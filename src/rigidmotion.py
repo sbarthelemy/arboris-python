@@ -158,14 +158,16 @@ class Body:
 
     def __init__(self, name=None):
         self.name = unicode(name)
-        self.frames = [Frame(self, np.eye(4), u"body")]
+        self.frames = [Frame(self, np.eye(4), unicode(name))]
         self.parentjoint = None
         self.childrenjoints = []
         self.pose = None # updated by self.geometric()
 
-    def addframe(self,pose,name=None):
-        self.frames.append(Frame(self,pose,name))
-
+    def newframe(self,pose,name=None):
+        frame = Frame(self,pose,name)
+        self.frames.append(frame)
+        return frame
+        
     def geometric(self,pose):
         self.pose = pose
         for j in self.childrenjoints:
@@ -188,7 +190,7 @@ class Body:
 
 class Transform(object):
     """
-    Matrix from SE(3)
+    Unused.
     """
     def __init__(self):
         self.pose = np.eye(4)
@@ -221,7 +223,7 @@ class Joint(object):
     """
     any joint
     """    
-    def __init__(self, leftframe, rightframe, name = u""):
+    def __init__(self, leftframe, rightframe, name=None):
         if not(isinstance(leftframe,Frame)):
             raise ValueError()
         if not(isinstance(rightframe,Frame)):
