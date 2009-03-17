@@ -5,6 +5,7 @@ import homogeneousmatrix as htr
 import adjointmatrix as Ad
 import controlwindow as cw
 import visu as v
+import visual
 from visual import controls
 
 w = rm.World()
@@ -27,17 +28,13 @@ for i in range(1,3):
         gpos = .5)
     w.addjoint(joint)
 
-H1 = htr.rotx(45.0/180*3.14)
-H1i = htr.inv(H1)
-Ad1 = htr.adjoint(H1)
-Ad1i = htr.adjoint(H1i)
-T2 = rm.Transform()
-H2 = T2.gethomogeneousmatrix()
-h1 = rm.HomogeneousMatrix(H1)
-t1 = rm.Twist([0, 0, 1, 0, 0, 0])
-
-
 w.geometric()
 vw = v.World(w)
-c = cw.controlwindow(vw)
 
+
+for t in range(100):
+    visual.rate(10)
+    print t
+    w.joints[1].gpos=t/20.
+    w.geometric()
+    vw.update()

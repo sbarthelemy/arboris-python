@@ -16,15 +16,21 @@ class World(object):
             self.bodies.append(Body(b))
 
     def update(self):
-        pass
+        for b in self.bodies:
+            b.update()
 
 class Body(object):
     def __init__(self, body):
         self._body = body
         self.frames = [draw_frame(pose=body.pose, label=body.frames[0].name)]
         for f in body.frames[1:]:
-            #pose = np.dot(body.pose,f.pose)
             self.frames.append(draw_frame(pose=f.pose, label=f.name, parent=self.frames[0]))
+        
+    def update(self):
+        (pos,axis,up) = htr_to_visual(self._body.pose)
+        self.frames[0].pos = pos
+        self.frames[0].axis = axis
+        self.frames[0].up = up
         
         
 def draw_frame(pose=np.eye(4), label=None, parent=None):
