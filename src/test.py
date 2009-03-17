@@ -3,24 +3,27 @@ import rigidmotion as rm
 import numpy as np
 import homogeneousmatrix as htr
 import adjointmatrix as Ad
-from visu import *
+import visu as v
 from visual import controls
 w = rm.World()
 
 
-H0 = np.dot(np.eye(4), htr.transl([-2,0,0]))
+Hprev = np.dot(np.eye(4), htr.transl([-4,0,0]))
+Hnext = np.dot(np.eye(4), htr.transl([4,0,0]))
 
-for i in range(1,5):
-    name = 'body%02d' % i
-    b = rm.Body(name)
-    b.addframe(H0,'frame01.01')
+for i in range(1,3):
+    prev_body = w.bodies[i-1]
+    left_frame = prev_body.newframe(Hnext,(prev_body.name +'-next'))
+    
+    new_body = rm.Body(name=('body%02d' % i))
+    right_frame = new_body.newframe(Hprev,(new_body.name +'-prev'))
 
-    j1 = rm.HingeJoint(
+    joint = rm.HingeJoint(
         name = ('joint%02d' % (i-1)),
-        leftframe = w.bodies[i-1].frames[0],
-        rightframe = b.frames[1],
-        gpos = 1)
-    w.addjoint(j1)
+        leftframe = left_frame,
+        rightframe = right_frame,
+        gpos = .5)
+    w.addjoint(joint)
 
 
 H1 = htr.rotx(45.0/180*3.14)
@@ -32,18 +35,6 @@ H2 = T2.gethomogeneousmatrix()
 h1 = rm.HomogeneousMatrix(H1)
 t1 = rm.Twist([0, 0, 1, 0, 0, 0])
 
-wv = WorldVisualizer(w)
-wv.draw()
+w.geometric()
+vw = v.World(w)
 
-def change(): # Called by controls when button clicked
-    if b.text == 'Click me':
-        b.text = 'Try again'
-    else:
-        b.text = 'Click me'
- 
-c = v.controls.controls() # Create controls window
-# Create a button in the controls window:
-b = v.controls.button( pos=(0,0), width=60, height=60,
-              text='Click me', action=lambda: change() )
-while 1:
-    c.interact() # Check for mouse; drive actions

@@ -1,38 +1,40 @@
 """
 Visualization of a simulation
 """
-import visual as v
+import visual
+import numpy as np
 import rigidmotion as rm
 
-class WorldVisualizer(object):
-    
+class World(object):
+        
     def __init__(self, world):
         self._world = world
-
-    def draw(self):
-        self._world.geometric()
-        self._scene = v.display()
-        self._body_frames = []
+        self._scene = visual.display()
+        self.bodies = []
 
         for b in self._world.bodies:
-            DrawableBody(b)
+            self.bodies.append(Body(b))
 
-        for j in self._world.joints:
-            pass
+    def update(self):
+        pass
 
-
-class DrawableBody(object):
-    def __init__(self,body):
-        self.body = body
-        (pos,axis,up) = htr_to_visual(body.pose)
-        self.frame = v.frame(pos=pos, axis=axis, up=up)
-        draw_frame(self.frame)
-        v.label(frame=self.frame, text=self.body.name)
+class Body(object):
+    def __init__(self, body):
+        self._body = body
+        self.frames = [draw_frame(pose=body.pose, label=body.frames[0].name)]
+        for f in body.frames[1:]:
+            #pose = np.dot(body.pose,f.pose)
+            self.frames.append(draw_frame(pose=f.pose, label=f.name, parent=self.frames[0]))
         
-def draw_frame(frame=None):
-    v.arrow(frame=frame, axis=(1,0,0),color=v.color.red)
-    v.arrow(frame=frame, axis=(0,1,0),color=v.color.green)
-    v.arrow(frame=frame, axis=(0,0,1),color=v.color.blue)
+        
+def draw_frame(pose=np.eye(4), label=None, parent=None):
+    (pos,axis,up) = htr_to_visual(pose)
+    f = visual.frame(frame=parent, pos=pos, axis=axis, up=up)
+    visual.arrow(frame=f, axis=(1,0,0), color=visual.color.red)
+    visual.arrow(frame=f, axis=(0,1,0), color=visual.color.green)
+    visual.arrow(frame=f, axis=(0,0,1), color=visual.color.blue)
+    visual.label(frame=f, text=label)
+    return f
     
 def htr_to_visual(pose):
     pos = pose[0:2,3]
