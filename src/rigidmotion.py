@@ -162,7 +162,8 @@ class Body:
         self.parentjoint = None
         self.childrenjoints = []
         self.pose = None # updated by self.geometric()
-
+        self.jacobian = None # updated by self.kinematic()
+        
     def newframe(self,pose,name=None):
         frame = Frame(self,pose,name)
         self.frames.append(frame)

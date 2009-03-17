@@ -37,7 +37,8 @@ h1 = rm.HomogeneousMatrix(H1)
 t1 = rm.Twist([0, 0, 1, 0, 0, 0])
 
 
+
 w.geometric()
+w.kinematic()
 vw = v.World(w)
-c = cw.controlwindow(vw)
 
