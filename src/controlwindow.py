@@ -24,7 +24,7 @@ class controlwindow(object):
         self.nbSnapShot = 100
         
         #creation of control btn and sldr 
-        c = v.controls.controls(x = self.x, y = self.y, width = self.width, height = self.height, range=120,
+        c = v.controls.controls(x = self.x, y = self.y, width = self.width, height = self.height, range=110,
             title='control window') # Create controls window
         self.btn_play = v.controls.button( pos = (0-self.offsetx,0-self.offsety), width = self.btnw, height = self.btnh,
             text='play', action = lambda: self.act_play())
@@ -38,13 +38,13 @@ class controlwindow(object):
             v.rate(self.interactRate)
             c.interact()
             if self.isPlaying==True:
-                self.displayNextSnapShot()
+                self.nextSliderPosition()
                 
                 
 ############################
 #class functions
 ############################  
-    def displayNextSnapShot(self):
+    def nextSliderPosition(self):
         if (self.slider.value + self.speedRate < self.nbSnapShot):
             self.slider.value = self.slider.value + self.speedRate
         else:
