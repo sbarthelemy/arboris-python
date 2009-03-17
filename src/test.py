@@ -3,8 +3,9 @@ import rigidmotion as rm
 import numpy as np
 import homogeneousmatrix as htr
 import adjointmatrix as Ad
+import controlwindow as cw
 from visu import *
-from visual import controls
+
 w = rm.World()
 
 
@@ -19,7 +20,7 @@ for i in range(1,5):
         name = ('joint%02d' % (i-1)),
         leftframe = w.bodies[i-1].frames[0],
         rightframe = b.frames[1],
-        gpos = 1)
+        gpos = 0.707)
     w.addjoint(j1)
 
 
@@ -35,15 +36,4 @@ t1 = rm.Twist([0, 0, 1, 0, 0, 0])
 wv = WorldVisualizer(w)
 wv.draw()
 
-def change(): # Called by controls when button clicked
-    if b.text == 'Click me':
-        b.text = 'Try again'
-    else:
-        b.text = 'Click me'
- 
-c = v.controls.controls() # Create controls window
-# Create a button in the controls window:
-b = v.controls.button( pos=(0,0), width=60, height=60,
-              text='Click me', action=lambda: change() )
-while 1:
-    c.interact() # Check for mouse; drive actions
+c = cw.controlwindow(wv)
