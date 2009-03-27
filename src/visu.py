@@ -13,6 +13,8 @@ class World(object):
         self._world = world
         self._scene = visual.display()
         self.bodies = []
+        self._scene.autoscale = False
+        self.movecoeff = 0.25
 
         for b in self._world.bodies:
             self.bodies.append(Body(b))
@@ -20,6 +22,23 @@ class World(object):
     def update(self):
         for b in self.bodies:
             b.update()
+        if self._scene.kb.keys:
+            keypressed = self._scene.kb.getkey()
+	    colindir = self._scene.forward - (visual.dot(self._scene.forward, self._scene.up) * self._scene.up)
+	    colindir = visual.norm(colindir)
+	    orthodir = visual.cross(colindir, self._scene.up)
+	    if keypressed == 'left':
+	        self._scene.center -= self.movecoeff*orthodir
+	    if keypressed == 'right':
+	        self._scene.center += self.movecoeff*orthodir
+	    if keypressed == 'page down':
+	        self._scene.center -= self.movecoeff*self._scene.up
+	    if keypressed == 'page up':
+	        self._scene.center += self.movecoeff*self._scene.up
+	    if keypressed == 'down':
+	        self._scene.center -= self.movecoeff*orthodir
+	    if keypressed == 'up':
+	        self._scene.center += self.movecoeff*orthodir
 
 class Body(object):
     """ A drawable version of rigidmotion.Body
