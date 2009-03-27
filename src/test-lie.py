@@ -1,3 +1,7 @@
+# coding=utf-8
+import homogeneousmatrix as htr
+import rigidmotion as rm
+
 H1 = htr.rotx(45.0/180*3.14)
 H1i = htr.inv(H1)
 Ad1 = htr.adjoint(H1)

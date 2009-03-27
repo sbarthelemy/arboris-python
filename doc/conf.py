@@ -23,7 +23,7 @@ sys.path.append(os.path.abspath('../src'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.pngmath']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
@@ -170,10 +170,21 @@ latex_documents = [
 #latex_use_parts = False
 
 # Additional stuff for the LaTeX preamble.
-#latex_preamble = ''
-
+latex_preamble = ''
 # Documents to append as an appendix to all manuals.
 #latex_appendices = []
 
 # If false, no module index is generated.
 #latex_use_modindex = True
+
+pngmath_latex_preamble = r"""\providecommand{\SO}{\text{SO}}
+\providecommand{\pre}[2][{}]{\vphantom{#2}^{#1}#2}
+\providecommand{\twist}[1][{}]{\vphantom{V}^{#1}V}
+\providecommand{\vect}[2]{\vphantom{#2}^{#1}#2}
+\providecommand{\Hg}[1][{}]{\vphantom{H}^{#1}H}
+\providecommand{\Ad}[1][{}]{\,\vphantom{Ad}^{#1}\!\!Ad}
+\providecommand{\GPos}{Q}
+\providecommand{\GPosSet}{\bar{\mathcal{Q}}}
+\providecommand{\GVel}{\nu}
+"""
+

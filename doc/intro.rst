@@ -2,10 +2,8 @@
 Introduction
 ============
 
-a world is composed of one or more bodies. Each body has a name and at least 
-one frame rigidly attached to it.
+todo: add a great introduction.
 
+This document was much inspired by [Duindam2006]_
 
-
-
-.. automodule:: rigidmotion
+.. [Duindam2006] V. Duindam, Port-Based Modelling and Control for Efficent Bipedal Walking Robots.

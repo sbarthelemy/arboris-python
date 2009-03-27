@@ -1,3 +1,4 @@
+# coding=utf-8
 """
 Visualization of a simulation
 """
@@ -5,13 +6,16 @@ import visual
 import numpy as np
 import rigidmotion as rm
 
+scale=1
+
 class World(object):
     """ A drawable version of rigidmotion.World
     """
     
-    def __init__(self, world):
+    def __init__(self, world,scale=1):
         self._world = world
         self._scene = visual.display()
+        self._scale = scale
         self.bodies = []
 
         for b in self._world.bodies:
@@ -27,9 +31,13 @@ class Body(object):
     
     def __init__(self, body):
         self._body = body
-        self.frames = [draw_frame(pose=body.pose, label=body.frames[0].name)]
+        self.frames = [draw_frame(
+            pose=body.pose,
+            label=body.frames[0].name,
+            length=scale)]
         for f in body.frames[1:]:
-            self.frames.append(draw_frame(pose=f.pose, label=f.name, parent=self.frames[0]))
+            self.frames.append(draw_frame(pose=f.pose, label=f.name,
+                                          parent=self.frames[0],length=scale))
         
     def update(self):
         (pos,axis,up) = htr_to_visual(self._body.pose)
@@ -38,14 +46,14 @@ class Body(object):
         self.frames[0].up = up
         
         
-def draw_frame(pose=np.eye(4), label=None, parent=None):
+def draw_frame(pose=np.eye(4), label=None, parent=None, length=1):
     """Draw the arrows and label of a frame.
     """
     (pos,axis,up) = htr_to_visual(pose)
     f = visual.frame(frame=parent, pos=pos, axis=axis, up=up)
-    visual.arrow(frame=f, axis=(1,0,0), color=visual.color.red)
-    visual.arrow(frame=f, axis=(0,1,0), color=visual.color.green)
-    visual.arrow(frame=f, axis=(0,0,1), color=visual.color.blue)
+    visual.arrow(frame=f, axis=(1,0,0), length=length, color=visual.color.red)
+    visual.arrow(frame=f, axis=(0,1,0), length=length, color=visual.color.green)
+    visual.arrow(frame=f, axis=(0,0,1), length=length, color=visual.color.blue)
     visual.label(frame=f, text=label)
     return f
     

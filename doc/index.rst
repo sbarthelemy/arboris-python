@@ -11,7 +11,11 @@ Contents:
    :maxdepth: 2
 
    intro
-    
+   rigidmotion
+   rigidmechanism
+   modules
+   devel
+
 Indices and tables
 ==================
 
