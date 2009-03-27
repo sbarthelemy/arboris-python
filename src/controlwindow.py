@@ -1,3 +1,4 @@
+# coding=utf-8
 """
 Creation of control window class
 """

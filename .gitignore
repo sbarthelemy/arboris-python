@@ -1,0 +1,4 @@
+*~
+*.swp
+/src/*.pyc
+/doc/.build/

@@ -1,5 +1,6 @@
+# coding=utf-8
 #!python
-import rigidmotion as rm
+import arboris as rm
 import numpy as np
 import homogeneousmatrix as htr
 import adjointmatrix as Ad
@@ -7,7 +8,7 @@ import controlwindow as cw
 import visu as v
 import visual
 from visual import controls
-
+from arboris import *
 w = rm.World()
 
 
@@ -30,12 +31,13 @@ for i in range(1,3):
 
 w.geometric()
 w.kinematic()
-vw = v.World(w)
+w.dynamic()
 
-
-for t in range(100):
-    visual.rate(10)
-    print t
-    w.joints[1].gpos=t/20.
-    w.geometric()
-    vw.update()
+if False:
+    vw = v.World(w)
+    for t in range(100):
+        visual.rate(10)
+        print t
+        w.joints[1].gpos=t/20.
+        w.geometric()
+        vw.update()

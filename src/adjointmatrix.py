@@ -1,9 +1,12 @@
+# coding=utf-8
 import numpy as np
 """
-H = [ R r
+Functions for working with adjoint matrices
+
+H = [ R p
       0 1 ]    
 Ad(H) = [  R   0
-          rxR  R ]
+          pxR  R ]
 """
 
 def isadjointmatrix(a):
@@ -26,5 +29,4 @@ def inv(Ad):
     return np.vstack((
         np.hstack((R  , np.zeros((3,3)))),
         np.hstack((pxR, R))))
-
 
