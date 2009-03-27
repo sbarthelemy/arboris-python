@@ -2,9 +2,16 @@
 """
 ...
 
-A world consists of bodies (instances of the :class:`Body` class) interlinked
-by joints (instances of :class:`Joint` subclasses). It forms a tree whose 
-bodies are the nodes and joints are the edges.
+A world (instance of the :class:`World` class) consists of bodies (instances of the :class:`Body` class) interlinked by joints (instances of :class:`Joint` subclasses). Joints serve two purposes in arboris: 
+    
+- restrict the relative motion between bodies (for instance a hinge joint only
+allows for rotations around its axis) 
+- and parametrize the bodies positions (for instance a single angle is enough to parametrize the relative position of two bodies constrained by a hinge joint).
+
+A world forms an oriented tree whose nodes are the bodies and edges are the
+joints, so that the state (pose and velocity) of each body can be computed from
+the state of its parent joints (the joints on the path from the body to the root
+of the tree (which is body called "ground")).
 
 One or more frames (instances of the :class:`Frame` class) can be associated to
 bodies and serve as anchor points to the joints
@@ -12,6 +19,7 @@ bodies and serve as anchor points to the joints
 TODO: 
 
 - add support for controllers and integration
+- add __repr__ or unicode methods
 - split world description and its state+matrices ? 
 - add support for visu
 - add support for explicit joints
@@ -28,7 +36,7 @@ import numpy as np
 import homogeneousmatrix as Hg
 import twistvector as T
 
-Pi = 3.14
+Pi = 3.14 #TODO: improve precision
 
 class World(object):
 
@@ -301,10 +309,19 @@ class RigidMotion(object):
     """
     
     def pose(self):
-        return self._pose
+        """Return the pose as an homogeneous matrix. 
+        
+        This method must be overloaded.        
+        """
+        raise NotImplementedError #TODO: make use of python2.6's ABC
 
     def twist(self):
-        return self._twist
+        """Return the velocity as a twist vector. 
+        
+        This method must be overloaded.        
+        """
+
+        raise NotImplementedError #TODO: make use of python2.6's ABC
 
     def adjoint(self):
         return Hg.adjoint(self.pose())
