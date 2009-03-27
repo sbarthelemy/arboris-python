@@ -22,6 +22,7 @@ The doc is written in the reST markup language and processed by sphinx (version 
 .. _NumpyDoc:
     http://docs.scipy.org/doc/
 
+
 Set up for Ubuntu Jaunty
 ========================
 
@@ -48,7 +49,7 @@ Install and set up git::
 
 Get python-arboris from git (you'll need an ssh account ``yourlastname`` on vizir)::
   cd ~
-  git clone yourlastname@vizir.robot.jussieu.fr:pyarboris
+  git clone yourlastname@vizir.robot.jussieu.fr:/home/seb/pyarboris
   cd pyarboris
   git remote add vizir-seb yourlastname@vizir.robot.jussieu.fr:pyarboris
 
