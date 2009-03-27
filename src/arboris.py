@@ -313,7 +313,7 @@ class RigidMotion(object):
         
         This method must be overloaded.        
         """
-        raise NotImplementedError #TODO: make use po python2.6's ABC
+        raise NotImplementedError #TODO: make use of python2.6's ABC
 
     def twist(self):
         """Return the velocity as a twist vector. 
@@ -321,7 +321,7 @@ class RigidMotion(object):
         This method must be overloaded.        
         """
 
-        raise NotImplementedError #TODO: make use po python2.6's ABC
+        raise NotImplementedError #TODO: make use of python2.6's ABC
 
     def adjoint(self):
         return Hg.adjoint(self.pose())
