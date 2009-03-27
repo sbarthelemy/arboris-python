@@ -31,7 +31,7 @@ We develop using a (possibly virtual) computer with ubuntu jaunty. In such a cas
 
 Install python-visual (build from sources)::
 
-  sudo aptitude install visual deps
+  sudo aptitude install visual-deps... #TODO
   cd ~
   wget visual... #TODO
   tar visual... #TODO
