@@ -65,18 +65,29 @@ class World(object):
         self.bodies = [Body(u"ground")] 
         self.joints = [] 
         self._ndof = 0
-        self.mass = None # updated by self.dynamic
-        self.viscosity = None # updated by self.dynamic
-        self.nleffect = None # updated by self.dynamic
+        self._mass = None # updated by self.dynamic
+        self._viscosity = None # updated by self.dynamic
+        self._nleffect = None # updated by self.dynamic
 
+    @property
+    def mass(self):
+        return self._mass
+
+    @property
+    def viscosity(self):
+        return self._viscosity
+
+    @property
+    def nleffect(self):
+        return self._nleffect
 
     def reset(self):
         """
         Set all state-dependent data to None
         """
-        self.mass = None
-        self.viscosity = None
-        self.nleffect = None
+        self._mass = None
+        self._viscosity = None
+        self._nleffect = None
         for b in self.bodies:
             b.reset()
 
@@ -347,17 +358,17 @@ class World(object):
             np.zeros((6,self._ndof)),
             np.zeros(6))
         
-        self.mass = np.zeros((self._ndof,self._ndof))
-        self.viscosity = np.zeros((self._ndof,self._ndof))
-        self.nleffect = np.zeros((self._ndof,self._ndof))
+        self._mass = np.zeros((self._ndof,self._ndof))
+        self._viscosity = np.zeros((self._ndof,self._ndof))
+        self._nleffect = np.zeros((self._ndof,self._ndof))
         for b in self.bodies:
-            self.mass += np.dot(
+            self._mass += np.dot(
                 np.dot(b.jacobian.transpose(), b.mass),
                 b.jacobian)
-            self.viscosity += np.dot(
+            self._viscosity += np.dot(
                 np.dot(b.jacobian.transpose(), b.viscosity),
                 b.jacobian)
-            self.nleffect += np.dot(
+            self._nleffect += np.dot(
                 b.jacobian.transpose(),
                 np.dot(
                     b.mass,
@@ -421,18 +432,39 @@ class Body(object):
         self.childrenjoints = []
         self.mass = mass
         self.viscosity = viscosity
-        self.pose = None # updated by self.geometric()
-        self.jacobian = None # updated by self.kinematic()/self.dynamic()
-        self.djacobian = None # updated by self.dynamic()
-        self.twist = None # updated by self.dynamic() 
-        self.nleffect = None # updated by self.dynamic() 
+        self._pose = None # updated by self.geometric()
+        self._jacobian = None # updated by self.kinematic()/self.dynamic()
+        self._djacobian = None # updated by self.dynamic()
+        self._twist = None # updated by self.dynamic() 
+        self._nleffect = None # updated by self.dynamic() 
+
+    @property
+    def pose(self):
+        return self._pose
+
+    @property
+    def jacobian(self):
+        return self._jacobian
+
+    @property
+    def djacobian(self):
+        return self._djacobian
+
+    @property
+    def twist(self):
+        return self._twist
+
+    @property
+    def nleffect(self):
+        return self._nleffect
+
 
     def reset(self):
-        self.pose = None
-        self.jacobian = None
-        self.djacobian = None
-        self.twist = None
-        self.nleffect = None
+        self._pose = None
+        self._jacobian = None
+        self._djacobian = None
+        self._twist = None
+        self._nleffect = None
 
     def newframe(self,pose,name=None):
         frame = Frame(self,pose,name)
@@ -452,7 +484,7 @@ class Body(object):
         H_gc = H_gp * H_pc
              = H_gp * (H_pr * H_rn * H_nc)
         """
-        self.pose = pose
+        self._pose = pose
         H_gp = pose
         for j in self.childrenjoints:
             H_cn = j.new_frame.pose
@@ -503,10 +535,10 @@ class Body(object):
         with dAd_cp = Ad_cn * dAd_nr * Ad_rp
 
         """
-        self.pose = pose
-        self.jacobian = jac
-        self.djacobian = djac
-        self.twist = twist
+        self._pose = pose
+        self._jacobian = jac
+        self._djacobian = djac
+        self._twist = twist
         wx = np.array(
             [[             0,-self.twist[2], self.twist[1]],
              [ self.twist[2],             0,-self.twist[0]],
@@ -515,11 +547,11 @@ class Body(object):
             rx = np.zeros((3,3))
         else:
             rx = self.mass[0:3,3:6]/self.mass[3,3] # todo: better solution?
-        self.nleffect = np.zeros((6,6))
-        self.nleffect[0:3,0:3] = wx
-        self.nleffect[3:6,3:6] = wx
-        self.nleffect[0:3,3:6] = np.dot(rx,wx)-np.dot(wx,rx)
-        self.nleffect = np.dot(self.nleffect,self.mass)
+        self._nleffect = np.zeros((6,6))
+        self._nleffect[0:3,0:3] = wx
+        self._nleffect[3:6,3:6] = wx
+        self._nleffect[0:3,3:6] = np.dot(rx,wx)-np.dot(wx,rx)
+        self._nleffect = np.dot(self.nleffect,self.mass)
 
         H_gp = pose
         J_pg = jac
