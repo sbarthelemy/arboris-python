@@ -15,31 +15,94 @@ def transl(vec):
 
     OUTPUT: Homogeneous matrix of the translation
     """
-    return np.vstack( (np.hstack((np.eye(3),np.array(vec).reshape(3,1))), [0,0,0,1]))
+    return np.vstack( (np.hstack((np.eye(3),np.array(vec).reshape(3,1))),
+                       [0,0,0,1]))
 
 
-def rotx(theta):
+def rotzyx(angle_z, angle_y, angle_x):
+    """homogeneous transformation matrix from pitch-roll-yaw angles)
+    
+    In short:  R = Rz * Ry * Rx
+
+    example:
+    >>> rotzyx(3.14/6, 3.14/6, 3.14/6)
+    array([[ 0.75022984, -0.21653948,  0.6247126 ,  0.        ],
+           [ 0.43287992,  0.8750575 , -0.21653948,  0.        ],
+           [-0.4997701 ,  0.43287992,  0.75022984,  0.        ],
+           [ 0.        ,  0.        ,  0.        ,  1.        ]])
+    """
+    
+    sx = np.sin(angle_x)
+    cx = np.cos(angle_x)
+    sy = np.sin(angle_y)
+    cy = np.cos(angle_y)
+    sz = np.sin(angle_z)
+    cz = np.cos(angle_z)
+    return np.array(
+        [[ cz*cy, cz*sy*sx-sz*cx, cz*sy*cx+sz*sx, 0.],
+         [ sz*cy, sz*sy*sx+cz*cx, sz*sy*cx-cz*sx, 0.],
+         [-sy   , cy*sx         , cy*cx         , 0.],
+         [ 0.   , 0.            , 0.            , 1.]])
+
+
+def rotx(angle):
     """
     Homogeneous matrix of a rotation around the x-axis
+   
+    example:
+    >>> rotx(3.14/6)
+    array([[ 1.        ,  0.        ,  0.        ,  0.        ],
+           [ 0.        ,  0.86615809, -0.4997701 ,  0.        ],
+           [ 0.        ,  0.4997701 ,  0.86615809,  0.        ],
+           [ 0.        ,  0.        ,  0.        ,  1.        ]])
+
     """
-    ct = np.cos(theta)
-    st = np.sin(theta)
+    ca = np.cos(angle)
+    sa = np.sin(angle)
     H = np.array(
         [[1,  0,   0,  0],
-         [0, ct, -st,  0],
-         [0, st,  ct,  0],
+         [0, ca, -sa,  0],
+         [0, sa,  ca,  0],
          [0,  0,   0,  1]])
     return H
 
-def rotz(theta):
+def roty(angle):
     """
-    Rotation around the x-axis
+    Homogeneous matrix of a rotation around the y-axis
+
+    example:
+    >>> roty(3.14/6)
+    array([[ 0.86615809,  0.        ,  0.4997701 ,  0.        ],
+           [ 0.        ,  1.        ,  0.        ,  0.        ],
+           [-0.4997701 ,  0.        ,  0.86615809,  0.        ],
+           [ 0.        ,  0.        ,  0.        ,  1.        ]])
+
     """
-    ct = np.cos(theta)
-    st = np.sin(theta)
+    ca = np.cos(angle)
+    sa = np.sin(angle)
     H = np.array(
-        [[ct, -st, 0, 0],
-         [st,  ct, 0, 0],
+        [[ ca,  0,  sa,  0],
+         [  0,  1,   0,  0],
+         [-sa,  0,  ca,  0],
+         [  0,  0,   0,  1]])
+    return H
+
+def rotz(angle):
+    """
+    Rotation around the z-axis
+    example:
+    >>> rotz(3.14/6)
+    array([[ 0.86615809, -0.4997701 ,  0.        ,  0.        ],
+           [ 0.4997701 ,  0.86615809,  0.        ,  0.        ],
+           [ 0.        ,  0.        ,  1.        ,  0.        ],
+           [ 0.        ,  0.        ,  0.        ,  1.        ]])
+
+    """
+    ca = np.cos(angle)
+    sa = np.sin(angle)
+    H = np.array(
+        [[ca, -sa, 0, 0],
+         [sa,  ca, 0, 0],
          [ 0,   0, 1, 0],
          [ 0,   0, 0, 1]])
     return H
@@ -48,7 +111,9 @@ def ishomogeneousmatrix(H, tol=tol):
     """
     Return true if input is an homogeneous matrix
     """
-    return (H.shape == (4,4)) and (np.abs(np.linalg.det(H[0:3,0:3])-1)<=tol) and (H[3,0:4]==[0,0,0,1]).all()
+    return (H.shape == (4,4)) \
+        and (np.abs(np.linalg.det(H[0:3,0:3])-1)<=tol) \
+        and (H[3,0:4]==[0,0,0,1]).all()
 
 def checkishomogeneousmatrix(H, tol=tol):
     """
@@ -86,3 +151,8 @@ def iadjoint(H):
     Return the adjoint of the inverse homogeneous matrix
     """
     return adjoint(inv(H))
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+
