@@ -10,7 +10,7 @@ Python
 Default values
 --------------
 
-The one function argument default value is evaluated only once. This makes a difference when the default is a mutable object such as a list, dictionary, or instances of most classes. For instance in this example
+The function argument default values ar'e evaluated only once. This makes a difference when the default is a mutable object such as a list, dictionary, or instances of most classes. For instance in this example
 
 .. testcode:: group1
 
