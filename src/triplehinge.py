@@ -70,34 +70,33 @@ def triplehinge():
 
 
     # create a joint between the ground and the arm
-    shoulder = arb.HingeJoint(
-        name = 'Shoulder',
-        ref_frame = ground.frames[0],
-        new_frame = arm.frames[0])
+    shoulder = arb.HingeJoint()
     # add the new joint to the world (this will also add arm to w.bodies)
-    w.addjoint(shoulder)    
+    w.addjoint(joint = shoulder,
+               ref_frame = ground.frames[0],
+               new_frame = arm.frames[0])
+
     
     # add a frame to the arm, where the forearm will be anchored
     f = arm.newframe(
         arb.Hg.transl((0,arm_length,0)),
         'ElbowLeftFrame')
     # create a joint between the arm and the forearm
-    elbow = arb.HingeJoint(
-        name = 'Elbow',
-        ref_frame = f,
-        new_frame = forearm.frames[0])
-    w.addjoint(elbow)
+    elbow = arb.HingeJoint()
+    w.addjoint(joint = elbow,
+               ref_frame = f,
+               new_frame = forearm.frames[0])
 
     # add a frame to the forearm, where the hand will be anchored
     f = forearm.newframe(
         arb.Hg.transl((0,forearm_length,0)),
         'WristLeftFrame')
     # create a joint between the forearm and the hand
-    wrist = arb.HingeJoint(
-        name = 'Wrist',
-        ref_frame = f,
-        new_frame = hand.frames[0])
-    w.addjoint(wrist)
+    wrist = arb.HingeJoint()
+    w.addjoint(joint = wrist, 
+               ref_frame = f,
+               new_frame = hand.frames[0])
+
     return w
 
 if __name__ == "__main__":

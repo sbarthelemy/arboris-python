@@ -17,8 +17,7 @@ bodies and serve as anchor points to the joints
 
 TODO: 
 
-- remove left/right-frames from joints
-- make use of @property for read-only properties
+- put object names in a dict.
 - add support for FreeJoint
 - import human36 from matlab-arboris
 - add unit tests for human36
@@ -45,8 +44,8 @@ import homogeneousmatrix as Hg
 import homogeneousmatrix
 import twistvector as T
 import adjointmatrix
-
-Pi = 3.14 #TODO: improve precision
+from abc import ABCMeta, abstractmethod
+from math import pi
 
 class World(object):
 
@@ -96,45 +95,58 @@ class World(object):
         return self._ndof
 
 
-    def addjoint(self, joint):
+    def addjoint(self, joint, ref_frame, new_frame, name=None):
         """Add a joint and its new-attached body to the world.
 
         :arguments:
             joint
                 the joint that will be added
+        TODO: find a better name for ``self._new_frame`` (current suggestions:
+        ``next_frame``, ``moving_frame``)
         """
-        # check the left frame is already in world
+        if not(isinstance(joint,Joint)):
+            raise ValueError("{0} is not an instance of Joint".format(
+                joint))
+        if not(isinstance(ref_frame,Frame)):
+            raise ValueError("{0} is not an instance of Frame".format(
+                ref_frame))
+        if not(isinstance(new_frame,Frame)):
+            raise ValueError("{0} is not an instance of Frame".format(
+                new_frame))
+
+        # check the reference frame for the joint is already in world
         ref_frame_is_in_world = False
-        for f in self.bodies:
-            if joint.ref_frame.body is f:
+        for b in self.bodies:
+            if ref_frame.body is b:
                ref_frame_is_in_world = True
         if not(ref_frame_is_in_world):
-            raise ValueError
+            raise ValueError("The reference frame is attached to a body that is not in world")
         
-        newbody = joint.new_frame.body
+        new_body = new_frame.body
         # check the new frame is not already in world
         new_frame_is_in_world = False
-        for f in self.bodies:
-            if newbody is f:
-               raise ValueError
+        for b in self.bodies:
+            if new_body is b:
+               raise ValueError("The new frame is attached to a body that is already in world")
 
-        if (newbody.parentjoint != None):
-            raise ValueError
-        if newbody.childrenjoints != []:
-            raise ValueError
+        if (new_body.parentjoint != None):
+            raise ValueError("The new frame is attached to a body that already has a parent joint")
+        if new_body.childrenjoints != []:
+            raise ValueError("The new frame is attached to a body that already has a children joints")
         
-        # add the joint and the moving frame to the world
-        self.joints.append(joint)
-        joint.ref_frame.body.childrenjoints.append(joint)
-        self.bodies.append(newbody)
-        newbody.parentjoint = joint
-
         # extend the world generalized velocities
         old_ndof = self._ndof
         self._ndof = self._ndof + joint.ndof()
-        joint.dofindex = slice(old_ndof, self._ndof)
-        joint.gvel = np.array(joint.gvel).reshape(-1) # ensure gvel is a 1-d array
         
+        # add the joint and the moving frame to the world
+        joint.name = unicode(name)
+        joint._ref_frame = ref_frame
+        joint._new_frame = new_frame
+        joint._dof_index = slice(old_ndof, self._ndof) 
+        self.joints.append(joint)
+        joint._ref_frame.body.childrenjoints.append(joint)
+        self.bodies.append(new_body)
+        new_body.parentjoint = joint
 
     def geometric(self):
         """
@@ -171,7 +183,7 @@ class World(object):
         >>> w.joints[0].gvel[0]=2.5
         >>> w.joints[1].gpos[0]=1.0
         >>> w.joints[1].gvel[0]=-1.0
-        >>> w.joints[2].gpos[0]=2.0/3
+        >>> w.joints[2].gpos[0]=2.0/3.0
         >>> w.joints[2].gvel[0]=-0.5
         >>> w.dynamic()
         >>> w.bodies[1].pose
@@ -384,10 +396,10 @@ class Frame(object):
         """Create a frame rigidly fixed to a body. 
         
         >>> b = Body()
-        >>> f = Frame(b,Hg.rotz(Pi/3),'Brand New Frame')
+        >>> f = Frame(b,Hg.rotz(3.14/3.),'Brand New Frame')
         
         The ``body`` argument must be a member of the ``Body`` class:
-        >>> f = Frame(None, Hg.rotz(Pi/3))
+        >>> f = Frame(None, Hg.rotz(3.14/3.))
         Traceback (most recent call last):
             ...
         ValueError: The ``body`` argument must be an instance of the ``Boby`` class
@@ -432,7 +444,7 @@ class Body(object):
         self.childrenjoints = []
         self.mass = mass
         self.viscosity = viscosity
-        self._pose = None # updated by self.geometric()
+        self._pose = None # updated by self.geometric()/self.kinematic()/self.dynamic()
         self._jacobian = None # updated by self.kinematic()/self.dynamic()
         self._djacobian = None # updated by self.dynamic()
         self._twist = None # updated by self.dynamic() 
@@ -457,7 +469,6 @@ class Body(object):
     @property
     def nleffect(self):
         return self._nleffect
-
 
     def reset(self):
         self._pose = None
@@ -487,12 +498,12 @@ class Body(object):
         self._pose = pose
         H_gp = pose
         for j in self.childrenjoints:
-            H_cn = j.new_frame.pose
-            H_pr = j.ref_frame.pose
+            H_cn = j._new_frame.pose
+            H_pr = j._ref_frame.pose
             H_rn = j.pose()
             H_pc = np.dot(H_pr, np.dot(H_rn, Hg.inv(H_cn)))
             child_pose = np.dot(H_gp, H_pc)
-            j.new_frame.body.geometric(child_pose)
+            j._new_frame.body.geometric(child_pose)
         
     def kinematic(self,pose,jac):
         raise NotImplemented #TODO: remove the method or implement it
@@ -558,10 +569,9 @@ class Body(object):
         dJ_pg = djac
         T_pg = twist
         for j in self.childrenjoints:
-            H_cn = j.new_frame.pose
-            H_pr = j.ref_frame.pose
+            H_cn = j._new_frame.pose
+            H_pr = j._ref_frame.pose
             H_rn = j.pose()
-            #H_nr = j.ipose()
             H_pc = np.dot(H_pr, np.dot(H_rn, Hg.inv(H_cn)))
             child_pose = np.dot(H_gp, H_pc)
             Ad_cp = Hg.iadjoint(H_pc)
@@ -574,11 +584,11 @@ class Body(object):
             dJ_nr = j.djacobian()
             child_twist = np.dot(Ad_cp, T_pg) + np.dot(Ad_cn, T_nr)
             child_jac = np.dot(Ad_cp, J_pg)
-            child_jac[:,j.dofindex] += np.dot(Ad_cn, J_nr)
+            child_jac[:,j._dof_index] += np.dot(Ad_cn, J_nr)
             child_djac = np.dot(dAd_cp, J_pg) + np.dot(Ad_cp, dJ_pg)
-            child_djac[:,j.dofindex] += np.dot(Ad_cn, dJ_nr)
-            j.new_frame.body.dynamic(child_pose, child_jac, child_djac, 
-                                      child_twist)
+            child_djac[:,j._dof_index] += np.dot(Ad_cn, dJ_nr)
+            j._new_frame.body.dynamic(child_pose, child_jac, child_djac, 
+                                     child_twist)
 
 
 class RigidMotion(object):
@@ -598,25 +608,24 @@ class RigidMotion(object):
     self.dadjoint(): dAd_rn
     self.idadjoint():dAd_nr
     """
-    
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def pose(self):
         """Return the pose as an homogeneous matrix. 
-        
-        This method must be overloaded.        
         """
-        raise NotImplementedError #TODO: make use of python2.6's ABC
+        pass
 
     def ipose(self):
         """Inverse of pose()
         """
         return Hg.inv(self.pose())
-        
+
+    @abstractmethod
     def twist(self):
         """Return the velocity as a twist vector. 
-        
-        This method must be overloaded.        
         """
-        raise NotImplementedError #TODO: make use of python2.6's ABC
+        pass
 
     def itwist(self):
         return -np.dot(np.asarray(self.iadjoint()),self.twist())
@@ -633,12 +642,14 @@ class RigidMotion(object):
     def iadjacency(self):
         return T.adjacency(self.itwist())
 
-
     def dadjoint(self):
         return np.dot(np.asarray(self.adjoint()),self.adjacency())
     
     def idadjoint(self):
         return np.dot(np.asarray(self.iadjoint()),self.iadjacency())
+
+
+
 
 class Joint(RigidMotion):
 
@@ -646,47 +657,63 @@ class Joint(RigidMotion):
     H
     T_
     """    
-    
-    def __init__(self, ref_frame, new_frame, name=None):
-        if not(isinstance(ref_frame,Frame)):
-            raise ValueError()
-        if not(isinstance(new_frame,Frame)):
-            raise ValueError()
-        self.name = unicode(name)
-        self.ref_frame = ref_frame
-        self.new_frame = new_frame
-        self.dofindex = None # will be set when the joint is added to the world
+    __metaclass__ = ABCMeta
 
     def twist(self):
         return np.dot(self.jacobian(),self.gvel)
 
+
+    @abstractmethod
     def ndof(self):
         """Number of degrees of freedom of the joint
-
-        This method must be overloaded.
         """
-        raise NotImplementedError #TODO: make use of python2.6's ABC
+        pass
 
+    @abstractmethod
     def jacobian(self):
-        """
+        pass
 
-        This method must be overloaded.
-        """
-        raise NotImplementedError #TODO: make use of python2.6's ABC
-
+    @abstractmethod
     def djacobian(self):
-        """
-
-        This method must be overloaded.
-        """
-        raise NotImplementedError #TODO: make use of python2.6's ABC
-
+        pass
 
 class FreeJoint(Joint):
 
     """Free joint (6-dof)
     """
+    def __init__(self, gpos=None, gvel=None):
+        """
+        example:
+        >>> j = FreeJoint()
+        >>> j.gpos
+        array([[ 1.,  0.,  0.,  0.],
+               [ 0.,  1.,  0.,  0.],
+               [ 0.,  0.,  1.,  0.],
+               [ 0.,  0.,  0.,  1.]])
+        >>> j.gvel
+        array([ 0.,  0.,  0.,  0.,  0.,  0.])
+        """
+        if gpos == None:
+            gpos = np.eye(4)
+        if gvel == None:
+            gvel = np.zeros((6))
+        self.gpos = np.array(gpos).reshape((4,4))
+        self.gvel = np.array(gvel).reshape((6))
 
+    def ndof(self):
+        return 6
+    
+    def pose(self):
+        return self.gpos.copy()
+
+    def twist(self):
+        return self.gvel.copy()
+
+    def jacobian(self):
+        return np.eye(6)
+
+    def djacobian(self):
+        return np.zeros((6,6))
 
 class PivotJoint(Joint):
 
@@ -703,9 +730,15 @@ class HingeJoint(Joint):
 
     """Hinge (1-dof) with axis in the z-direction
     """
-    def __init__(self, ref_frame, new_frame, name=None, 
-                 gpos=0., gvel=0.):
-        Joint.__init__(self, ref_frame, new_frame, name)
+    def __init__(self, gpos=0., gvel=0.):
+        """
+        example:
+        >>> j = HingeJoint(gpos = 3.14/2., gvel = 1.)
+        >>> j.gpos
+        array([ 1.57])
+        >>> j.gvel
+        array([ 1.])
+        """
         self.gpos = np.array(gpos).reshape((1))
         self.gvel = np.array(gvel).reshape((1))
     
@@ -713,15 +746,61 @@ class HingeJoint(Joint):
         return 1
 
     def pose(self):
+        """
+        >>> j = HingeJoint(gpos = 3.14/2., gvel = 1.)
+        >>> j.pose()
+        array([[  7.96326711e-04,  -9.99999683e-01,   0.00000000e+00,
+                  0.00000000e+00],
+               [  9.99999683e-01,   7.96326711e-04,   0.00000000e+00,
+                  0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   1.00000000e+00,
+                  0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  1.00000000e+00]])
+        """
         return Hg.rotz(self.gpos[0])
 
     def ipose(self):
+        """
+        >>> j = HingeJoint(gpos = 3.14/2., gvel = 1.)
+        >>> j.ipose()
+        array([[  7.96326711e-04,   9.99999683e-01,   0.00000000e+00,
+                  0.00000000e+00],
+               [ -9.99999683e-01,   7.96326711e-04,   0.00000000e+00,
+                  0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   1.00000000e+00,
+                  0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  1.00000000e+00]])
+
+        """
         return Hg.rotz(-self.gpos[0])
 
     def jacobian(self):
+        """
+        >>> j = HingeJoint(gpos = 3.14/2., gvel = 1.)
+        >>> j.jacobian()
+        array([[ 0.],
+               [ 0.],
+               [ 1.],
+               [ 0.],
+               [ 0.],
+               [ 0.]])
+        """
         return np.array([[0.], [0.], [1.], [0.], [0.], [0.]])
 
     def djacobian(self):
+        """
+        >>> j = HingeJoint(gpos = 3.14/2., gvel = 1.)
+        >>> j.djacobian()
+        array([[ 0.],
+               [ 0.],
+               [ 0.],
+               [ 0.],
+               [ 0.],
+               [ 0.]])
+
+        """
         return np.zeros((6,1))
 
 
