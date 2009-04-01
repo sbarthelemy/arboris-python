@@ -4,8 +4,7 @@
 
 A world (instance of the :class:`World` class) consists of bodies (instances of the :class:`Body` class) interlinked by joints (instances of :class:`Joint` subclasses). Joints serve two purposes in arboris: 
     
-- restrict the relative motion between bodies (for instance a hinge joint only
-allows for rotations around its axis) 
+- restrict the relative motion between bodies (for instance a hinge joint only allows for rotations around its axis) 
 - and parametrize the bodies positions (for instance a single angle is enough to parametrize the relative position of two bodies constrained by a hinge joint).
 
 A world forms an oriented tree whose nodes are the bodies and edges are the
@@ -18,12 +17,21 @@ bodies and serve as anchor points to the joints
 
 TODO: 
 
+- remove left/right-frames from joints
+- make use of @property for read-only properties
+- add support for FreeJoint
+- import human36 from matlab-arboris
+- add unit tests for human36
 - add support for controllers and integration
 - add __repr__ or unicode methods
 - split world description and its state+matrices ? 
 - add support for visu
 - add support for explicit joints
 - add support for contacts and joint limits
+
+IDEAS:
+
+- add dpose() to RigidMotion
 - add support for coupled joints
 - add support for non-holonomic joints
 
@@ -34,7 +42,9 @@ __version__ = "$Revision: 1 $"
 
 import numpy as np
 import homogeneousmatrix as Hg
+import homogeneousmatrix
 import twistvector as T
+import adjointmatrix
 
 Pi = 3.14 #TODO: improve precision
 
@@ -47,7 +57,6 @@ class World(object):
     >>> import worldfactory
     >>> w = worldfactory.triplehinge()
     >>> w.geometric()
-    >>> w.kinematic()
     >>> w.dynamic()
     """
 
@@ -56,7 +65,6 @@ class World(object):
         self.bodies = [Body(u"ground")] 
         self.joints = [] 
         self._ndof = 0
-        self.gvel = np.zeros(0) # concatenates all joints gvel
         self.mass = None # updated by self.dynamic
         self.viscosity = None # updated by self.dynamic
         self.nleffect = None # updated by self.dynamic
@@ -78,19 +86,23 @@ class World(object):
 
 
     def addjoint(self, joint):
-        """Add a joint and its right-attached body to the world.
+        """Add a joint and its new-attached body to the world.
+
+        :arguments:
+            joint
+                the joint that will be added
         """
         # check the left frame is already in world
-        left_frame_is_in_world = False
+        ref_frame_is_in_world = False
         for f in self.bodies:
-            if joint.leftframe.body is f:
-               left_frame_is_in_world = True
-        if not(left_frame_is_in_world):
+            if joint.ref_frame.body is f:
+               ref_frame_is_in_world = True
+        if not(ref_frame_is_in_world):
             raise ValueError
         
-        newbody = joint.rightframe.body
+        newbody = joint.new_frame.body
         # check the new frame is not already in world
-        right_frame_is_in_world = False
+        new_frame_is_in_world = False
         for f in self.bodies:
             if newbody is f:
                raise ValueError
@@ -102,21 +114,15 @@ class World(object):
         
         # add the joint and the moving frame to the world
         self.joints.append(joint)
-        joint.leftframe.body.childrenjoints.append(joint)
+        joint.ref_frame.body.childrenjoints.append(joint)
         self.bodies.append(newbody)
         newbody.parentjoint = joint
 
         # extend the world generalized velocities
-        old_gvel = self.gvel
         old_ndof = self._ndof
         self._ndof = self._ndof + joint.ndof()
-        self.gvel = np.zeros(self._ndof)
-        self.gvel[0:old_ndof] = old_gvel        
-        
         joint.dofindex = slice(old_ndof, self._ndof)
-        self.gvel[joint.dofindex] = joint.gvel
-        # make joint.gvel a view of self.gvel
-        joint.gvel = self.gvel[joint.dofindex] 
+        joint.gvel = np.array(joint.gvel).reshape(-1) # ensure gvel is a 1-d array
         
 
     def geometric(self):
@@ -147,7 +153,193 @@ class World(object):
         - each body pose, jacobian, djacobian, twist and nleffect 
           attributes 
         - the world mass, viscosity and nleffect attributes
-        
+
+        >>> import worldfactory
+        >>> w = worldfactory.triplehinge()
+        >>> w.joints[0].gpos[0]=0.5
+        >>> w.joints[0].gvel[0]=2.5
+        >>> w.joints[1].gpos[0]=1.0
+        >>> w.joints[1].gvel[0]=-1.0
+        >>> w.joints[2].gpos[0]=2.0/3
+        >>> w.joints[2].gvel[0]=-0.5
+        >>> w.dynamic()
+        >>> w.bodies[1].pose
+        array([[ 0.87758256, -0.47942554,  0.        ,  0.        ],
+               [ 0.47942554,  0.87758256,  0.        ,  0.        ],
+               [ 0.        ,  0.        ,  1.        ,  0.        ],
+               [ 0.        ,  0.        ,  0.        ,  1.        ]])
+        >>> w.bodies[2].pose
+        array([[ 0.0707372 , -0.99749499,  0.        , -0.23971277],
+               [ 0.99749499,  0.0707372 ,  0.        ,  0.43879128],
+               [ 0.        ,  0.        ,  1.        ,  0.        ],
+               [ 0.        ,  0.        ,  0.        ,  1.        ]])
+        >>> w.bodies[3].pose
+        array([[-0.56122931, -0.82766035,  0.        , -0.63871076],
+               [ 0.82766035, -0.56122931,  0.        ,  0.46708616],
+               [ 0.        ,  0.        ,  1.        ,  0.        ],
+               [ 0.        ,  0.        ,  0.        ,  1.        ]])
+        >>> w.bodies[0].jacobian
+        array([[ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.]])
+        >>> w.bodies[1].jacobian
+        array([[ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 1.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.]])
+        >>> w.bodies[2].jacobian
+        array([[ 0.        ,  0.        ,  0.        ],
+               [ 0.        ,  0.        ,  0.        ],
+               [ 1.        ,  1.        ,  0.        ],
+               [-0.27015115,  0.        ,  0.        ],
+               [ 0.42073549,  0.        ,  0.        ],
+               [ 0.        ,  0.        ,  0.        ]])
+        >>> w.bodies[3].jacobian
+        array([[ 0.        ,  0.        ,  0.        ],
+               [ 0.        ,  0.        ,  0.        ],
+               [ 1.        ,  1.        ,  1.        ],
+               [-0.26649313, -0.3143549 ,  0.        ],
+               [ 0.7450519 ,  0.24734792,  0.        ],
+               [ 0.        ,  0.        ,  0.        ]])
+        >>> w.bodies[0].twist
+        array([ 0.,  0.,  0.,  0.,  0.,  0.])
+        >>> w.bodies[1].twist
+        array([ 0. ,  0. ,  2.5,  0. ,  0. ,  0. ])
+        >>> w.bodies[2].twist
+        array([ 0.        ,  0.        ,  1.5       , -0.67537788,  1.05183873,  0.        ])
+        >>> w.bodies[3].twist
+        array([ 0.        ,  0.        ,  1.        , -0.35187792,  1.61528183,  0.        ])
+        >>> w.viscosity
+        array([[ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.]])
+        >>> w.bodies[1].mass
+        array([[  8.35416667e-02,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   2.50000000e-01],
+               [  0.00000000e+00,   4.16666667e-04,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   8.35416667e-02,
+                 -2.50000000e-01,   0.00000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,  -2.50000000e-01,
+                  1.00000000e+00,   0.00000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   1.00000000e+00,   0.00000000e+00],
+               [  2.50000000e-01,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   1.00000000e+00]])
+        >>> w.bodies[2].mass
+        array([[  4.27733333e-02,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   1.60000000e-01],
+               [  0.00000000e+00,   2.13333333e-04,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   4.27733333e-02,
+                 -1.60000000e-01,   0.00000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,  -1.60000000e-01,
+                  8.00000000e-01,   0.00000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   8.00000000e-01,   0.00000000e+00],
+               [  1.60000000e-01,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   8.00000000e-01]])
+        >>> w.bodies[3].mass
+        array([[  2.67333333e-03,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   2.00000000e-02],
+               [  0.00000000e+00,   1.33333333e-05,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   2.67333333e-03,
+                 -2.00000000e-02,   0.00000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,  -2.00000000e-02,
+                  2.00000000e-01,   0.00000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   2.00000000e-01,   0.00000000e+00],
+               [  2.00000000e-02,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   2.00000000e-01]])
+        >>> w.mass
+        array([[ 0.55132061,  0.1538999 ,  0.0080032 ],
+               [ 0.1538999 ,  0.09002086,  0.00896043],
+               [ 0.0080032 ,  0.00896043,  0.00267333]])
+        >>> w.bodies[0].djacobian
+        array([[ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.]])
+        >>> w.bodies[1].djacobian
+        array([[ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.]])
+        >>> w.bodies[2].djacobian
+        array([[ 0.        ,  0.        ,  0.        ],
+               [ 0.        ,  0.        ,  0.        ],
+               [ 0.        ,  0.        ,  0.        ],
+               [-0.42073549,  0.        ,  0.        ],
+               [-0.27015115,  0.        ,  0.        ],
+               [ 0.        ,  0.        ,  0.        ]])
+        >>> w.bodies[3].djacobian
+        array([[ 0.        ,  0.        ,  0.        ],
+               [ 0.        ,  0.        ,  0.        ],
+               [ 0.        ,  0.        ,  0.        ],
+               [-0.87022993, -0.12367396,  0.        ],
+               [-0.08538479, -0.15717745,  0.        ],
+               [ 0.        ,  0.        ,  0.        ]])
+        >>> w.bodies[0].nleffect
+        array([[ 0.,  0.,  0.,  0.,  0.,  0.],
+               [ 0.,  0.,  0.,  0.,  0.,  0.],
+               [ 0.,  0.,  0.,  0.,  0.,  0.],
+               [ 0.,  0.,  0.,  0.,  0.,  0.],
+               [ 0.,  0.,  0.,  0.,  0.,  0.],
+               [ 0.,  0.,  0.,  0.,  0.,  0.]])
+        >>> w.bodies[1].nleffect
+        array([[  0.00000000e+00,  -1.04166667e-03,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00],
+               [  5.26041667e-02,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   6.25000000e-01,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,  -2.50000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,  -6.25000000e-01,
+                  2.50000000e+00,   0.00000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00]])
+        >>> w.bodies[2].nleffect
+        array([[  0.00000000e+00,  -3.20000000e-04,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00],
+               [  1.61600000e-02,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,  -2.22261445e-18],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   2.40000000e-01,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,  -1.20000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,  -2.40000000e-01,
+                  1.20000000e+00,   0.00000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00]])
+        >>> w.bodies[3].nleffect
+        array([[  0.00000000e+00,  -1.33333333e-05,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00],
+               [  6.73333333e-04,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,  -1.10961316e-18],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   2.00000000e-02,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,  -2.00000000e-01,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,  -2.00000000e-02,
+                  2.00000000e-01,   0.00000000e+00,   0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00]])
+        >>> w.nleffect
+        array([[ 0.11838112, -0.15894538, -0.01490104],
+               [ 0.27979997,  0.00247348, -0.00494696],
+               [ 0.03230564,  0.00742044,  0.        ]])
+
         """        
         self.bodies[0].dynamic(
             np.eye(4),
@@ -177,7 +369,7 @@ class World(object):
 
 class Frame(object):
 
-    def __init__(self, body, pose=np.eye(4), name=None):
+    def __init__(self, body, pose=None, name=None):
         """Create a frame rigidly fixed to a body. 
         
         >>> b = Body()
@@ -200,6 +392,8 @@ class Frame(object):
          [ 1.  1.  1.  1.]] is not an homogeneous matrix
 
         """
+        if pose == None:
+            pose = np.eye(4)
         self.name = unicode(name)
         Hg.checkishomogeneousmatrix(pose)
         self.pose = pose
@@ -211,8 +405,16 @@ class Frame(object):
 
 class Body(object):
 
-    def __init__(self, name=None, mass=np.zeros((6,6)), 
-                 viscosity=np.zeros((6,6))):
+    def __init__(self, name=None, mass=None, viscosity=None):
+        if mass == None:
+            mass = np.zeros((6,6))
+        else:
+            pass #TODO: check the mass matrix
+        if viscosity == None:
+            viscosity = np.zeros((6,6))
+        else:
+            pass #TODO: check the viscosity matrix
+
         self.name = unicode(name)
         self.frames = [Frame(self, np.eye(4), unicode(name))]
         self.parentjoint = None
@@ -238,31 +440,73 @@ class Body(object):
         return frame
         
     def geometric(self,pose):
+        """
+        - g: ground body
+        - p: parent body
+        - c: child body
+        - r: reference frame of the joint, rigidly fixed to the parent body
+        - n: new frame of the joint, rigidly fixed to the child body
+        
+        so H_nc and H_pr are constant.
+
+        H_gc = H_gp * H_pc
+             = H_gp * (H_pr * H_rn * H_nc)
+        """
         self.pose = pose
+        H_gp = pose
         for j in self.childrenjoints:
-            H = np.dot(j.leftframe.pose,
-                np.dot(j.pose(), Hg.inv(j.rightframe.pose)))
-            j.rightframe.body.geometric( np.dot(pose, H))
+            H_cn = j.new_frame.pose
+            H_pr = j.ref_frame.pose
+            H_rn = j.pose()
+            H_pc = np.dot(H_pr, np.dot(H_rn, Hg.inv(H_cn)))
+            child_pose = np.dot(H_gp, H_pc)
+            j.new_frame.body.geometric(child_pose)
         
     def kinematic(self,pose,jac):
-        self.pose = pose
-        self.jacobian = jac
-        for j in self.childrenjoints:
-            H = np.dot(j.leftframe.pose,
-                np.dot(j.pose(), Hg.inv(j.rightframe.pose)))
-            child_pose = np.dot(pose, H)
-            child_jac = np.dot(Hg.adjoint(H), jac)
-            child_jac[:,j.dofindex] += np.dot(
-                Hg.adjoint(j.leftframe.pose),
-                j.jacobian())
-            j.rightframe.body.kinematic(child_pose,child_jac)
-
+        raise NotImplemented #TODO: remove the method or implement it
+    
     def dynamic(self,pose,jac,djac,twist):
+        """
+        T_ab: velocity of {a} relative to {b} expressed in {a} (body twist)
+
+        - g: ground body
+        - p: parent body
+        - c: child body
+        - r: reference frame of the joint, rigidly fixed to the parent body
+        - n: new frame of the joint, rigidly fixed to the child body
+        
+        so H_nc and H_pr are constant.
+
+        H_gc = H_gp * H_pc
+             = H_gp * (H_pr * H_rn * H_nc)
+
+        T_cg = Ad_cp * T_pg + T_cp
+             = Ad_cp * T_pg + Ad_cn * T_nr
+             = Ad_cp * J_pg * dQ + Ad_cn * J_nr * dq
+             = J_cg * dQ
+        with 
+        dq = [0...0 I 0...0 ] *  dQ  and
+        J_cg = Ad_cp * J_pg + [ 0...0 (Ad_cn * J_nr) 0...0 ]
+
+        dT_cg = dAd_cp * J_pg * dQ 
+                + Ad_cp * dJ_pg * dQ  
+                + Ad_cp * dJ_pg * ddQ 
+                + Ad_cn * dJ_nr * dq
+                + Ad_cn * J_nr * ddq
+              = J_cg * ddQ + dJ_cg * dQ 
+        so:
+        dJ_cg * dQ = dAd_cp * J_pg * dQ 
+                     + Ad_cp * dJ_pg * dQ  
+                     + Ad_cn * dJ_nr * dq
+        dJ_cg = dAd_cp * J_pg + Ad_cp * dJ_pg 
+                + [ 0...0 (Ad_cn * dJ_nr) 0...0 ]
+        with dAd_cp = Ad_cn * dAd_nr * Ad_rp
+
+        """
         self.pose = pose
         self.jacobian = jac
         self.djacobian = djac
         self.twist = twist
-
         wx = np.array(
             [[             0,-self.twist[2], self.twist[1]],
              [ self.twist[2],             0,-self.twist[0]],
@@ -270,42 +514,57 @@ class Body(object):
         if self.mass[3,3]==0:
             rx = np.zeros((3,3))
         else:
-            rx = self.mass[3:6,0:3]/self.mass[3,3] # todo: better solution?
+            rx = self.mass[0:3,3:6]/self.mass[3,3] # todo: better solution?
         self.nleffect = np.zeros((6,6))
         self.nleffect[0:3,0:3] = wx
         self.nleffect[3:6,3:6] = wx
         self.nleffect[0:3,3:6] = np.dot(rx,wx)-np.dot(wx,rx)
         self.nleffect = np.dot(self.nleffect,self.mass)
 
+        H_gp = pose
+        J_pg = jac
+        dJ_pg = djac
+        T_pg = twist
         for j in self.childrenjoints:
-            H = np.dot(
-                j.leftframe.pose,
-                np.dot(j.pose(), Hg.inv(j.rightframe.pose)))
-            child_pose = np.dot(pose, H)
-            Ad = Hg.adjoint(H)
-            dAd = np.dot(
-                Hg.adjoint(j.leftframe.pose),
-                np.dot(
-                    j.dadjoint(),
-                    Hg.adjoint(Hg.inv(j.rightframe.pose))))
-            child_twist = twist + np.dot(
-                Hg.adjoint(j.leftframe.pose),
-                j.twist())
-            child_jac = np.dot(Ad, jac)
-            child_jac[:,j.dofindex] += np.dot(
-                Hg.adjoint(j.leftframe.pose),
-                j.jacobian())
-            child_djac = np.dot(Ad, djac) + np.dot(dAd,jac)
-            child_djac[:,j.dofindex] += np.dot(
-                Hg.adjoint(j.leftframe.pose),
-                j.djacobian())
-            j.rightframe.body.dynamic(child_pose, child_jac, child_djac, 
+            H_cn = j.new_frame.pose
+            H_pr = j.ref_frame.pose
+            H_rn = j.pose()
+            #H_nr = j.ipose()
+            H_pc = np.dot(H_pr, np.dot(H_rn, Hg.inv(H_cn)))
+            child_pose = np.dot(H_gp, H_pc)
+            Ad_cp = Hg.iadjoint(H_pc)
+            Ad_cn = Hg.adjoint(H_cn)
+            Ad_rp = Hg.adjoint(Hg.inv(H_pr))
+            dAd_nr = j.idadjoint()
+            dAd_cp = np.dot(Ad_cn, np.dot(dAd_nr, Ad_rp))
+            T_nr = j.twist()
+            J_nr = j.jacobian()
+            dJ_nr = j.djacobian()
+            child_twist = np.dot(Ad_cp, T_pg) + np.dot(Ad_cn, T_nr)
+            child_jac = np.dot(Ad_cp, J_pg)
+            child_jac[:,j.dofindex] += np.dot(Ad_cn, J_nr)
+            child_djac = np.dot(dAd_cp, J_pg) + np.dot(Ad_cp, dJ_pg)
+            child_djac[:,j.dofindex] += np.dot(Ad_cn, dJ_nr)
+            j.new_frame.body.dynamic(child_pose, child_jac, child_djac, 
                                       child_twist)
 
 
 class RigidMotion(object):
 
     """Model a rigid motion, including relative pose and velocity
+
+    n: new frame
+    r: reference frame
+    self.pose(): H_rn
+    self.ipose(): H_nr
+    self.twist(): T_nr
+    self.itwist(): T_rn
+    self.adjoint(): Ad_rn == adjoint(H_rn)
+    self.iadjoint(): Ad_nr == adjoint(H_nr)
+    self.adjacency(): adjacency(T_nr)
+    self.iadjacency(): adjacency(T_rn)
+    self.dadjoint(): dAd_rn
+    self.idadjoint():dAd_nr
     """
     
     def pose(self):
@@ -315,41 +574,80 @@ class RigidMotion(object):
         """
         raise NotImplementedError #TODO: make use of python2.6's ABC
 
+    def ipose(self):
+        """Inverse of pose()
+        """
+        return Hg.inv(self.pose())
+        
     def twist(self):
         """Return the velocity as a twist vector. 
         
         This method must be overloaded.        
         """
-
         raise NotImplementedError #TODO: make use of python2.6's ABC
+
+    def itwist(self):
+        return -np.dot(np.asarray(self.iadjoint()),self.twist())
 
     def adjoint(self):
         return Hg.adjoint(self.pose())
 
+    def iadjoint(self):
+        return Hg.adjoint(self.ipose())
+
     def adjacency(self):
         return T.adjacency(self.twist())
+
+    def iadjacency(self):
+        return T.adjacency(self.itwist())
+
 
     def dadjoint(self):
         return np.dot(np.asarray(self.adjoint()),self.adjacency())
     
+    def idadjoint(self):
+        return np.dot(np.asarray(self.iadjoint()),self.iadjacency())
 
 class Joint(RigidMotion):
 
     """any joint
+    H
+    T_
     """    
     
-    def __init__(self, leftframe, rightframe, name=None):
-        if not(isinstance(leftframe,Frame)):
+    def __init__(self, ref_frame, new_frame, name=None):
+        if not(isinstance(ref_frame,Frame)):
             raise ValueError()
-        if not(isinstance(rightframe,Frame)):
+        if not(isinstance(new_frame,Frame)):
             raise ValueError()
         self.name = unicode(name)
-        self.leftframe = leftframe
-        self.rightframe = rightframe
+        self.ref_frame = ref_frame
+        self.new_frame = new_frame
         self.dofindex = None # will be set when the joint is added to the world
 
     def twist(self):
         return np.dot(self.jacobian(),self.gvel)
+
+    def ndof(self):
+        """Number of degrees of freedom of the joint
+
+        This method must be overloaded.
+        """
+        raise NotImplementedError #TODO: make use of python2.6's ABC
+
+    def jacobian(self):
+        """
+
+        This method must be overloaded.
+        """
+        raise NotImplementedError #TODO: make use of python2.6's ABC
+
+    def djacobian(self):
+        """
+
+        This method must be overloaded.
+        """
+        raise NotImplementedError #TODO: make use of python2.6's ABC
 
 
 class FreeJoint(Joint):
@@ -373,19 +671,23 @@ class HingeJoint(Joint):
 
     """Hinge (1-dof) with axis in the z-direction
     """
-    def __init__(self, leftframe, rightframe, name=u"", gpos=0, gvel=0):
-        Joint.__init__(self, leftframe, rightframe, name)
-        self.gpos = gpos
-        self.gvel = gvel
+    def __init__(self, ref_frame, new_frame, name=None, 
+                 gpos=0., gvel=0.):
+        Joint.__init__(self, ref_frame, new_frame, name)
+        self.gpos = np.array(gpos).reshape((1))
+        self.gvel = np.array(gvel).reshape((1))
     
     def ndof(self):
         return 1
 
     def pose(self):
-        return Hg.rotz(self.gpos)
+        return Hg.rotz(self.gpos[0])
+
+    def ipose(self):
+        return Hg.rotz(-self.gpos[0])
 
     def jacobian(self):
-        return np.array([[0], [0], [1], [0], [0], [0]])
+        return np.array([[0.], [0.], [1.], [0.], [0.], [0.]])
 
     def djacobian(self):
         return np.zeros((6,1))

@@ -68,3 +68,10 @@ linkcheck:
 	@echo
 	@echo "Link check complete; look for any errors in the above output " \
 	      "or in .build/linkcheck/output.txt."
+
+doctest:
+	mkdir -p .build/doctests
+	$(SPHINXBUILD) -b doctest . .build/doctests
+	@echo
+	@echo "Doctests passed"
+

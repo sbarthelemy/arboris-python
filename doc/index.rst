@@ -15,6 +15,7 @@ Contents:
    rigidmechanism
    modules
    devel
+   quirks
 
 Indices and tables
 ==================

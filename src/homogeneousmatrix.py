@@ -80,3 +80,9 @@ def adjoint(H):
     return np.vstack((
         np.hstack((R  , np.zeros((3,3)))),
         np.hstack((pxR, R))))
+
+def iadjoint(H):
+    """
+    Return the adjoint of the inverse homogeneous matrix
+    """
+    return adjoint(inv(H))
