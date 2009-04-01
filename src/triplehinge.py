@@ -15,7 +15,7 @@ import numpy as np
 
 def transport_mass_matrix(mass,H):
     """Transport (express) the mass matrix into another frame."""
-    Ad = arb.Hg.adjoint(arb.Hg.inv(H))
+    Ad = arb.Hg.iadjoint(H)
     return np.dot(
         Ad.transpose(),
         np.dot(mass, Ad))
@@ -24,9 +24,9 @@ def mass_parallelepiped(m,lengths):
     """The mass matrix of an homogeneous parallelepiped."""
     (a, b, c) = lengths
     return np.diag((
-        m/12*(b**2+c**2 ), 
-        m/12*(a**2+c**2), 
-        m/12*(a**2+b**2),
+        m/12.*(b**2+c**2 ), 
+        m/12.*(a**2+c**2), 
+        m/12.*(a**2+b**2),
         m, m, m))
 
 def triplehinge():
@@ -72,11 +72,10 @@ def triplehinge():
     # create a joint between the ground and the arm
     shoulder = arb.HingeJoint(
         name = 'Shoulder',
-        leftframe = ground.frames[0],
-        rightframe = arm.frames[0],
-        gpos = .5)
+        ref_frame = ground.frames[0],
+        new_frame = arm.frames[0])
     # add the new joint to the world (this will also add arm to w.bodies)
-    w.addjoint(shoulder)
+    w.addjoint(shoulder)    
     
     # add a frame to the arm, where the forearm will be anchored
     f = arm.newframe(
@@ -85,11 +84,9 @@ def triplehinge():
     # create a joint between the arm and the forearm
     elbow = arb.HingeJoint(
         name = 'Elbow',
-        leftframe = f,
-        rightframe = forearm.frames[0],
-        gpos = -.5)
+        ref_frame = f,
+        new_frame = forearm.frames[0])
     w.addjoint(elbow)
-
 
     # add a frame to the forearm, where the hand will be anchored
     f = forearm.newframe(
@@ -98,9 +95,8 @@ def triplehinge():
     # create a joint between the forearm and the hand
     wrist = arb.HingeJoint(
         name = 'Wrist',
-        leftframe = f,
-        rightframe = hand.frames[0],
-        gpos = -.5)
+        ref_frame = f,
+        new_frame = hand.frames[0])
     w.addjoint(wrist)
     return w
 
