@@ -5,22 +5,62 @@ Developpement
 This is a small page to help starting using and hacking python-arboris.
   
 
-What we use
-===========
+What we use...
+==============
 
-All the program is written in python2.6. See Python26LocalDoc_ and start with the tutorial. We also use numpy. See NumpyDoc_. Numpy supports n-dimensionnal arrays (class :class:`numpy.ndarray`) and matrices (built with `numpy.matrix`) which are 2-d matrices with special behavior, similar to the matlab one. In pyarboris we never uses matrices.
+...for the simulation
+---------------------
 
+All the program is written in python2.6. See Python26Doc_ (or Python26LocalDoc_) and start with the tutorial. We also use numpy. See NumpyDoc_. Numpy supports n-dimensionnal arrays (class :class:`numpy.ndarray`) and matrices (built with `numpy.matrix`) which are 2-d matrices with special behavior, similar to the matlab one. In pyarboris we never uses matrices.
 
-The doc is written in the reST markup language and processed by sphinx (version >=5). See the sphinx (and reST) documentation at SphinxLocalDoc_. We use sphinx plugins which allow to embed latex in the doc, to parse the docstrings spread in the code and to run the examples with doctest.
+.. _Python26Doc:
+  http://docs.python.org/
 
 .. _Python26LocalDoc:
-    file:///usr/share/doc/python2.6-doc/html/index.html
-
-.. _SphinxLocalDoc:
-    file:///usr/share/doc/python-sphinx/html/index.html
+  file:///usr/share/doc/python2.6-doc/html/index.html
 
 .. _NumpyDoc:
-    http://docs.scipy.org/doc/
+  http://docs.scipy.org/doc/
+
+
+...for the documentation
+------------------------
+The doc is written in the reST markup language and processed by sphinx (version >=5). See the sphinx (and reST) documentation at SphinxDoc_ (or SphinxLocalDoc_). We use sphinx plugins which allow to embed latex in the doc, to parse the docstrings spread in the code and to run the examples with doctest.
+
+.. _SphinxDoc:
+  http://sphinx.pocoo.org/
+
+.. _SphinxLocalDoc:
+  file:///usr/share/doc/python-sphinx/html/index.html
+
+
+
+...for the visualization
+------------------------
+
+No real choice has been done yet.
+
+We'd like to support both interactive and offline vizualisation. We'd like it to be simple enough for a user to add custom shapes and complete enough to import and animate complex graphics.
+
+Here is a list of candidates:
+
+visual python: 
+  really simple to use, but with some weird choices (for orientation...),  maybe too simple. Not really well maintained, documented and distributed (the latest version is not packaged in ubuntu).
+
+blender:
+  ?
+
+blender with game engine:
+  ?
+
+openscenegraph:
+  ?
+
+mayavi:
+  ?
+
+
+
 
 
 Set up for Ubuntu Jaunty
