@@ -1,10 +1,10 @@
 # coding=utf-8
 
 """
-Build a  planar 3-R robot.
+Build a planar 3-R robot.
 
-This module builds a planar 3-r robot, identical to the one buildt in the
-matlab- arboris t06_ConstructionRobot.m tutorial.
+This module builds a planar 3-r robot, identical to the one built in the
+t06_ConstructionRobot.m tutorial from matlab-arboris.
 
 When ran as a script, the module shows the robot in motion.
 """
