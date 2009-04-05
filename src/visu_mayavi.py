@@ -18,7 +18,13 @@ class Body(visu.Body):
     """ A drawable version of rigidmotion.Body
     """
     def draw_body(self):
-        return
+        if self._body.pose != None:
+            self.frames.append(self.draw_frame(self._body.pose, self._body.frames[0].name));
+            for f in self._body.frames[1:]:
+                nf = self.draw_frame(f.pose, f.name, parent=self.frames[0])
+                self.frames.append(nf);
+                #TODO: faire les link
+                #self.draw_link(self.frames[0], (0,0,0), nf.pos)
         
     def update(self):
         for f in self.frames:
@@ -41,13 +47,14 @@ class Body(visu.Body):
         if parent == None:
             pos = pose
         else:
-            pos = np.dot(parent.pose, pose)
-        
-        f.vx = mlab.quiver3d(pos(0,3), pos(1,3), pos(2,3), pos(0,0), pos(1,0), pos(2,0), color=(1,0,0))
-        f.vy = mlab.quiver3d(pos(0,3), pos(1,3), pos(2,3), pos(0,1), pos(1,1), pos(2,1), color=(0,1,0))
-        f.vz = mlab.quiver3d(pos(0,3), pos(1,3), pos(2,3), pos(0,2), pos(1,2), pos(2,2), color=(0,0,1))
-        f.parent = parent
-        f.label = label
+            pos = np.dot(parent['pose'], pose)
+        f = {}
+        f['pose'] = pos
+        f['vx'] = mlab.quiver3d([pos[0,3]],[pos[1,3]],[pos[2,3]],[pos[0,0]],[pos[1,0]],[pos[2,0]], color=(1,0,0))
+        f['vy'] = mlab.quiver3d([pos[0,3]],[pos[1,3]],[pos[2,3]],[pos[0,1]],[pos[1,1]],[pos[2,1]], color=(0,1,0))
+        f['vz'] = mlab.quiver3d([pos[0,3]],[pos[1,3]],[pos[2,3]],[pos[0,2]],[pos[1,2]],[pos[2,2]], color=(0,0,1))
+        f['parent'] = parent
+        f['label'] = label
         return f
     
     def draw_link(self):

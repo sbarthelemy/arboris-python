@@ -30,12 +30,11 @@ w.geometric()
 
 #animation
 if True:
-    #vw = vmaya.World(w)
-    vw = vpy.World(w)
-    for t in range(100):
-        #visual.rate(10)
-        print t
-        w.joints[1].gpos=t/20.
-        w.geometric()
-        vw.update()
+    vw = vmaya.World(w)
+    #vw = vpy.World(w)
+#    for t in range(100):
+#        print t
+#        w.joints[1].gpos=t/20.
+#        w.geometric()
+#        vw.update()
 
