@@ -4,7 +4,7 @@ import arboris as arb
 from arboris import *
 import numpy as np
 import homogeneousmatrix as htr
-import visu_mayavi as vmaya
+
 import visu_vpython as vpy
 
 #creation du monde
@@ -30,11 +30,17 @@ w.geometric()
 
 #animation
 if True:
-    vw = vmaya.World(w)
-    #vw = vpy.World(w)
-#    for t in range(100):
-#        print t
-#        w.joints[1].gpos=t/20.
-#        w.geometric()
-#        vw.update()
+    if 0:
+        import visu_mayavi as vmaya
+        vw = vmaya.World(w)
+    else:
+        import visu_vpython as vpy
+        vw = vpy.World(w)
+        
+    if 1:
+        for t in range(100):
+            print t
+            w.joints[1].gpos=t/20.
+            w.geometric()
+            vw.update()
 

@@ -11,7 +11,7 @@ class World(object):
     """
     __metaclass__ = ABCMeta
     
-    def __init__(self, world, module = None):
+    def __init__(self, world): #, module = None): # voir si on veut pouvoir choisir son module a partir d'ici
         self._world = world
         self.bodies = []
         for b in self._world.bodies:
@@ -34,6 +34,7 @@ class Body(object):
     def __init__(self, body):
         self._body = body
         self.frames = []
+        self.links = []
         self.draw_body()
     
     @abstractmethod

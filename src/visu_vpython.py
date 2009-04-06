@@ -10,9 +10,18 @@ class World(visu.World):
     """ A drawable version of rigidmotion.World
     """
     #TODO: voir s'il n'y a pas de fonction overload de la fonction __init__
-    #def __init__(self):
-    #    self._scene = visual.display()
-    
+    def __init__(self, world):
+        self._world = world
+        self.bodies = []
+        for b in self._world.bodies:
+            self.add_body(b)
+        self._scene = visual.display()
+        self._scene.autoscale = 1
+        self._scene.autocenter = 1
+
+    def add_body(self, added_body):
+        self.bodies.append(Body(added_body))
+        
     def update(self):
         for b in self.bodies:
             b.update()
@@ -32,22 +41,18 @@ class World(visu.World):
 	    if keypressed == 'down':
 	        self._scene.center -= self.movecoeff*orthodir
 	    if keypressed == 'up':
-	        self._scene.center += self.movecoeff*orthodir   
-    
-    def add_body(self, added_body):
-        self.bodies.append(Body(added_body))
+	        self._scene.center += self.movecoeff*orthodir
         
         
 class Body(visu.Body):
     """ A drawable version of rigidmotion.Body
     """
     def draw_body(self):
-        if self._body.pose != None:
-            self.frames.append(self.draw_frame(self._body.pose, self._body.frames[0].name));
-            for f in self._body.frames[1:]:
-                nf = self.draw_frame(f.pose, f.name, parent=self.frames[0])
-                self.frames.append(nf);
-                self.draw_link(self.frames[0], (0,0,0), nf.pos)
+        self.frames.append(self.draw_frame(self._body.pose, self._body.frames[0].name))
+        for f in self._body.frames[1:]:
+            nf = self.draw_frame(f.pose, f.name, parent=self.frames[0])
+            self.frames.append(nf)
+            self.links.append(self.draw_link(self.frames[0], (0,0,0), nf.pos))
         
     def update(self, rate_frequency=10):
         (pos,axis,up) = htr_to_visual(self._body.pose)
@@ -64,11 +69,11 @@ class Body(visu.Body):
         visual.arrow(frame=f, axis=(1,0,0), length=length, color=visual.color.red)
         visual.arrow(frame=f, axis=(0,1,0), length=length, color=visual.color.green)
         visual.arrow(frame=f, axis=(0,0,1), length=length, color=visual.color.blue)
-        visual.label(frame=f, text=str(text))
+        visual.label(frame=f, yoffset=-10, box=0, line=0, text=str(text))
         return f
     
-    def draw_link(self, ref_frame, origin, end, color=(1,1,1)):
-        link = visual.cylinder(frame = ref_frame, pos = origin, axis = (end-origin), radius = 0.05, color=color)
+    def draw_link(self, ref_frame, start, end, color=(1,1,1)):
+        link = visual.cylinder(frame = ref_frame, pos = start, axis = (end-start), radius = 0.05, color=color)
         return link
     
     def htr_to_visual(self, pose):
