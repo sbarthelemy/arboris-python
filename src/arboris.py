@@ -19,6 +19,7 @@ TODO:
 
 - put object names in a dict.
 - add support for FreeJoint
+- rename HingeJoint RzJoint ?
 - import human36 from matlab-arboris
 - add unit tests for human36
 - add support for controllers and integration
