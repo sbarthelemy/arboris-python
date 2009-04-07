@@ -789,8 +789,7 @@ def human36(height=1.741, mass=73, name=''):
 
     >>> w = human36()
     """
-    lengths = anatomical_lengths(height)
-    L = lengths
+    L = anatomical_lengths(height)
     bodies = {}
     for b in _humans_bodies(height, mass):
         bodies[b['HumansName']] = arb.Body(
