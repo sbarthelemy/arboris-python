@@ -8,6 +8,12 @@ Modules
 .. automodule:: arboris
    :members:
 
+:mod:`human36` -- Dead parrot access
+====================================
+
+.. automodule:: human36
+   :members:
+
 
 :mod:`homogeneousmatrix` -- Dead parrot access
 ==============================================
