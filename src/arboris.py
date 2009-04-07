@@ -649,8 +649,6 @@ class RigidMotion(object):
         return np.dot(np.asarray(self.iadjoint()),self.iadjacency())
 
 
-
-
 class Joint(RigidMotion):
 
     """any joint
@@ -676,6 +674,7 @@ class Joint(RigidMotion):
     @abstractmethod
     def djacobian(self):
         pass
+
 
 class FreeJoint(Joint):
 
@@ -725,6 +724,45 @@ class BallJoint(Joint):
 
     """Ball and socket (3-dof)
     """
+
+class RzRyRxJoint(Joint):
+    """Ball and socket (3-dof) impemented 3 serial hinge
+    H = Rz*Ry*Rx
+    """
+    def __init__(self, gpos=[0.,0.,0.], gvel=[0.,0.,0.]):
+        self.gpos = np.array(gpos).reshape((3))
+        self.gvel = np.array(gvel).reshape((3))
+
+    def ndof(self):
+        return 3
+
+    def pose(self):
+        return Hg.rotzyx(self.gpos)
+
+    def jacobian(self):
+        """
+        T_n/r = 
+        """   
+        sx = np.sin(self.gpos[0])
+        cx = np.cos(self.gpos[0])
+        sy = np.sin(self.gpos[1])
+        cy = np.cos(self.gpos[1])
+        return np.array(
+            [[ 1.   ,  0. , -sy    ],
+             [ 0.   , cx  ,  sx*sy ],
+             [ 0.   ,-sx  ,  cx*cy ]])
+    
+    def djacobian(self):
+        sx = np.sin(self.gpos[0])
+        cx = np.cos(self.gpos[0])
+        sy = np.sin(self.gpos[1])
+        cy = np.cos(self.gpos[1])
+        dx = self.gvel[0]
+        dy = self.gvel[1]
+        return np.array(
+            [[ 0.   , 0.    ,-dy*cy             ],
+             [ 0.   ,-dx*sx , dx*cx*sy+dy*sx*cy ],
+             [ 0.   ,-dx*cx ,-dx*sx*cy-dy*cx*sy ]])
 
 class HingeJoint(Joint):
 

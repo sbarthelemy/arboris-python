@@ -19,25 +19,25 @@ def transl(vec):
                        [0,0,0,1]))
 
 
-def rotzyx(angle_z, angle_y, angle_x):
+def rotzyx(angle_x, angle_y, angle_z):
     """homogeneous transformation matrix from pitch-roll-yaw angles)
     
     In short:  R = Rz * Ry * Rx
 
     example:
-    >>> rotzyx(3.14/6, 3.14/6, 3.14/6)
+    >>> rotzyx((3.14/6, 3.14/6, 3.14/6))
     array([[ 0.75022984, -0.21653948,  0.6247126 ,  0.        ],
            [ 0.43287992,  0.8750575 , -0.21653948,  0.        ],
            [-0.4997701 ,  0.43287992,  0.75022984,  0.        ],
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
     """
     
-    sx = np.sin(angle_x)
-    cx = np.cos(angle_x)
-    sy = np.sin(angle_y)
-    cy = np.cos(angle_y)
-    sz = np.sin(angle_z)
-    cz = np.cos(angle_z)
+    sx = np.sin(angle[0])
+    cx = np.cos(angle[0])
+    sy = np.sin(angle[1])
+    cy = np.cos(angle[1])
+    sz = np.sin(angle[2])
+    cz = np.cos(angle[2])
     return np.array(
         [[ cz*cy, cz*sy*sx-sz*cx, cz*sy*cx+sz*sx, 0.],
          [ sz*cy, sz*sy*sx+cz*cx, sz*sy*cx-cz*sx, 0.],
