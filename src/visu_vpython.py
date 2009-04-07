@@ -18,30 +18,33 @@ class World(visu.World):
         self._scene = visual.display()
         self._scene.autoscale = 1
         self._scene.autocenter = 1
+        self.update_frequency = 10
 
     def add_body(self, added_body):
         self.bodies.append(Body(added_body))
         
     def update(self):
+        visual.rate(self.update_frequency)
         for b in self.bodies:
             b.update()
-        if self._scene.kb.keys:
-            keypressed = self._scene.kb.getkey()
-	    colindir = self._scene.forward - (visual.dot(self._scene.forward, self._scene.up) * self._scene.up)
-	    colindir = visual.norm(colindir)
-	    orthodir = visual.cross(colindir, self._scene.up)
-	    if keypressed == 'left':
-	        self._scene.center -= self.movecoeff*orthodir
-	    if keypressed == 'right':
-	        self._scene.center += self.movecoeff*orthodir
-	    if keypressed == 'page down':
-	        self._scene.center -= self.movecoeff*self._scene.up
-	    if keypressed == 'page up':
-	        self._scene.center += self.movecoeff*self._scene.up
-	    if keypressed == 'down':
-	        self._scene.center -= self.movecoeff*orthodir
-	    if keypressed == 'up':
-	        self._scene.center += self.movecoeff*orthodir
+        if 0: ############ probleme: affiche une deuxieme fenetre ############
+            if self._scene.kb.keys:
+                keypressed = self._scene.kb.getkey()
+	        colindir = self._scene.forward - (visual.dot(self._scene.forward, self._scene.up) * self._scene.up)
+	        colindir = visual.norm(colindir)
+	        orthodir = visual.cross(colindir, self._scene.up)
+	        if keypressed == 'left':
+	            self._scene.center -= self.movecoeff*orthodir
+	        if keypressed == 'right':
+	            self._scene.center += self.movecoeff*orthodir
+	        if keypressed == 'page down':
+	            self._scene.center -= self.movecoeff*self._scene.up
+	        if keypressed == 'page up':
+	            self._scene.center += self.movecoeff*self._scene.up
+	        if keypressed == 'down':
+	            self._scene.center -= self.movecoeff*orthodir
+	        if keypressed == 'up':
+	            self._scene.center += self.movecoeff*orthodir
         
         
 class Body(visu.Body):
@@ -53,14 +56,7 @@ class Body(visu.Body):
             nf = self.draw_frame(f.pose, f.name, parent=self.frames[0])
             self.frames.append(nf)
             self.links.append(self.draw_link(self.frames[0], (0,0,0), nf.pos))
-        
-    def update(self, rate_frequency=10):
-        (pos,axis,up) = htr_to_visual(self._body.pose)
-        self.frames[0].pos = pos
-        self.frames[0].axis = axis
-        self.frames[0].up = up
-        visual.rate(rate_frequency)
-        
+
     def draw_frame(self, pose=np.eye(4), text=None, parent=None, length=1):
         """Draw the arrows and label of a frame.
         """
@@ -75,7 +71,13 @@ class Body(visu.Body):
     def draw_link(self, ref_frame, start, end, color=(1,1,1)):
         link = visual.cylinder(frame = ref_frame, pos = start, axis = (end-start), radius = 0.05, color=color)
         return link
-    
+                
+    def update(self):
+        (pos,axis,up) = self.htr_to_visual(self._body.pose)
+        self.frames[0].pos = pos
+        self.frames[0].axis = axis
+        self.frames[0].up = up
+        
     def htr_to_visual(self, pose):
         """Convert an homogeneous matrix to visual pos,axis an up vectors.
         """

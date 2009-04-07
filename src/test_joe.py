@@ -30,7 +30,7 @@ w.geometric()
 
 #animation
 if True:
-    if 0:
+    if 1:
         import visu_mayavi as vmaya
         vw = vmaya.World(w)
     else:
@@ -40,7 +40,8 @@ if True:
     if 1:
         for t in range(100):
             print t
-            w.joints[1].gpos=t/20.
+            w.joints[0].gpos=[t/20.]
+            w.joints[1].gpos=[t/20.]
             w.geometric()
             vw.update()
 
