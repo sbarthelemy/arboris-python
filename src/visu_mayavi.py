@@ -94,3 +94,16 @@ class Body(visu.Body):
         pass
     
     
+if __name__=='__main__':
+    # testing!
+    from worldfactory import triplehinge
+    w = triplehinge()
+    w.geometric()
+
+    import visu_mayavi as vmaya
+    vw = vmaya.World(w)
+    for t in range(100):
+        w.joints[0].gpos=[t/20.]
+        w.joints[1].gpos=[t/20.]
+        w.geometric()
+        vw.update()

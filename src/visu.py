@@ -7,11 +7,11 @@ from abc import ABCMeta, abstractmethod
 
 
 class World(object):
-    """ A drawable version of rigidmotion.World
+    """ A drawable version of arboris.World
     """
     __metaclass__ = ABCMeta
     
-    def __init__(self, world): #, module = None): # voir si on veut pouvoir choisir son module a partir d'ici
+    def __init__(self, world):
         self._world = world
         self.bodies = []
         for b in self._world.bodies:

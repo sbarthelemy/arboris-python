@@ -40,28 +40,36 @@ The doc is written in the reST markup language and processed by sphinx (version 
 
 No real choice has been done yet.
 
-We'd like to support both interactive and offline vizualisation. We'd like it to be simple enough for a user to add custom shapes and complete enough to import and animate complex graphics.
+We'd like to support both interactive and offline vizualisation. We'd like it to be simple enough for a user to add custom shapes and complete enough to import and animate complex graphics. It should work on linux, mac OS and Windows computers.
 
 Here is a list of candidates:
 
-visual python: 
-  really simple to use, but with some weird choices (for orientation...),  maybe too simple. Not really well maintained, documented and distributed (the latest version is not packaged in ubuntu).
+`visual python`_: 
+  really simple to use, but with some weird choices (for orientation...). It maybe too simple. Also, it is not really well maintained, documented and distributed (the latest version is not packaged in ubuntu, and is not availble for python2.6 on windows).
 
 blender:
-  ?
+  Blender may be a great way to interact with the simulation, at the price of some redundancy, as it already has its own data structures for kinematics models and so. It is only suited for offline visualization.
 
 blender with game engine:
   ?
 
-openscenegraph:
-  ?
+`openscenegraph`_:
+  Seems great, but lacks well established python bindings. According to Anthony, `http://code.google.com/p/osgswig`_ is usable
 
-mayavi:
-  ?
+mayavi2:
+  Joseph did some testing and it appeared that it was incredibly slow. It is based on VTK
 
+`VTK`_:
+  Has python bindings.
 
+.. _`visual python`:
+  http://vpython.org
 
+.. _`openscengraph`:
+  http://www.openscenegraph.org
 
+.. _`VTK`:
+  http://www.vtk.org
 
 Set up for Ubuntu Jaunty
 ========================
@@ -77,12 +85,13 @@ Install python-visual (build from sources)::
   tar visual... #TODO
   mkdir usr
   cd visual
-  ./configure --prefix=~/usr
+  ./configure --prefix=$HOME/usr
   make
   make install
   echo "export PYTHONPATH=~/usr/lib/python2.6:~/usr/lib/python2.6/dist-packages" >> ~/.bashrc
   exec bash
 
+For troubleshooting the compilation process, see ``src/build.log``.
 
 Install and set up git::
 

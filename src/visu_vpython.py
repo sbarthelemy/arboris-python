@@ -46,42 +46,72 @@ class World(visu.World):
 	        if keypressed == 'up':
 	            self._scene.center += self.movecoeff*orthodir
         
-        
+
+def draw_frame(pose=None, text=None, parent=None, length=1):
+    """Draw the arrows and label of a frame.
+    """
+    if pose==None:
+        pose = np.eye(4)
+    (pos,axis,up) = htr_to_visual(pose)
+    f = visual.frame(frame=parent, pos=pos, axis=axis, up=up)
+    visual.arrow(frame=f, axis=(1,0,0), length=length, color=visual.color.red)
+    visual.arrow(frame=f, axis=(0,1,0), length=length, color=visual.color.green)
+    visual.arrow(frame=f, axis=(0,0,1), length=length, color=visual.color.blue)
+    visual.label(frame=f, yoffset=-10, box=0, line=0, text=str(text))
+    return f
+    
+
+def draw_link(ref_frame, start, end, color=(1,1,1)):
+    link = visual.cylinder(
+        frame = ref_frame, 
+        pos = start, 
+        axis = (end-start), 
+        radius = 0.05, 
+        color=color)
+    return link
+
+
+def htr_to_visual(pose):
+    """Convert an homogeneous matrix to the ``pos``, ``axis`` an ``up`` vectors used by vpython
+    """
+    pos = pose[0:3,3]
+    axis = pose[0:3,0]
+    up = pose[0:3,1]
+    return (pos,axis,up)
+
+
 class Body(visu.Body):
     """ A drawable version of rigidmotion.Body
     """
     def draw_body(self):
-        self.frames.append(self.draw_frame(self._body.pose, self._body.frames[0].name))
+        self.frames.append(draw_frame(
+            self._body.pose, 
+            self._body.frames[0].name))
         for f in self._body.frames[1:]:
-            nf = self.draw_frame(f.pose, f.name, parent=self.frames[0])
+            nf = draw_frame(f.pose, f.name, parent=self.frames[0])
             self.frames.append(nf)
-            self.links.append(self.draw_link(self.frames[0], (0,0,0), nf.pos))
+            self.links.append(draw_link(self.frames[0], (0,0,0), nf.pos))
 
-    def draw_frame(self, pose=np.eye(4), text=None, parent=None, length=1):
-        """Draw the arrows and label of a frame.
-        """
-        (pos,axis,up) = self.htr_to_visual(pose)
-        f = visual.frame(frame=parent, pos=pos, axis=axis, up=up)
-        visual.arrow(frame=f, axis=(1,0,0), length=length, color=visual.color.red)
-        visual.arrow(frame=f, axis=(0,1,0), length=length, color=visual.color.green)
-        visual.arrow(frame=f, axis=(0,0,1), length=length, color=visual.color.blue)
-        visual.label(frame=f, yoffset=-10, box=0, line=0, text=str(text))
-        return f
-    
-    def draw_link(self, ref_frame, start, end, color=(1,1,1)):
-        link = visual.cylinder(frame = ref_frame, pos = start, axis = (end-start), radius = 0.05, color=color)
-        return link
                 
     def update(self):
-        (pos,axis,up) = self.htr_to_visual(self._body.pose)
+        (pos,axis,up) = htr_to_visual(self._body.pose)
         self.frames[0].pos = pos
         self.frames[0].axis = axis
         self.frames[0].up = up
         
-    def htr_to_visual(self, pose):
-        """Convert an homogeneous matrix to visual pos,axis an up vectors.
-        """
-        pos = pose[0:2,3]
-        axis = pose[0:2,0]
-        up = pose[0:2,1]
-        return (pos,axis,up)
+
+if __name__=='__main__':
+    # testing!
+    from worldfactory import triplehinge
+    w = triplehinge()
+    w.geometric()
+
+    import visu_vpython as vpy
+    vw = vpy.World(w)
+    for t in range(100):
+        w.joints[0].gpos=[t/20.]
+        w.joints[1].gpos=[t/20.]
+        w.geometric()
+        vw.update()
+
+    
