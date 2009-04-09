@@ -1,0 +1,210 @@
+# Copyright (C) INRIA 1999-2005
+# 
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 2 as published
+# by the Free Software Foundation.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+# Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+# 
+# Author(s): Florence Billet
+# Affiliation(s): INRIA, team BIPOP
+# Email(s): Florence.Billet@inria.fr
+# 
+# Description:
+# 
+#
+# 
+
+#
+# Kinematic of Human's model with 36 articulations and then 42 degree of freedom
+#
+# FREE BASE == LPT(Lower Part of trunk )
+#
+# Frames for segment with cardan angles
+#
+# Florence le 30/11/05
+#
+
+
+# solids number
+NSOL := 17:
+
+# degrees of freedom number
+NDDL := 36+6:
+
+#measured lengths number
+NLANAT := 31:
+
+#generalized coordinates and speed definition
+q := vector(NDDL):
+qdot := vector(NDDL):
+
+#Anatomical lengths definitions
+L := vector(NLANAT):
+
+
+#Cardan Rotation: We begin with the rotation around x, then around y then
+#around z.
+
+# Frame 1 : LPT: Orientation and position
+ref_1	:= 0:
+z_1	:= q[42]:
+y_1	:= q[41]:
+x_1	:= q[40]:
+Tx_1	:= q[37]:
+Ty_1	:= L[14] + L[15] + L[16]+ q[38]:
+Tz_1	:= q[39]:
+
+# Frame 2 : right thigh
+ref_2	:= 1:
+z_2	:= q[6]:
+y_2	:= q[5]:
+x_2	:= q[4]:
+Tx_2	:= 0:
+Ty_2	:= 0:
+Tz_2	:= L[3]/2:
+
+# Frame 3 : right shank
+ref_3	:= 2:
+z_3	:= q[3]:
+y_3	:= 0:
+x_3	:= 0:
+Tx_3	:= 0:
+Ty_3	:= -L[6]:
+Tz_3	:= 0:
+
+# Frame 4 : right foot
+ref_4	:= 3:
+z_4	:= q[2]:
+y_4	:= 0:
+x_4	:= q[1]:
+Tx_4	:= 0:
+Ty_4	:= -L[5]:
+Tz_4	:= 0:
+
+# Frame 5 : left thigh
+ref_5	:= 1:
+z_5	:= q[12]:
+y_5	:= q[11]:
+x_5	:= q[10]:
+Tx_5	:= 0:
+Ty_5	:= 0:
+Tz_5	:= -L[3]/2:
+
+# Frame 6 : left shank
+ref_6	:= 5:
+z_6	:= q[9]:
+y_6	:= 0:
+x_6	:= 0:
+Tx_6	:= 0:
+Ty_6	:= -L[16]:
+Tz_6	:= 0:
+
+# Frame 7 : left foot
+ref_7	:= 6:
+z_7	:= q[8]:
+y_7	:= 0:
+x_7	:= q[7]:
+Tx_7	:= 0:
+Ty_7	:= -L[15]:
+Tz_7	:= 0:
+
+# Frame 8 : thorax
+ref_8	:= 1:
+z_8	:= q[15]:
+y_8	:= q[14]:
+x_8	:= q[13]:
+Tx_8	:= -L[2]:
+Ty_8	:= L[1]:
+Tz_8	:= 0:
+
+# Frame 9 : right clavicular
+ref_9	:= 8:
+z_9	:= 0:
+y_9	:= q[17]:
+x_9	:= q[16]:
+Tx_9	:= L[9]:
+Ty_9	:= L[7]:
+Tz_9	:= L[8]:
+
+# Frame 10 : right humerus
+ref_10 	:= 9:
+z_10	:= q[20]:
+y_10	:= q[19]:
+x_10	:= q[18]:
+Tx_10	:= -L[12]:
+Ty_10	:= L[10]:
+Tz_10	:= L[11]:
+
+# Frame 11 : right forearm
+ref_11	:= 10:
+z_11	:= q[22]:
+y_11	:= q[21]:
+x_11	:= 0:
+Tx_11	:= 0:
+Ty_11	:= -L[13]:
+Tz_11	:= 0:
+
+# Frame 12 : right hand
+ref_12	:= 11:
+z_12	:= q[24]:
+y_12	:= 0:
+x_12	:= q[23]:
+Tx_12	:= 0:
+Ty_12	:= -L[24]:
+Tz_12	:= 0:
+
+
+# Frame 13 : left clavicular
+ref_13	:= 8:
+z_13	:= 0:
+y_13	:= q[26]:
+x_13	:= q[25]:
+Tx_13	:= L[19]:
+Ty_13	:= L[17]:
+Tz_13	:= -L[18]:
+
+# Frame 14 : left humerus
+ref_14	:= 13:
+z_14	:= q[29]:
+y_14	:= q[28]:
+x_14	:= q[27]:
+Tx_14	:= -L[22]:
+Ty_14	:= L[20]:
+Tz_14	:= -L[21]:
+
+# Frame 15 : left forearm
+ref_15	:= 14:
+z_15	:= q[31]:
+y_15	:= q[30]:
+x_15	:= 0:
+Tx_15	:= 0:
+Ty_15	:= -L[23]:
+Tz_15	:= 0:
+
+# Frame 16 : left hand
+ref_16	:= 15:
+z_16	:= q[33]:
+y_16	:= 0:
+x_16	:= q[32]:
+Tx_16	:= 0:
+Ty_16	:= -L[25]:
+Tz_16	:= 0:
+
+# Frame 17 : head
+ref_17	:= 8:
+z_17	:= q[36]:
+y_17	:= q[35]:
+x_17	:= q[34]:
+Tx_17	:= L[2]:
+Ty_17	:= L[26]:
+Tz_17	:= 0:
+
+
