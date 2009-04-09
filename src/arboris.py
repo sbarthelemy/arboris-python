@@ -101,8 +101,10 @@ class World(object):
             joint
                 the joint that will be added
 
+        TODO: find a better name for ``self._ref_frame`` (current suggestions:
+            ``prev_frame``, ``parent_frame``, ``base_frame``)
         TODO: find a better name for ``self._new_frame`` (current suggestions:
-        ``next_frame``, ``moving_frame``)
+        ``next_frame``, ``moving_frame``, ``local_frame``)
         """
         if not(isinstance(joint,Joint)):
             raise ValueError("{0} is not an instance of Joint".format(
