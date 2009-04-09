@@ -2,6 +2,7 @@
 """
 Visualization of a simulation
 """
+__author__ = ("Joseph SALINI <joseph.salini@gmail.com>")
 import numpy as np
 import visu
 from enthought.mayavi import mlab

@@ -2,6 +2,8 @@
 """
 Visualization of a simulation
 """
+__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
+              "Joseph SALINI <joseph.salini@gmail.com>")
 import numpy as np
 import visu
 import visual

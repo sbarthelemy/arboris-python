@@ -1,8 +1,10 @@
 # coding=utf-8
-import numpy as np
 """
 Functions for working with twists stored as [w,v]
 """
+__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
+
+import numpy as np
 
 def adjacency(tw):
     """

@@ -1,10 +1,13 @@
 # coding=utf-8
-import numpy as np
 """
 Functions for working with homogeneous matrices.
 
 toto
 """
+__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
+import numpy as np
+
+
 tol=1e-12
 
 def transl(vec):
@@ -19,7 +22,7 @@ def transl(vec):
                        [0,0,0,1]))
 
 
-def rotzyx(angle_x, angle_y, angle_z):
+def rotzyx(angles):
     """homogeneous transformation matrix from pitch-roll-yaw angles)
     
     In short:  R = Rz * Ry * Rx
@@ -32,12 +35,12 @@ def rotzyx(angle_x, angle_y, angle_z):
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
     """
     
-    sx = np.sin(angle[0])
-    cx = np.cos(angle[0])
-    sy = np.sin(angle[1])
-    cy = np.cos(angle[1])
-    sz = np.sin(angle[2])
-    cz = np.cos(angle[2])
+    sx = np.sin(angles[0])
+    cx = np.cos(angles[0])
+    sy = np.sin(angles[1])
+    cy = np.cos(angles[1])
+    sz = np.sin(angles[2])
+    cz = np.cos(angles[2])
     return np.array(
         [[ cz*cy, cz*sy*sx-sz*cx, cz*sy*cx+sz*sx, 0.],
          [ sz*cy, sz*sy*sx+cz*cx, sz*sy*cx-cz*sx, 0.],

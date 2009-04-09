@@ -8,7 +8,7 @@ t06_ConstructionRobot.m tutorial from matlab-arboris.
 
 When ran as a script, the module shows the robot in motion.
 """
-
+__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
 import arboris as arb
 import numpy as np
@@ -105,15 +105,4 @@ if __name__ == "__main__":
     
     #compute dynamic model
     w.dynamic()
-
-    import visu
-    import visual
-    visu.scale=0.3
-    vw = visu.World(world=w,scale=0.1)
-    for t in range(100):
-        visual.rate(10)
-        print t
-        w.joints[1].gpos=t/20.
-        w.geometric()
-        vw.update()
 

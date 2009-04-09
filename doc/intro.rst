@@ -2,7 +2,7 @@
 Introduction
 ============
 
-todo: add a great introduction.
+TODO: add a great introduction.
 
 This document was much inspired by [Duindam2006]_
 

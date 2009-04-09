@@ -2,6 +2,8 @@
 """
 Creation of control window class
 """
+__author__ = ("Joseph SALINI <joseph.salini@gmail.com>")
+
 import visual as v
 from visual import controls
 

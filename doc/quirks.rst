@@ -29,7 +29,7 @@ The ``gpos`` is shared by the two instances ``j1`` and ``j2``:
 .. testoutput:: group1
 
   [ 3.14]
-  False
+  True
 
 A solution is:
 

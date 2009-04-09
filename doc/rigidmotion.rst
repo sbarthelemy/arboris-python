@@ -2,8 +2,13 @@
 Rigid Motion
 ============
 
-Position
-========
+Rigid bodies and frames
+=======================
+
+TODO: Define *body* and *body twist*
+
+Position of a coordinate frame
+==============================
 
 An homogeneous matrix `H` is a matrix of the form
 
@@ -37,8 +42,8 @@ with:
 - :math:`\pre[a]R_b` defined as the :math:`3 \times 3` matrix with the columns equal to the coordinates of the three unit vectors along the frame axes of :math:`\Psi_b` expressed in :math:`\Psi_a`.
 
 
-Velocity
-========
+Velocity of a coordinate frame
+==============================
 
 The velocity of a rigid body can be described by a twist.
 
@@ -49,6 +54,45 @@ The velocity of a rigid body can be described by a twist.
         \pre[c]v_{a/b}(t)\\
     \end{bmatrix}
 
+TODO: add adjoint matrix and relative velocities formulas
+
+Acceleration of a coordinate frame
+==================================
+
+TODO: introduce adjacency
+
 Implementation
 ==============
-See :class:`arboris.RigidMotion` or :mod:`homogeneousmatrix`
+
+The modules :mod:`twistvector`, :mod:`homogeneousmatrix` and :mod:`adjointmatrix` respectively  implement "low level" operations on twist and on homogeneous and adjoint matrices. For instance, 
+the following excerp creates the homogeneous matrix of a translation and then inverts it.
+
+.. doctest::
+
+  >>> import homogeneousmatrix
+  >>> H = homogeneousmatrix.transl((1., 0., 2./3.))
+  >>> H
+  array([[ 1.        ,  0.        ,  0.        ,  1.        ],
+         [ 0.        ,  1.        ,  0.        ,  0.        ],
+         [ 0.        ,  0.        ,  1.        ,  0.66666667],
+         [ 0.        ,  0.        ,  0.        ,  1.        ]])
+  >>> Hinv = homogeneousmatrix.inv(H)
+  >>> Hinv
+  array([[ 1.        ,  0.        ,  0.        , -1.        ],
+         [ 0.        ,  1.        ,  0.        , -0.        ],
+         [ 0.        ,  0.        ,  1.        , -0.66666667],
+         [ 0.        ,  0.        ,  0.        ,  1.        ]])
+
+
+A more convenient way of dealing with rigid motion is by using the :class:`rigidmotion.RigidMotion` class which wraps all the elementary functions in an object-oriented way.
+
+define a rigid motion by its pose and twist. However, this class does not exist yet. One may use :class:`rigidmotion.FreeJoint` (see next chapter) instead.
+
+TODO: implement :class:`rigidmotion.FreeMotion` 
+
+
+
+Dynamics
+========
+
+TODO: document 1st and 2nd order dynamics for a rigid body.

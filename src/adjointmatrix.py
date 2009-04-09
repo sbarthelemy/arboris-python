@@ -1,5 +1,6 @@
 # coding=utf-8
-import numpy as np
+
+
 """
 Functions for working with adjoint matrices
 
@@ -8,7 +9,10 @@ H = [ R p
 Ad(H) = [  R   0
           pxR  R ]
 """
+__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
+
+import numpy as np
 def isadjointmatrix(a):
     """
     Return true if a is an adjoint matrix

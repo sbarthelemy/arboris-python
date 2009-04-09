@@ -5,9 +5,7 @@ Factory for several known robots
 
 
 """
-
-__version__ = "$Revision: 1 $"
-# $Source$
+__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
 from triplehinge import triplehinge
 

@@ -2,7 +2,7 @@
 Developpement
 =============
 
-This is a small page to help starting using and hacking python-arboris.
+This is a small page to help using and hacking python-arboris.
   
 
 What we use...
@@ -25,6 +25,7 @@ All the program is written in python2.6. See Python26Doc_ (or Python26LocalDoc_)
 
 ...for the documentation
 ------------------------
+
 The doc is written in the reST markup language and processed by sphinx (version >=5). See the sphinx (and reST) documentation at SphinxDoc_ (or SphinxLocalDoc_). We use sphinx plugins which allow to embed latex in the doc, to parse the docstrings spread in the code and to run the examples with doctest.
 
 .. _SphinxDoc:
@@ -45,27 +46,37 @@ We'd like to support both interactive and offline vizualisation. We'd like it to
 Here is a list of candidates:
 
 `visual python`_: 
-  really simple to use, but with some weird choices (for orientation...). It maybe too simple. Also, it is not really well maintained, documented and distributed (the latest version is not packaged in ubuntu, and is not availble for python2.6 on windows).
-
+  Very simple to use, it may even be too simple. Also, it is not really well maintained, documented nor distributed (the latest version is not packaged in ubuntu, and is not availble for python2.6 on windows). This unofficial documentation in French may be worth a read: _`VpythonDocFr`.
+  
 blender:
-  Blender may be a great way to interact with the simulation, at the price of some redundancy, as it already has its own data structures for kinematics models and so. It is only suited for offline visualization.
+  Blender may be a great way to interact with the simulation. Joseph succeeded in generating programmatically a skeletton (Armature), and feeding it with generalized coordinates trajectories. However,
+ 
+  - it is only suited for offline visualization (see blender game engine for an alternative), 
+  - it comes at the price of some redundancy (which may lead to confusion), as blender has its own data structures for kinematics models and so...
 
 blender with game engine:
   ?
 
 `openscenegraph`_:
-  Seems great, but lacks well established python bindings. According to Anthony, `http://code.google.com/p/osgswig`_ is usable
-
-mayavi2:
-  Joseph did some testing and it appeared that it was incredibly slow. It is based on VTK
+  Seems great, but lacks well established python bindings. According to Anthony, `http://code.google.com/p/osgswig`_ is usable though.
 
 `VTK`_:
   Has python bindings.
 
+TVTK_:
+  ?
+
+mayavi2:
+  Joseph did some testing and it appeared that it was incredibly slow. It is based on VTK
+
+
+.. _DocVpythonDocFr:
+  ftp://ftp-developpez.com/guigui/cours/python/vpython/fr/ManuelVpython.pdf
+ 
 .. _`visual python`:
   http://vpython.org
 
-.. _`openscengraph`:
+.. _openscenegraph:
   http://www.openscenegraph.org
 
 .. _`VTK`:
@@ -109,3 +120,9 @@ Get python-arboris from git (you'll need an ssh account ``yourlastname`` on vizi
 Now in ``~/pyarboris`` you have all the history of python-arboris. You can get updates with::
 
   git pull vizir-seb
+
+
+Future
+======
+
+There are to do items spread overall the code and the documentation, ``grep  TODO {src,doc}/*{.py,.rst}`` should get them
