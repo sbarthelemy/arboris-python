@@ -46,7 +46,66 @@ def rotzyx(angles):
          [ sz*cy, sz*sy*sx+cz*cx, sz*sy*cx-cz*sx, 0.],
          [-sy   , cy*sx         , cy*cx         , 0.],
          [ 0.   , 0.            , 0.            , 1.]])
+         
+         
+def rotzy(angles):
+    """homogeneous transformation matrix from pitch-roll-yaw angles)
+    
+    In short:  R = Rz * Ry
 
+    example:
+    >>> rotzy((3.14/6, 3.14/6))
+
+    """
+    sy = np.sin(angles[0])
+    cy = np.cos(angles[0])
+    sz = np.sin(angles[1])
+    cz = np.cos(angles[1])
+    return np.array(
+        [[ cz*cy,-sz, cz*sy, 0.],
+         [ sz*cy, cz, sz*sy, 0.],
+         [-sy   , 0., cy   , 0.],
+         [ 0.   , 0., 0.   , 1.]])
+
+
+def rotzx(angles):
+    """homogeneous transformation matrix from pitch-roll-yaw angles)
+    
+    In short:  R = Rz * Rx
+
+    example:
+    >>> rotzy((3.14/6, 3.14/6))
+
+    """
+    sx = np.sin(angles[0])
+    cx = np.cos(angles[0])
+    sz = np.sin(angles[1])
+    cz = np.cos(angles[1])
+    return np.array(
+        [[ cz,-sz*cx, sz*sx, 0.],
+         [ sz, cz*cx,-cz*sx, 0.],
+         [ 0., sx   , cx   , 0.],
+         [ 0., 0.   , 0.   , 1.]])
+         
+         
+def rotyx(angles):
+    """homogeneous transformation matrix from pitch-roll-yaw angles)
+    
+    In short:  R = Ry * Rx
+
+    example:
+    >>> rotzy((3.14/6, 3.14/6))
+
+    """
+    sx = np.sin(angles[0])
+    cx = np.cos(angles[0])
+    sy = np.sin(angles[1])
+    cy = np.cos(angles[1])
+    return np.array(
+        [[ cy, sy*sx, sy*cx, 0.],
+         [ 0., cx   ,-sx   , 0.],
+         [-sy, cy*sx, cy*cx, 0.],
+         [ 0., 0.   , 0.   , 1.]])
 
 def rotx(angle):
     """

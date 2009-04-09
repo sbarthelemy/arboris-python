@@ -183,6 +183,115 @@ class RzRyRxJoint(Joint):
              [ 0.   ,-dx*sx , dx*cx*sy+dy*sx*cy ],
              [ 0.   ,-dx*cx ,-dx*sx*cy-dy*cx*sy ]])
 
+
+class RzRyJoint(Joint):
+    """Fingered Ball (2-dof) implemented with 2 serial hinges
+
+    the resulting homogeneous matrix is given by H = Rz*Ry
+    """
+    def __init__(self, gpos=[0.,0.], gvel=[0.,0.]):
+        self.gpos = np.array(gpos).reshape((2))
+        self.gvel = np.array(gvel).reshape((2))
+
+    def ndof(self):
+        return 2
+
+    def pose(self):
+        return Hg.rotzy(self.gpos)
+
+    def jacobian(self):
+        """
+        T_n/r = 
+        """   
+        sy = np.sin(self.gpos[0])
+        cy = np.cos(self.gpos[0])
+        return np.array(
+            [[ 0.   , -sy ],
+             [ 1.   ,  0. ],
+             [ 0.   ,  cy ]])
+    
+    def djacobian(self):
+        sy = np.sin(self.gpos[0])
+        cy = np.cos(self.gpos[0])
+        dy = self.gvel[0]
+        return np.array(
+            [[ 0.   ,-dy*cy ],
+             [ 0.   , 0.    ],
+             [ 0.   ,-dy*sy ]])
+             
+             
+class RzRxJoint(Joint):
+    """Fingered Ball (2-dof) implemented with 2 serial hinges
+
+    the resulting homogeneous matrix is given by H = Rz*Ry
+    """
+    def __init__(self, gpos=[0.,0.], gvel=[0.,0.]):
+        self.gpos = np.array(gpos).reshape((2))
+        self.gvel = np.array(gvel).reshape((2))
+
+    def ndof(self):
+        return 2
+
+    def pose(self):
+        return Hg.rotzx(self.gpos)
+
+    def jacobian(self):
+        """
+        T_n/r = 
+        """   
+        sx = np.sin(self.gpos[0])
+        cx = np.cos(self.gpos[0])
+        return np.array(
+            [[ 1.   ,  0. ],
+             [ 0.   ,  sx ],
+             [ 0.   ,  cx ]])
+    
+    def djacobian(self):
+        sy = np.sin(self.gpos[0])
+        cy = np.cos(self.gpos[0])
+        dy = self.gvel[0]
+        return np.array(
+            [[ 0.   , 0.    ],
+             [ 0.   , dx*cx ],
+             [ 0.   ,-dx*sx ]])
+             
+             
+class RyRxJoint(Joint):
+    """Fingered Ball (2-dof) implemented with 2 serial hinges
+
+    the resulting homogeneous matrix is given by H = Rz*Ry
+    """
+    def __init__(self, gpos=[0.,0.], gvel=[0.,0.]):
+        self.gpos = np.array(gpos).reshape((2))
+        self.gvel = np.array(gvel).reshape((2))
+
+    def ndof(self):
+        return 2
+
+    def pose(self):
+        return Hg.rotyx(self.gpos)
+
+    def jacobian(self):
+        """
+        T_n/r = 
+        """   
+        sx = np.sin(self.gpos[0])
+        cx = np.cos(self.gpos[0])
+        return np.array(
+            [[ 1.   ,  0. ],
+             [ 0.   ,  cx ],
+             [ 0.   , -sx ]])
+    
+    def djacobian(self):
+        sy = np.sin(self.gpos[0])
+        cy = np.cos(self.gpos[0])
+        dy = self.gvel[0]
+        return np.array(
+            [[ 0.   , 0.    ],
+             [ 0.   ,-dx*sx ],
+             [ 0.   ,-dx*cx ]])
+             
+             
 class HingeJoint(Joint):
 
     """Hinge (1-dof) with axis in the z-direction
