@@ -802,7 +802,7 @@ def human36(height=1.741, mass=73, name=''):
     w = arb.World()
 
     ## liaison 1 ##
-    rf = w.bodies[0].newframe(Hg.transl((0, 0, L['yfootL']+L['ytibiaL']+L['yfemurL'])))
+    rf = w.bodies[0].newframe(Hg.transl((0, L['yfootL']+L['ytibiaL']+L['yfemurL'], 0)))
     #    n = bodies['LPT'].newframe(Hg.transl((0,0,-(L['yfootL']+L['ytibiaL']+L['yfemurL']))))
     w.addjoint(arb.FreeJoint(), rf, bodies['LPT'].frames[0])
     
