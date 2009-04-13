@@ -64,7 +64,7 @@ class World(visu.World):
         self.viewer = osgViewer.Viewer()
         self.viewer.setSceneData(self._root)
         self.viewer.setCameraManipulator(osgGA.TrackballManipulator())
-        self.viewer.setUpViewInWindow(100,200, 800, 600)
+        self.viewer.setUpViewInWindow(100,100, 800, 600)
         
     def add_body(self, added_body, scale, color, gen_frame):
         new_vbody = Body(added_body, scale, color, gen_frame)
@@ -130,7 +130,17 @@ class Body(visu.Body):
         self.links = []
         self._color = color
         self._scale = scale
+        # create the osg body sub tree
         self.body_node = osg.MatrixTransform()
+        self.switcher = osg.Switch()
+        self.body_node.addChild(self.switcher)
+        # create trhe groups ...
+        self.group_frames = osg.Group()
+        self.group_links = osg.Group()
+        self.group_shapes = osg.Group()
+        self.switcher.addChild(self.group_frames) # ... and link them with the tree
+        self.switcher.addChild(self.group_links)
+        self.switcher.addChild(self.group_shapes)
         if gen_frame == None:
             gen_frame = create_generic_frame()
         self.draw_body(gen_frame)
@@ -140,11 +150,11 @@ class Body(visu.Body):
         self.body_node.setMatrix(pose_2_mat(self._body.pose))
         for f in self._body.frames:
             nf = draw_frame(f.pose, f.name, gen_frame)
-            self.body_node.addChild(nf)
+            self.group_frames.addChild(nf)
             self.frames.append(nf)
             lf = draw_link(np.eye(4), f.pose, self._scale, self._color)
             if lf != None:
-                self.body_node.addChild(lf)
+                self.group_links.addChild(lf)
                 self.links.append(lf)
 
     def update(self):
