@@ -18,9 +18,11 @@ def transl(vec):
 
     OUTPUT: Homogeneous matrix of the translation
     """
-    return np.vstack( (np.hstack((np.eye(3),np.array(vec).reshape(3,1))),
-                       [0,0,0,1]))
-
+    return np.array(
+        [[ 1. , 0., 0., vec[0]],
+         [ 0. , 1., 0., vec[1]],
+         [ 0. , 0., 1., vec[2]],
+         [ 0.,  0., 0., 1.]])
 
 def rotzyx(angles):
     """homogeneous transformation matrix from pitch-roll-yaw angles)
@@ -28,19 +30,19 @@ def rotzyx(angles):
     In short:  R = Rz * Ry * Rx
 
     example:
-    >>> rotzyx((3.14/6, 3.14/6, 3.14/6))
-    array([[ 0.75022984, -0.21653948,  0.6247126 ,  0.        ],
-           [ 0.43287992,  0.8750575 , -0.21653948,  0.        ],
-           [-0.4997701 ,  0.43287992,  0.75022984,  0.        ],
+    >>> rotzyx((3.14/6, 3.14/4, 3.14/3))
+    array([[ 0.61271008,  0.27992274,  0.73907349,  0.        ],
+           [ 0.35353151,  0.73930695, -0.57309746,  0.        ],
+           [-0.70682518,  0.61242835,  0.35401931,  0.        ],
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
     """
     
-    sx = np.sin(angles[0])
-    cx = np.cos(angles[0])
+    sz = np.sin(angles[0])
+    cz = np.cos(angles[0])
     sy = np.sin(angles[1])
     cy = np.cos(angles[1])
-    sz = np.sin(angles[2])
-    cz = np.cos(angles[2])
+    sx = np.sin(angles[2])
+    cx = np.cos(angles[2])
     return np.array(
         [[ cz*cy, cz*sy*sx-sz*cx, cz*sy*cx+sz*sx, 0.],
          [ sz*cy, sz*sy*sx+cz*cx, sz*sy*cx-cz*sx, 0.],
@@ -54,13 +56,16 @@ def rotzy(angles):
     In short:  R = Rz * Ry
 
     example:
-    >>> rotzy((3.14/6, 3.14/6))
-
+    >>> rotzy((3.14/6, 3.14/4))
+    array([[ 0.61271008, -0.4997701 ,  0.61222235,  0.        ],
+           [ 0.35353151,  0.86615809,  0.35325009,  0.        ],
+           [-0.70682518,  0.        ,  0.70738827,  0.        ],
+           [ 0.        ,  0.        ,  0.        ,  1.        ]])
     """
-    sy = np.sin(angles[0])
-    cy = np.cos(angles[0])
-    sz = np.sin(angles[1])
-    cz = np.cos(angles[1])
+    sz = np.sin(angles[0])
+    cz = np.cos(angles[0])
+    sy = np.sin(angles[1])
+    cy = np.cos(angles[1])
     return np.array(
         [[ cz*cy,-sz, cz*sy, 0.],
          [ sz*cy, cz, sz*sy, 0.],
@@ -74,13 +79,17 @@ def rotzx(angles):
     In short:  R = Rz * Rx
 
     example:
-    >>> rotzy((3.14/6, 3.14/6))
+    >>> rotzx((3.14/6, 3.14/3))
+    array([[ 0.86615809, -0.25011479,  0.43268088,  0.        ],
+           [ 0.4997701 ,  0.43347721, -0.74988489,  0.        ],
+           [ 0.        ,  0.86575984,  0.50045969,  0.        ],
+           [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
     """
-    sx = np.sin(angles[0])
-    cx = np.cos(angles[0])
-    sz = np.sin(angles[1])
-    cz = np.cos(angles[1])
+    sz = np.sin(angles[0])
+    cz = np.cos(angles[0])
+    sx = np.sin(angles[1])
+    cx = np.cos(angles[1])
     return np.array(
         [[ cz,-sz*cx, sz*sx, 0.],
          [ sz, cz*cx,-cz*sx, 0.],
@@ -94,13 +103,17 @@ def rotyx(angles):
     In short:  R = Ry * Rx
 
     example:
-    >>> rotzy((3.14/6, 3.14/6))
+    >>> rotyx((3.14/4, 3.14/3))
+    array([[ 0.70738827,  0.61194086,  0.35373751,  0.        ],
+           [ 0.        ,  0.50045969, -0.86575984,  0.        ],
+           [-0.70682518,  0.61242835,  0.35401931,  0.        ],
+           [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
     """
-    sx = np.sin(angles[0])
-    cx = np.cos(angles[0])
-    sy = np.sin(angles[1])
-    cy = np.cos(angles[1])
+    sy = np.sin(angles[0])
+    cy = np.cos(angles[0])
+    sx = np.sin(angles[1])
+    cx = np.cos(angles[1])
     return np.array(
         [[ cy, sy*sx, sy*cx, 0.],
          [ 0., cx   ,-sx   , 0.],
