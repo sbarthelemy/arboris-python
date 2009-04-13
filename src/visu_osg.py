@@ -4,9 +4,13 @@ Visualization of a simulation
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
               "Joseph SALINI <joseph.salini@gmail.com>")
+
+from OpenSceneGraph import osg, osgDB, osgGA, osgViewer # on linux
+#import osg, osgDB, osgGA, osgViewer                     # on windows
 import numpy as np
 import visu
-import osg, osgDB, osgGA, osgViewer
+
+
 
 #we create the frame node and we will re-use it for every frame created
 def create_generic_frame(scale=1.):
@@ -60,6 +64,7 @@ class World(visu.World):
         self.viewer = osgViewer.Viewer()
         self.viewer.setSceneData(self._root)
         self.viewer.setCameraManipulator(osgGA.TrackballManipulator())
+        self.viewer.setUpViewInWindow(100,200, 800, 600)
         
     def add_body(self, added_body, scale, color, gen_frame):
         new_vbody = Body(added_body, scale, color, gen_frame)
@@ -149,12 +154,13 @@ class Body(visu.Body):
 
 if __name__=='__main__':
     # testing!
-    if 0:
+    if 0:       # choose between triplehinge and human36
         from worldfactory import triplehinge
         w = triplehinge()
     else:
         import human36
         w = human36.human36()
+        
     w.geometric()
 
     import visu_osg
