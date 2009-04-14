@@ -12,7 +12,7 @@ class World(visu.World):
     """ A drawable version of rigidmotion.World
     """
     #TODO: voir s'il n'y a pas de fonction overload de la fonction __init__
-    def __init__(self, world, scale):
+    def __init__(self, world, scale=1):
         self._world = world
         self.bodies = []
         self._scale = scale
