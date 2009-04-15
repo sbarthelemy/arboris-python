@@ -64,7 +64,8 @@ def draw_frame(pose=None, text=None, parent=None, scale=1):
     visual.arrow(frame=f, axis=(scale,0,0), color=visual.color.red)
     visual.arrow(frame=f, axis=(0,scale,0), color=visual.color.green)
     visual.arrow(frame=f, axis=(0,0,scale), color=visual.color.blue)
-    visual.label(frame=f, yoffset=-10, box=0, line=0, text=str(text))
+    if text !=None:
+        visual.label(frame=f, yoffset=-10, box=0, line=0, text=str(text))
     return f
     
 
@@ -101,7 +102,7 @@ class Body(visu.Body):
     def draw_body(self, scale, color):
         self.frames.append(draw_frame(
             self._body.pose, 
-            self._body.frames[0].name, scale = scale))
+            self._body.name, scale = scale))
         for f in self._body.frames[1:]:
             nf = draw_frame(f.pose, f.name, self.frames[0], scale)
             self.frames.append(nf)

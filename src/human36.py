@@ -783,111 +783,226 @@ def _humans_bodies(height, mass):
          "GyrationRadius": [0.303, 0.261, 0.315]})
     return bodies
 
-
 def human36(height=1.741, mass=73, name=''): 
     """
 
-    >>> w = human36()
+    
+    >>> (w, bodies, tags) = human36()
+    >>> w.geometric()
+    >>> def tag_positions(tag_frames):
+    ...     \"\"\"The tags absolute position
+    ...
+    ...     The array elements are in the same order that in the array
+    ...     returned by the ``Tags`` function from the 
+    ...     HuMAnS toolbox. In HuMAnS, though, there is an 29th line
+    ...     which cotains the center of mass position.
+    ...     \"\"\"
+    ...     from numpy import dot
+    ...     pos_dict= {}
+    ...     for (key, val) in tag_frames.iteritems():
+    ...         pos_dict[key] = dot(val.body.pose, val.pose)[0:3,3]
+    ...
+    ...     pos_array = np.zeros((len(tag_frames),3))
+    ...     for t in _humans_tags(1.741):
+    ...         pos_array[t['HumansId']-1,:] = pos_dict[t['HumansName']]
+    ...     return pos_array
+    >>> p = tag_positions(tags)
+    >>> p
+    array([[  2.15013500e-01,   2.08166817e-17,   8.72241000e-02],
+           [ -4.31768000e-02,   2.08166817e-17,   8.72241000e-02],
+           [  1.15254200e-01,   2.08166817e-17,   1.40324600e-01],
+           [  1.15254200e-01,   2.08166817e-17,   3.41236000e-02],
+           [  0.00000000e+00,   3.86502000e-02,   1.30575000e-01],
+           [  0.00000000e+00,   4.72681500e-01,   1.37713100e-01],
+           [  0.00000000e+00,   8.94874000e-01,   1.63828100e-01],
+           [  4.71811000e-02,   9.58594600e-01,   1.21347700e-01],
+           [  2.15013500e-01,   2.08166817e-17,  -8.72241000e-02],
+           [ -4.31768000e-02,   2.08166817e-17,  -8.72241000e-02],
+           [  1.15254200e-01,   2.08166817e-17,  -1.40324600e-01],
+           [  1.15254200e-01,   2.08166817e-17,  -3.41236000e-02],
+           [  0.00000000e+00,   3.86502000e-02,  -1.30575000e-01],
+           [  0.00000000e+00,   4.72681500e-01,  -1.37713100e-01],
+           [  0.00000000e+00,   8.94874000e-01,  -1.63828100e-01],
+           [  4.71811000e-02,   9.58594600e-01,  -1.21347700e-01],
+           [  1.20651300e-01,   1.25613150e+00,   0.00000000e+00],
+           [  9.15766000e-02,   1.42674950e+00,   0.00000000e+00],
+           [  0.00000000e+00,   1.47932770e+00,   2.25459500e-01],
+           [  0.00000000e+00,   1.16316210e+00,   2.62194600e-01],
+           [  0.00000000e+00,   8.96266800e-01,   2.83086600e-01],
+           [  0.00000000e+00,   7.04408600e-01,   2.25459500e-01],
+           [  0.00000000e+00,   1.47932770e+00,  -2.25459500e-01],
+           [  0.00000000e+00,   1.16316210e+00,  -2.62194600e-01],
+           [  0.00000000e+00,   8.96266800e-01,  -2.83086600e-01],
+           [  0.00000000e+00,   7.04408600e-01,  -2.25459500e-01],
+           [  0.00000000e+00,   1.49813050e+00,   0.00000000e+00],
+           [  0.00000000e+00,   1.74100000e+00,   0.00000000e+00]])
+
+Here is another HuMAnS result
+ q  =
+ 
+    0.         
+    0.         
+  - 0.8147779  
+    0.         
+    0.         
+  - 0.0402589  
+    0.         
+    0.         
+  - 0.2575124  
+    0.         
+    0.         
+    0.2036690  
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.         
+    0.2        
+    0.         
+    0.         
+    0.         
+    0.         
+ 
+Tags(q)             
+ ans  =
+ 
+  - 0.2325857    0.2006062    0.0872241  
+  - 0.4020078    0.3954354    0.0872241  
+  - 0.2980468    0.2758841    0.1403246  
+  - 0.2980468    0.2758841    0.0341236  
+  - 0.3445103    0.3882163    0.130575   
+  - 0.0169924    0.6730236    0.1377131  
+    0.           1.094874     0.1638281  
+    0.0471811    1.1585946    0.1213477  
+    0.2746577    0.1978398  - 0.0872241  
+    0.0168416    0.2117349  - 0.0872241  
+    0.1750430    0.2032086  - 0.1403246  
+    0.1750430    0.2032086  - 0.0341236  
+    0.0620359    0.2480055  - 0.130575   
+    0.0853943    0.6814078  - 0.1377131  
+    0.           1.094874   - 0.1638281  
+    0.0471811    1.1585946  - 0.1213477  
+    0.1206513    1.4561315    0.         
+    0.0915766    1.6267495    0.         
+    0.           1.6793277    0.2254595  
+    0.           1.3631621    0.2621946  
+    0.           1.0962668    0.2830866  
+    0.           0.9044086    0.2254595  
+    0.           1.6793277  - 0.2254595  
+    0.           1.3631621  - 0.2621946  
+    0.           1.0962668  - 0.2830866  
+    0.           0.9044086  - 0.2254595  
+    0.           1.6981305    0.         
+    0.           1.941        0.         
+  - 0.0023268    1.1764976    1.894E-20  
+
+           COM position as returned by HuMAnS for q(:)=0
+           0.0019382    0.9712007    1.894E-20 
+    > convert_to_array(_humans_tags(1.741))
+    
+    
+    
+    ...     for tag in tags:
+    ...         t[tag['HumansId']-1,:] = tag["Position"][:]
     """
     lengths = anatomical_lengths(height)
     L = lengths
     bodies = {}
+    humansbodyid_to_humansbodyname_map = {}
     for b in _humans_bodies(height, mass):
         bodies[b['HumansName']] = arb.Body(
         name = b['HumansName'])
+        humansbodyid_to_humansbodyname_map[b['HumansId']] = b['HumansName']
         #'Mass'=b['Mass'],
         #'CenterOfMass': b['CenterOfMass'],
         #'GyrationRadius': b['GyrationRadius']}
+    
+    tags = {}
+    for t in _humans_tags(height):
+        bodyname = humansbodyid_to_humansbodyname_map[t['HumansBodyId']]
+        tags[t['HumansName']] = bodies[bodyname].newframe(
+            Hg.transl(t['Position']),
+            t['HumansName'])
 
     w = arb.World()
 
-    ## liaison 1 ##
-    rf = w.bodies[0].newframe(Hg.transl((0, L['yfootL']+L['ytibiaL']+L['yfemurL'], 0)))
-    #    n = bodies['LPT'].newframe(Hg.transl((0,0,-(L['yfootL']+L['ytibiaL']+L['yfemurL']))))
+    rf = w.bodies[0].newframe(
+        Hg.transl((0, L['yfootL']+L['ytibiaL']+L['yfemurL'], 0)))
     w.addjoint(arb.FreeJoint(), rf, bodies['LPT'].frames[0])
     
-    ##
     rf = bodies['LPT'].newframe(Hg.transl((0, 0, L['zhip']/2.)))
-    #w.addjoint(arb.RzRyRxJoint(),rf,bodies['ThighR'].frames[0])
-    w.addjoint(arb.FreeJoint(), rf, bodies['ThighR'].frames[0])
+    w.addjoint(arb.RzRyRxJoint(),rf,bodies['ThighR'].frames[0])
     
-    ##
     rf = bodies['ThighR'].newframe(Hg.transl((0, -L['yfemurR'], 0)))
-    #w.addjoint(arb.HingeJoint(), rf, bodies['ShankR'].frames[0])
-    w.addjoint(arb.FreeJoint(), rf, bodies['ShankR'].frames[0])
+    w.addjoint(arb.HingeJoint(), rf, bodies['ShankR'].frames[0])
     
-    ##
     rf = bodies['ShankR'].newframe(Hg.transl((0, -L['ytibiaR'], 0)))
-    #w.addjoint(arb.RzRxJoint(), rf, bodies['FootR'].frames[0])
-    w.addjoint(arb.FreeJoint(), rf, bodies['FootR'].frames[0])
+    w.addjoint(arb.RzRxJoint(), rf, bodies['FootR'].frames[0])
     
-    ## liasion 5 ##
     rf = bodies['LPT'].newframe(Hg.transl((0, 0, -L['zhip']/2.)))
-    #w.addjoint(arb.RzRyRxJoint(), rf, bodies['ThighL'].frames[0])
-    w.addjoint(arb.FreeJoint(), rf, bodies['ThighL'].frames[0])
+    w.addjoint(arb.RzRyRxJoint(), rf, bodies['ThighL'].frames[0])
     
-    ##
     rf = bodies['ThighL'].newframe(Hg.transl((0, -L['yfemurL'], 0)))
-    #w.addjoint(arb.HingeJoint(),rf,bodies['ShankL'].frames[0])
-    w.addjoint(arb.FreeJoint(),rf,bodies['ShankL'].frames[0])
+    w.addjoint(arb.HingeJoint(),rf,bodies['ShankL'].frames[0])
     
-    ##
     rf = bodies['ShankL'].newframe(Hg.transl((0, -L['ytibiaL'], 0)))
-    #w.addjoint(arb.RzRxJoint(), rf, bodies['FootL'].frames[0])
-    w.addjoint(arb.FreeJoint(), rf, bodies['FootL'].frames[0])
+    w.addjoint(arb.RzRxJoint(), rf, bodies['FootL'].frames[0])
     
-    ##
     rf = bodies['LPT'].newframe(Hg.transl((-L['xvT10'], L['yvT10'], 0)))
-    #w.addjoint(arb.RzRyRxJoint(), rf, bodies['UPT'].frames[0])
-    w.addjoint(arb.FreeJoint(), rf, bodies['UPT'].frames[0])
+    w.addjoint(arb.RzRyRxJoint(), rf, bodies['UPT'].frames[0])
     
-    ##
-    rf = bodies['UPT'].newframe(Hg.transl((L['xsternoclavR'], L['ysternoclavR'], L['zsternoclavR'])))
-    ##w.addjoint(arb.RyRxJoint(), rf, bodies['UPT'].frames[0])
+    rf = bodies['UPT'].newframe(
+        Hg.transl((L['xsternoclavR'], L['ysternoclavR'], L['zsternoclavR'])))
     w.addjoint(arb.FreeJoint(), rf, bodies['ScapulaR'].frames[0])
     
-    ## liaison 10 ##
-    rf = bodies['ScapulaR'].newframe(Hg.transl((-L['xshoulderR'], L['yshoulderR'], L['zshoulderR'])))
-    #w.addjoint(arb.RzRyRxJoint(), rf, bodies['ArmR'].frames[0])
-    w.addjoint(arb.FreeJoint(), rf, bodies['ArmR'].frames[0])
+    rf = bodies['ScapulaR'].newframe(
+        Hg.transl((-L['xshoulderR'], L['yshoulderR'], L['zshoulderR'])))
+    w.addjoint(arb.RzRyRxJoint(), rf, bodies['ArmR'].frames[0])
     
-    ##
     rf = bodies['ArmR'].newframe(Hg.transl((0, -L['yhumerusR'], 0)))
-    #w.addjoint(arb.RzRyJoint(), rf, bodies['ForearmR'].frames[0])
-    w.addjoint(arb.FreeJoint(), rf, bodies['ForearmR'].frames[0])
+    w.addjoint(arb.RzRyJoint(), rf, bodies['ForearmR'].frames[0])
     
-    ##
     rf = bodies['ForearmR'].newframe(Hg.transl((0, -L['yforearmR'], 0)))
-    #w.addjoint(arb.RzRxJoint(), rf, bodies['HandR'].frames[0])
-    w.addjoint(arb.FreeJoint(), rf, bodies['HandR'].frames[0])
+    w.addjoint(arb.RzRxJoint(), rf, bodies['HandR'].frames[0])
     
-    ##
-    rf = bodies['UPT'].newframe(Hg.transl((L['xsternoclavL'], L['ysternoclavL'], -L['zsternoclavL'])))
-    #w.addjoint(arb.RyRxJoint(), rf, bodies['ScapulaL'].frames[0])
-    w.addjoint(arb.FreeJoint(), rf, bodies['ScapulaL'].frames[0])
+    rf = bodies['UPT'].newframe(
+        Hg.transl((L['xsternoclavL'], L['ysternoclavL'], -L['zsternoclavL'])))
+    w.addjoint(arb.RyRxJoint(), rf, bodies['ScapulaL'].frames[0])
     
-    ##
-    rf = bodies['ScapulaL'].newframe(Hg.transl((-L['xshoulderL'], L['yshoulderL'], -L['zshoulderL'])))
-    #w.addjoint(arb.RzRyRxJoint(), rf, bodies['ArmL'].frames[0])
-    w.addjoint(arb.FreeJoint(), rf, bodies['ArmL'].frames[0])
+    rf = bodies['ScapulaL'].newframe(
+        Hg.transl((-L['xshoulderL'], L['yshoulderL'], -L['zshoulderL'])))
+    w.addjoint(arb.RzRyRxJoint(), rf, bodies['ArmL'].frames[0])
     
-    ## liaison 15 ##
     rf = bodies['ArmL'].newframe(Hg.transl((0, -L['yhumerusL'], 0)))
-    #w.addjoint(arb.RzRyJoint(), rf, bodies['ForearmL'].frames[0])
-    w.addjoint(arb.FreeJoint(), rf, bodies['ForearmL'].frames[0])
+    w.addjoint(arb.RzRyJoint(), rf, bodies['ForearmL'].frames[0])
     
-    ##
     rf = bodies['ForearmL'].newframe(Hg.transl((0, -L['yforearmL'], 0)))
-    #w.addjoint(arb.RzRxJoint(), rf, bodies['HandL'].frames[0])
-    w.addjoint(arb.FreeJoint(), rf, bodies['HandL'].frames[0])
+    w.addjoint(arb.RzRxJoint(), rf, bodies['HandL'].frames[0])
     
-    ##
     rf = bodies['UPT'].newframe(Hg.transl((L['xvT10'], L['yvC7'], 0)))
-    #w.addjoint(arb.RzRyRxJoint(), rf, bodies['Head'].frames[0])
-    w.addjoint(arb.FreeJoint(), rf, bodies['Head'].frames[0])
+    w.addjoint(arb.RzRyRxJoint(), rf, bodies['Head'].frames[0])
     
-    
-    return w
+    return (w, bodies, tags)
 
 if __name__ == "__main__":
     import doctest

@@ -169,7 +169,10 @@ class RzRyRxJoint(Joint):
         return np.array(
             [[ 1.   ,  0. , -sy    ],
              [ 0.   , cx  ,  sx*sy ],
-             [ 0.   ,-sx  ,  cx*cy ]])
+             [ 0.   ,-sx  ,  cx*cy ],
+             [ 0.   ,  0. ,  0.    ],
+             [ 0.   ,  0. ,  0.    ],
+             [ 0.   ,  0. ,  0.    ]])
     
     def djacobian(self):
         sx = np.sin(self.gpos[0])
@@ -181,7 +184,10 @@ class RzRyRxJoint(Joint):
         return np.array(
             [[ 0.   , 0.    ,-dy*cy             ],
              [ 0.   ,-dx*sx , dx*cx*sy+dy*sx*cy ],
-             [ 0.   ,-dx*cx ,-dx*sx*cy-dy*cx*sy ]])
+             [ 0.   ,-dx*cx ,-dx*sx*cy-dy*cx*sy ],
+             [ 0.   ,  0. ,  0.    ],
+             [ 0.   ,  0. ,  0.    ],
+             [ 0.   ,  0. ,  0.    ]])
 
 
 class RzRyJoint(Joint):
@@ -208,7 +214,10 @@ class RzRyJoint(Joint):
         return np.array(
             [[ 0.   , -sy ],
              [ 1.   ,  0. ],
-             [ 0.   ,  cy ]])
+             [ 0.   ,  cy ],
+             [ 0.   ,  0. ],
+             [ 0.   ,  0. ],
+             [ 0.   ,  0. ]])
     
     def djacobian(self):
         sy = np.sin(self.gpos[0])
@@ -217,13 +226,16 @@ class RzRyJoint(Joint):
         return np.array(
             [[ 0.   ,-dy*cy ],
              [ 0.   , 0.    ],
-             [ 0.   ,-dy*sy ]])
+             [ 0.   ,-dy*sy ],
+             [ 0.   ,  0.   ],
+             [ 0.   ,  0.   ],
+             [ 0.   ,  0.   ]])
              
              
 class RzRxJoint(Joint):
     """Fingered Ball (2-dof) implemented with 2 serial hinges
 
-    the resulting homogeneous matrix is given by H = Rz*Ry
+    the resulting homogeneous matrix is given by H = Rz*Rx
     """
     def __init__(self, gpos=[0.,0.], gvel=[0.,0.]):
         self.gpos = np.array(gpos).reshape((2))
@@ -244,16 +256,22 @@ class RzRxJoint(Joint):
         return np.array(
             [[ 1.   ,  0. ],
              [ 0.   ,  sx ],
-             [ 0.   ,  cx ]])
+             [ 0.   ,  cx ],
+             [ 0.   ,  0. ],
+             [ 0.   ,  0. ],
+             [ 0.   ,  0. ]])
     
     def djacobian(self):
-        sy = np.sin(self.gpos[0])
-        cy = np.cos(self.gpos[0])
-        dy = self.gvel[0]
+        sx = np.sin(self.gpos[0])
+        cx = np.cos(self.gpos[0])
+        dx = self.gvel[0]
         return np.array(
             [[ 0.   , 0.    ],
              [ 0.   , dx*cx ],
-             [ 0.   ,-dx*sx ]])
+             [ 0.   ,-dx*sx ],
+             [ 0.   ,  0.   ],
+             [ 0.   ,  0.   ],
+             [ 0.   ,  0.   ]])
              
              
 class RyRxJoint(Joint):
@@ -280,16 +298,22 @@ class RyRxJoint(Joint):
         return np.array(
             [[ 1.   ,  0. ],
              [ 0.   ,  cx ],
-             [ 0.   , -sx ]])
+             [ 0.   , -sx ],
+             [ 0.   ,  0. ],
+             [ 0.   ,  0. ],
+             [ 0.   ,  0. ]])
     
     def djacobian(self):
-        sy = np.sin(self.gpos[0])
-        cy = np.cos(self.gpos[0])
-        dy = self.gvel[0]
+        sx = np.sin(self.gpos[0])
+        cx = np.cos(self.gpos[0])
+        dx = self.gvel[0]
         return np.array(
             [[ 0.   , 0.    ],
              [ 0.   ,-dx*sx ],
-             [ 0.   ,-dx*cx ]])
+             [ 0.   ,-dx*cx ],
+             [ 0.   , 0.    ],
+             [ 0.   , 0.    ],
+             [ 0.   , 0.    ]])
              
              
 class HingeJoint(Joint):

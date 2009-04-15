@@ -17,7 +17,7 @@ bodies and serve as anchor points to the joints
 
 TODO: 
 
-- put object names in a dict.
+- put object names in a dict. replace bodies by an iterator
 - import human36 from matlab-arboris
 - add unit tests for human36
 - add support for controllers and integration
@@ -419,7 +419,10 @@ class Frame(object):
         """
         if pose == None:
             pose = np.eye(4)
-        self.name = unicode(name)
+        if name == None: 
+            self.name = None
+        else:
+            self.name = unicode(name)
         Hg.checkishomogeneousmatrix(pose)
         self.pose = pose
         if not(isinstance(body,Body)):
