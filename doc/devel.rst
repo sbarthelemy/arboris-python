@@ -153,7 +153,7 @@ Joe wants to help. He can send patches to Seb by email::
   joe@joe-laptop$ edit ...files... #(improve vizualisation by adding labels)
   joe@joe-laptop$ git add ...files...
   joe@joe-laptop$ git commit
-  joe@joe-laptop$ git diff > labels-in-vizu.patch
+  joe@joe-laptop$ git diff master..origin/master > labels-in-vizu.patch
 
 
 Future
