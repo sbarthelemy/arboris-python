@@ -104,22 +104,56 @@ Install python-visual (build from sources)::
 
 For troubleshooting the compilation process, see ``src/build.log``.
 
+Using Git
+=========
+
+Linux setup
+-----------
+
 Install and set up git::
 
   sudo aptitude install git-gui gitk gitmagic
   git config --global user.name "Your Name Comes Here"
   git config --global user.email you@yourdomain.example.com
 
-Get python-arboris from git (you'll need an ssh account ``yourlastname`` on vizir)::
+Then, issue ``git help tutorial`` for help or look at ``/usr/share/doc/gitmagic/html``.
 
-  cd ~
-  git clone yourlastname@vizir.robot.jussieu.fr:/home/seb/pyarboris
-  cd pyarboris
-  git remote add vizir-seb yourlastname@vizir.robot.jussieu.fr:pyarboris
+Workflow
+--------
 
-Now in ``~/pyarboris`` you have all the history of python-arboris. You can get updates with::
+Seb, as the first author of arboris, creates a repository on its laptop::
 
-  git pull vizir-seb
+  seb@seb-laptop$ mkdir arboris-python
+  seb@seb-laptop$ cd arboris-python
+  seb@seb-laptop$ git init
+  seb@seb-laptop$ edit ...files... 
+  seb@seb-laptop$ git add ...files...
+  seb@seb-laptop$ git commit
+
+Then, in order to make the repository accessible to others, Seb puts it on the vizir server::
+
+  seb@seb-laptop$ scp -r  arboris-python seb@vizir.robot.jussieu.fr:
+  seb@seb-laptop$ ssh seb@vizir.robot.jussieu.fr
+  seb@vizir$ git clone --bare arboris-python arboris-python.git
+  seb@vizir$ rm -rf arboris-python
+  seb@vizir$ cd arboris-python.git
+  seb@vizir$ git config receive.denyNonFastforwards true
+  seb@vizir$ logout
+  seb@seb-laptop$ rm -rf arboris-python
+  seb@seb-laptop$ git clone ssh://seb@vizir.robot.jussieu.fr/arboris-python.git
+
+Now, Seb can work locally and push back to vizir::
+
+  TODO: explain how
+
+Joe wants to help. He can send patches to Seb by email::
+
+  joe@joe-laptop$ git clone ssh://salini@vizir.robot.jussieu.fr/arboris-python.git
+  joe@joe-laptop$ cd arboris-python
+  joe@joe-laptop$ edit ...files... #(improve vizualisation by adding labels)
+  joe@joe-laptop$ git add ...files...
+  joe@joe-laptop$ git commit
+  joe@joe-laptop$ git diff > labels-in-vizu.patch
 
 
 Future
