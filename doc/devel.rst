@@ -112,11 +112,11 @@ Linux setup
 
 Install and set up git::
 
-  sudo aptitude install git-gui gitk gitmagic
+  sudo aptitude install git-gui gitk
   git config --global user.name "Your Name Comes Here"
   git config --global user.email you@yourdomain.example.com
 
-Then, issue ``git help tutorial`` for help or look at ``/usr/share/doc/gitmagic/html``.
+Then, run ``git help tutorial`` for help.
 
 Workflow
 --------
