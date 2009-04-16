@@ -5,8 +5,8 @@ Visualization of a simulation
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
               "Joseph SALINI <joseph.salini@gmail.com>")
 
-from OpenSceneGraph import osg, osgDB, osgGA, osgViewer # on linux
-#import osg, osgDB, osgGA, osgViewer                     # on windows
+from OpenSceneGraph import osg, osgDB, osgGA, osgViewer, osgText # on linux
+#import osg, osgDB, osgGA, osgViewer, osgText                    # on windows
 import numpy as np
 import visu
 
@@ -71,9 +71,9 @@ class World(visu.World):
         self._root.addChild(new_vbody.body_node)
         self.bodies.append(new_vbody)
 
-    def update(self):
+    def update(self, showFrames = None, showLinks = None):
         for b in self.bodies:
-            b.update()
+            b.update(showFrames, showLinks)
 
 def pose_2_mat(pose):
     m = osg.Matrixd()
@@ -84,18 +84,27 @@ def pose_2_mat(pose):
           ) # here we do the f***ing transposition: good to do some error
     return m
     
-def draw_frame(pose=None, text=None, gen_frame=None):
+def draw_frame(pose=None, text=None, gen_frame=None, scale = 1.):
     """Draw the arrows and label of a frame.
     """
+    if gen_frame == None:
+        gen_frame = create_generic_frame()
+    #create the text geode and add it as frame child
+    frame_text = osgText.Text()
+    frame_text.setCharacterSize(scale)
+    frame_text.setText(str(text))
+    frame_text.setDrawMode(osgText.Text.TEXT | osgText.Text.BOUNDINGBOX)
+    frame_text.setAlignment(osgText.Text.LEFT_TOP)
+    #frame_text.setAxisAlignment(osgText.Text.SCREEN)   # decomment if want HUD version
+    geo_text = osg.Geode()
+    geo_text.addDrawable(frame_text)
     # set position
     if pose==None:
         pose = np.eye(4)
-    frame = osg.MatrixTransform()
+    frame = osg.MatrixTransform()   #create frame node
     frame.setMatrix(pose_2_mat(pose))
-    #add gen_frame as child
-    if gen_frame == None:
-        gen_frame = create_generic_frame()
-    frame.addChild(gen_frame)
+    frame.addChild(gen_frame) #add childs
+    frame.addChild(geo_text)  #
     return frame
 
 def draw_link(start, end, scale, color):
@@ -115,7 +124,10 @@ def draw_link(start, end, scale, color):
         geo.addDrawable( cyl )
         link = osg.PositionAttitudeTransform()
         link.setPosition(osg.Vec3d(start[0,3],start[1,3],start[2,3]))
-        link.setAttitude(osg.Quat(theta, osg.Vec3d(q[0], q[1], q[2])))
+        if sin_theta == 0.:
+            link.setAttitude(osg.Quat(theta, osg.Vec3d(1.,0.,0.)))
+        else:
+            link.setAttitude(osg.Quat(theta, osg.Vec3d(q[0], q[1], q[2])))
         link.addChild(geo)
         return link
     else:
@@ -149,7 +161,7 @@ class Body(visu.Body):
         # set the matrixTransform
         self.body_node.setMatrix(pose_2_mat(self._body.pose))
         for f in self._body.frames:
-            nf = draw_frame(f.pose, f.name, gen_frame)
+            nf = draw_frame(f.pose, f.name, gen_frame, self._scale)
             self.group_frames.addChild(nf)
             self.frames.append(nf)
             lf = draw_link(np.eye(4), f.pose, self._scale, self._color)
@@ -157,9 +169,13 @@ class Body(visu.Body):
                 self.group_links.addChild(lf)
                 self.links.append(lf)
 
-    def update(self):
+    def update(self, showFrames, showLinks):
         pose = self._body.pose
         self.body_node.setMatrix(pose_2_mat(pose))
+        if showFrames != None:
+            self.switcher.setChildValue(self.group_frames, showFrames)
+        if showLinks != None:
+            self.switcher.setChildValue(self.group_links, showLinks)
 
 
 if __name__=='__main__':
@@ -169,18 +185,28 @@ if __name__=='__main__':
         w = triplehinge()
     else:
         import human36
-        w = human36.human36()
+        (w, bd, tags) = human36.human36() # or also: "w = human36.human36()[0]
         
     w.geometric()
 
     import visu_osg
     vw = visu_osg.World(w, 0.1)
-    t = 0
+    t = 0.
     vw.viewer.realize()
     while(not(vw.viewer.done())):
-        t+=1
-        #w.joints[0].gpos=[t/200.]
-        #w.joints[1].gpos=[t/200.]
+        t+=1/800.
+        if 0: #choose witch robot to control: 1=3hinge; 0=human36
+            w.joints[0].gpos=[t]
+            w.joints[1].gpos=[t]
+            w.joints[2].gpos=[t]
+        else:
+            #w.joints[0].gpos=np.array([[1,0,0,t],[0,1,0,t],[0,0,1,t],[0,0,0,1]])
+            w.joints[1].gpos=[t, t, t]
+            w.joints[2].gpos=[t]
+            w.joints[3].gpos=[t, t]
+            
         w.geometric()
-        vw.update()
+        vw.update(False, True) #(showframe, showBody)
         vw.viewer.frame()
+        
+        
