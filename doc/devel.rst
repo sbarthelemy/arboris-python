@@ -2,7 +2,7 @@
 Developpement
 =============
 
-This is a small page to help using and hacking python-arboris.
+This is a small page to help using and hacking arboris-python.
   
 
 What we use...
@@ -11,7 +11,7 @@ What we use...
 ...for the simulation
 ---------------------
 
-All the program is written in python2.6. See Python26Doc_ (or Python26LocalDoc_) and start with the tutorial. We also use numpy. See NumpyDoc_. Numpy supports n-dimensionnal arrays (class :class:`numpy.ndarray`) and matrices (built with `numpy.matrix`) which are 2-d matrices with special behavior, similar to the matlab one. In pyarboris we never uses matrices.
+All the program is written in python2.6. See Python26Doc_ (or Python26LocalDoc_) and start with the tutorial. We also use numpy. See NumpyDoc_. Numpy supports n-dimensionnal arrays (class :class:`numpy.ndarray`) and matrices (built with `numpy.matrix`) which are 2-d matrices with special behavior, similar to the matlab one. In arboris-python we never uses matrices.
 
 .. _Python26Doc:
   http://docs.python.org/
@@ -33,7 +33,6 @@ The doc is written in the reST markup language and processed by sphinx (version 
 
 .. _SphinxLocalDoc:
   file:///usr/share/doc/python-sphinx/html/index.html
-
 
 
 ...for the visualization
@@ -82,12 +81,36 @@ mayavi2:
 .. _`VTK`:
   http://www.vtk.org
 
-Set up for Ubuntu Jaunty
-========================
+Set up...
+=========
+
+...for Ubuntu Jaunty
+--------------------
 
 We develop using a (possibly virtual) computer with ubuntu jaunty. In such a case, the following commands shoud set up the development environment ::
   sudo aptitude install python2.6-doc python-sphinx python-numpy ipython
 
+Install openscenegraph 2.6::
+
+  svn co http://www.openscenegraph.org/svn/osg/OpenSceneGraph/tags/OpenSceneGraph-2.6.1
+  ccmake .
+  /!\... install the wrappers
+  fix ./examples/osgviewerGTK/osgviewerGTK.cpp by replacing "std::strncmp" by "strncmp" at lines 53 and 55
+  make
+  sudo make install
+
+Install openscengraph python bindings (http://code.google.com/p/osgswig/wiki/BuildInstructions)::
+  svn checkout http://osgswig.googlecode.com/svn/trunk/ osgswig
+  ccmake .
+  make
+  sudo cp ./lib/python/* /usr/lib/python2.6/****-packages/OpenSceneGraph/" # where ****-packages/ = "site-packages/" or "dist-packages/" 
+    creer un fichier "__init__.py" vide dans le dossier "$PYTHON_PATH/****-packages/OpenSceneGraph/"
+    le probleme avec cette méthode, c'est que les wrappers ne connaissent pas les bibliothèques importées:
+        il faut donc ajouter au début des fichiers "$PYTHON_PATH/****-packages/OpenSceneGraph/osg***.py" les biblios nécessaires
+            pour moi, ce qui a marché, c'est:
+            "import osg" dans tout les fichiers "***.py" autre que "osg.py"
+            "import osgGA" dans le fichier "osgViewer.py"
+ 
 Install python-visual (build from sources)::
 
   sudo aptitude install visual-deps... #TODO
@@ -96,13 +119,24 @@ Install python-visual (build from sources)::
   tar visual... #TODO
   mkdir usr
   cd visual
-  ./configure --prefix=$HOME/usr
+  ./configure --prefix=$HOME/usr # /!\TODO install in .local/lib/python2.6
   make
   make install
   echo "export PYTHONPATH=~/usr/lib/python2.6:~/usr/lib/python2.6/dist-packages" >> ~/.bashrc
   exec bash
 
 For troubleshooting the compilation process, see ``src/build.log``.
+
+...for Windows
+--------------
+
+Install...
+
+- python 2.6 from http://www.python.org/download/. The current installer is named "Python 2.6.1 Windows installer".
+- numpy from http://numpy.scipy.org/. Ensure to choose a version compatible with python 2.6. The current installer is named "numpy-1.3.0-win32-superpack-python2.6.exe".
+- osgswig from http://code.google.com/p/osgswig/. The current installer is named "osgPython-2.6.1-0-py26.exe"
+- ipython...
+
 
 Using Git
 =========

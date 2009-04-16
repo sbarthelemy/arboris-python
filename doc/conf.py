@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# pyarboris documentation build configuration file, created by
+# arboris-python documentation build configuration file, created by
 # sphinx-quickstart on Mon Mar 16 21:29:38 2009.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -35,7 +35,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General substitutions.
-project = 'pyarboris'
+project = 'arboris-python'
 copyright = '2009, Sébastien BARTHÉLEMY'
 
 # The default replacements for |version| and |release|, also used in various
@@ -142,7 +142,7 @@ html_last_updated_fmt = '%b %d, %Y'
 #html_file_suffix = ''
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'pyarborisdoc'
+htmlhelp_basename = 'arboris-pythondoc'
 
 
 # Options for LaTeX output
@@ -157,7 +157,7 @@ htmlhelp_basename = 'pyarborisdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
-  ('index', 'pyarboris.tex', 'pyarboris Documentation',
+  ('index', 'arboris-python.tex', 'arboris-python Documentation',
    'Sébastien BARTHÉLEMY', 'manual'),
 ]
 
