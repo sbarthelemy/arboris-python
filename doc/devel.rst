@@ -128,7 +128,7 @@ For troubleshooting the compilation process, see ``src/build.log``.
 
 Install...
 
-- python 2.6 from http://www.python.org/download/. The current installer is named "Python 2.6.1 Windows installer".
+- python 2.6 from http://www.python.org/download/. The current installer is named "Python 2.6.2 Windows installer".
 - numpy from http://numpy.scipy.org/. Ensure to choose a version compatible with python 2.6. The current installer is named "numpy-1.3.0-win32-superpack-python2.6.exe".
 - osgswig from http://code.google.com/p/osgswig/. The current installer is named "osgPython-2.6.1-0-py26.exe"
 - ipython...
