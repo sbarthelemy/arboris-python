@@ -40,78 +40,74 @@ The doc is written in the reST markup language and processed by sphinx (version 
 
 No real choice has been done yet.
 
-We'd like to support both interactive and offline vizualisation. We'd like it to be simple enough for a user to add custom shapes and complete enough to import and animate complex graphics. It should work on linux, mac OS and Windows computers.
+We'd like to support both interactive and offline vizualisation. We'd like it to be simple enough for a user to add custom shapes and powerful enough to import and animate complex graphics. It should work on linux, mac OS and Windows computers. We've considered these candidates:
 
-Here is a list of candidates:
-
-`visual python`_: 
-  Very simple to use, it may even be too simple. Also, it is not really well maintained, documented nor distributed (the latest version is not packaged in ubuntu, and is not availble for python2.6 on windows). This unofficial documentation in French may be worth a read: _`VpythonDocFr`.
+`Visual python <http://vpython.org>`_: 
+  visual python is very simple to use but does not seem activelly maintained, documented nor distributed (the latest version is not packaged in ubuntu, and is not available for python2.6 on windows). The users community seems small too. This `unofficial documentation in French <ftp://ftp-developpez.com/guigui/cours/python/vpython/fr/ManuelVpython.pdf>`_ may be worth a read.
   
 blender:
   Blender may be a great way to interact with the simulation. Joseph succeeded in generating programmatically a skeletton (Armature), and feeding it with generalized coordinates trajectories. However,
  
   - it is only suited for offline visualization (see blender game engine for an alternative), 
-  - it comes at the price of some redundancy (which may lead to confusion), as blender has its own data structures for kinematics models and so...
+  - it comes at the price of some redundancy (which may lead to confusion), as blender has its own data structures for kinematics models.
 
 blender with game engine:
-  ?
+  Not really tried yet
 
-`openscenegraph`_:
-  Seems great, but lacks well established python bindings. According to Anthony, `http://code.google.com/p/osgswig`_ is usable though.
+`OpenSceneGraph <http://www.openscenegraph.org>`_:
+  Seems great, but lacks well established python bindings. We tried the `osgswig <http://code.google.com/p/osgswig>`_ with OpenSceneGrap 2.6, it works fine in spite of the hundreds of warning during the compilation.
 
-`VTK`_:
-  Has python bindings.
+`VTK <http://www.vtk.org>`_:
+  A quite famous visualisation toolkit in C++, which has python bindings.
 
-TVTK_:
-  ?
+`TVTK <https://svn.enthought.com/enthought/wiki/TVTK>`_:
+  Another layer of wrappers around the VTK python bindings.
 
-mayavi2:
-  Joseph did some testing and it appeared that it was incredibly slow. It is based on VTK
+`MayaVi2 <https://svn.enthought.com/enthought/wiki/MayaVi>`_:
+  A visualisation framework built around TVTK. It is more suited to vector fields visualisation than to scene viewing. 
 
+`matplotlib <http://matplotlib.sourceforge.net/>`_:
+  A 2D viewing library, which used to have limited 3D support. The 3D part was eventually removed.
+  
 
-.. _DocVpythonDocFr:
-  ftp://ftp-developpez.com/guigui/cours/python/vpython/fr/ManuelVpython.pdf
- 
-.. _`visual python`:
-  http://vpython.org
-
-.. _openscenegraph:
-  http://www.openscenegraph.org
-
-.. _`VTK`:
-  http://www.vtk.org
-
-Set up...
-=========
+Setting up...
+=============
 
 ...for Ubuntu Jaunty
 --------------------
 
-We develop using a (possibly virtual) computer with ubuntu jaunty. In such a case, the following commands shoud set up the development environment ::
+Install the packaged stuff::
+
   sudo aptitude install python2.6-doc python-sphinx python-numpy ipython
 
-Install openscenegraph 2.6::
+Install OpenSceneGraph 2.6 from source::
 
-  svn co http://www.openscenegraph.org/svn/osg/OpenSceneGraph/tags/OpenSceneGraph-2.6.1
-  ccmake .
-  /!\... install the wrappers
-  fix ./examples/osgviewerGTK/osgviewerGTK.cpp by replacing "std::strncmp" by "strncmp" at lines 53 and 55
+  sudo aptitude install wx-common libwxgtk2.8-dev #TODO: not sue this is useful
+  svn export http://www.openscenegraph.org/svn/osg/OpenSceneGraph/tags/OpenSceneGraph-2.6.1
+  cd OpenSceneGraph-2.6.1
+  mkdir build
+  cd build
+  ccmake ..
+
+Then check the option to compile the wrappers, then::
+
   make
   sudo make install
+  TODO: how to check everything was fine?
 
-Install openscengraph python bindings (http://code.google.com/p/osgswig/wiki/BuildInstructions)::
+Install OpenSceneGraph python bindings from souces (inspired by `this wiki page <http://code.google.com/p/osgswig/wiki/BuildInstructions>`_)::
+
+  sudo aptitude install swig
   svn checkout http://osgswig.googlecode.com/svn/trunk/ osgswig
-  ccmake .
+  cd osgswig
+  mkdir build
+  cd build
+  ccmake .. -DCMAKE_BUILD_TYPE=Release
   make
-  sudo cp ./lib/python/* /usr/lib/python2.6/****-packages/OpenSceneGraph/" # where ****-packages/ = "site-packages/" or "dist-packages/" 
-    creer un fichier "__init__.py" vide dans le dossier "$PYTHON_PATH/****-packages/OpenSceneGraph/"
-    le probleme avec cette méthode, c'est que les wrappers ne connaissent pas les bibliothèques importées:
-        il faut donc ajouter au début des fichiers "$PYTHON_PATH/****-packages/OpenSceneGraph/osg***.py" les biblios nécessaires
-            pour moi, ce qui a marché, c'est:
-            "import osg" dans tout les fichiers "***.py" autre que "osg.py"
-            "import osgGA" dans le fichier "osgViewer.py"
- 
-Install python-visual (build from sources)::
+  cp -r lib/python/ ~/.local/lib/python2.6/site-packages/OpenSceneGraph
+  touch ~/.local/lib/python2.6/site-packages/OpenSceneGraph/__init__.py
+
+Install python-visual from sources::
 
   sudo aptitude install visual-deps... #TODO
   cd ~
@@ -180,17 +176,28 @@ Now, Seb can work locally and push back to vizir::
 
   TODO: explain how
 
-Joe wants to help. He can send patches to Seb by email::
+Joe wants to help. He can fetch Seb's repository, and produce a patch::
 
   joe@joe-laptop$ git clone ssh://salini@vizir.robot.jussieu.fr/arboris-python.git
   joe@joe-laptop$ cd arboris-python
-  joe@joe-laptop$ edit ...files... #(improve vizualisation by adding labels)
+  joe@joe-laptop$ edit ...files... #(Joe improves the visualisation)
   joe@joe-laptop$ git add ...files...
   joe@joe-laptop$ git commit
-  joe@joe-laptop$ git diff master..origin/master > labels-in-vizu.patch
+  joe@joe-laptop$ git diff master..origin/master > visu-impr.patch
+
+Then he sends the patch to Seb by email, who applies it and push the result back to vizir::
+
+  seb@seb-laptop$ git apply visu-impr.patch
+  seb@seb-laptop$ git add ...files...
+  seb@seb-laptop$ git commit 
+  seb@seb-laptop$ git push 
+
+Eventually, when Joe issues a new pull, everything gets merged gracefully::
+
+  joe@joe-laptop$ git pull
 
 
 Future
 ======
 
-There are to do items spread overall the code and the documentation, ``grep  TODO {src,doc}/*{.py,.rst}`` should get them
+There are to do items spread allover the code and the documentation, ``grep  TODO {src,doc}/*{.py,.rst}`` should get them. You might also look at the file ``TODO.txt``
