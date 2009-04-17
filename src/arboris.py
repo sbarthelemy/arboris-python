@@ -60,7 +60,8 @@ class World(object):
 
     def __init__(self,name=None):
         self.name = unicode(name)
-        self.bodies = [Body(u"ground")] 
+        self.ground = Body(u"ground")
+        self.bodies = [self.ground] 
         self.joints = [] 
         self._ndof = 0
         self._mass = None # updated by self.dynamic
@@ -454,6 +455,22 @@ class Body(object):
         self._djacobian = None # updated by self.dynamic()
         self._twist = None # updated by self.dynamic() 
         self._nleffect = None # updated by self.dynamic() 
+
+    def descendants(self):
+        """Iterate over all descendant bodies, with a depth-first strategy"""
+        from itertools import imap
+        for b in imap(lambda x: x._new_frame.body, self.childrenjoints):
+            yield b
+            for bb in b.descendants():
+                yield bb
+
+    def ancestors(self):
+        from itertools import imap
+        if self.parentjoint != None:
+            parent = self.parentjoint._ref_frame.body
+            yield parent
+            for a in parent.ancestors():
+                yield a
 
     @property
     def pose(self):
