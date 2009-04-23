@@ -1,5 +1,5 @@
 =============
-Developpement
+Development
 =============
 
 This is a small page to help using and hacking arboris-python.
@@ -11,16 +11,13 @@ What we use...
 ...for the simulation
 ---------------------
 
-All the program is written in python2.6. See Python26Doc_ (or Python26LocalDoc_) and start with the tutorial. We also use numpy. See NumpyDoc_. Numpy supports n-dimensionnal arrays (class :class:`numpy.ndarray`) and matrices (built with `numpy.matrix`) which are 2-d matrices with special behavior, similar to the matlab one. In arboris-python we never uses matrices.
+All the program is written in python2.6. See Python26Doc_ (or Python26LocalDoc_) and start with the tutorial. We also use numpy. See `the numpy documentation <http://docs.scipy.org/doc/>`_ and `NumPy_for_Matlab_Users <http://www.scipy.org/NumPy_for_Matlab_Users>`_. Numpy supports n-dimensionnal arrays (class :class:`numpy.ndarray`) and matrices (built with `numpy.matrix`) which are 2-d matrices with special behavior, similar to the matlab one. In arboris-python we never uses matrices. 
 
 .. _Python26Doc:
   http://docs.python.org/
 
 .. _Python26LocalDoc:
   file:///usr/share/doc/python2.6-doc/html/index.html
-
-.. _NumpyDoc:
-  http://docs.scipy.org/doc/
 
 
 ...for the documentation

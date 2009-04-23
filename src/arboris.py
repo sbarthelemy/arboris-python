@@ -37,14 +37,17 @@ IDEAS:
 
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
-from rigidmotion import *
-import numpy as np
+from numpy import ix_, array, zeros, ones, eye, dot
+import numpy
 import homogeneousmatrix as Hg
 import homogeneousmatrix
 import twistvector as T
 import adjointmatrix
 from abc import ABCMeta, abstractmethod
 from math import pi
+from controllers import *
+from joints import *
+from constraints import *
 
 class World(object):
 
@@ -52,8 +55,8 @@ class World(object):
 
     TODO: provide ability to merge worlds or subtrees
     
-    >>> import worldfactory
-    >>> w = worldfactory.triplehinge()
+    >>> from  worldfactory import triplehinge
+    >>> w = triplehinge()
     >>> w.geometric()
     >>> w.dynamic()
     """
@@ -63,10 +66,16 @@ class World(object):
         self.ground = Body(u"ground")
         self.bodies = [self.ground] 
         self.joints = [] 
+        self.controllers = {}
+        self._constraints = []
+        self._collisions = []
         self._ndof = 0
+        self._gvel = array([])
         self._mass = None # updated by self.dynamic
         self._viscosity = None # updated by self.dynamic
-        self._nleffect = None # updated by self.dynamic
+        self._controller_viscosity = None # updated by self.dynamic
+        self._nleffects = None # updated by self.dynamic
+        self._dt = 0.001
 
     @property
     def mass(self):
@@ -77,8 +86,8 @@ class World(object):
         return self._viscosity
 
     @property
-    def nleffect(self):
-        return self._nleffect
+    def nleffects(self):
+        return self._nleffects
 
     def reset(self):
         """
@@ -86,7 +95,9 @@ class World(object):
         """
         self._mass = None
         self._viscosity = None
-        self._nleffect = None
+        self._nleffects = None
+        self._controllers_viscosity = None 
+        self._controllers_torque = None
         for b in self.bodies:
             b.reset()
 
@@ -95,17 +106,23 @@ class World(object):
         return self._ndof
 
 
-    def addjoint(self, joint, ref_frame, new_frame, name=None):
+    def add_joint(self, joint, ref_frame, new_frame, name=None):
         """Add a joint and its new-attached body to the world.
 
         :arguments:
             joint
                 the joint that will be added
 
-        TODO: find a better name for ``self._ref_frame`` (current suggestions:
-            ``prev_frame``, ``parent_frame``, ``base_frame``)
-        TODO: find a better name for ``self._new_frame`` (current suggestions:
-        ``next_frame``, ``moving_frame``, ``local_frame``)
+        Examples:
+        >>> from  worldfactory import triplehinge
+        >>> w = triplehinge()
+        >>> w.joints[0].gvel[0] = 1.
+        >>> w._gvel
+        array([ 1.,  0.,  0.])
+        >>> w._gvel[1] = 2.
+        >>> w.joints[1].gvel
+        array([ 2.])
+
         """
         if not(isinstance(joint,Joint)):
             raise ValueError("{0} is not an instance of Joint".format(
@@ -145,11 +162,58 @@ class World(object):
         joint.name = unicode(name)
         joint._ref_frame = ref_frame
         joint._new_frame = new_frame
-        joint._dof_index = slice(old_ndof, self._ndof) 
+        joint._dof = slice(old_ndof, self._ndof)
         self.joints.append(joint)
         joint._ref_frame.body.childrenjoints.append(joint)
         self.bodies.append(new_body)
         new_body.parentjoint = joint
+
+        self._gvel = zeros(self._ndof)
+        for j in self.joints:
+            self._gvel[j._dof] = j.gvel[:]
+            j.gvel = self._gvel[j._dof]
+
+    def add_jointcontroller(self, controller, joints, name=None):
+        """
+        Add a joint controller to the world
+
+        Example:
+
+        >>> from worldfactory import triplehinge
+        >>> w = triplehinge()
+        >>> c0 = ProportionalDerivativeController()
+        >>> w.add_jointcontroller(c0, w.joints[1:3], 'my controller')
+        >>> c1 = ProportionalDerivativeController()
+        >>> w.add_jointcontroller(c1, w.joints[0:1])
+        >>> c2 = ProportionalDerivativeController()
+        >>> w.add_jointcontroller(c2, w.joints[0:1], 1)
+        Traceback (most recent call last):
+            ...
+        ValueError: there is already a controller with name "1"
+
+        """
+        controller._dof_indices = []
+        if name == None:
+            # if no name was given, give a number
+            name = len(self.controllers)
+            while self.controllers.has_key(name):
+                name = name + 1
+        elif self.controllers.has_key(name):
+            raise ValueError(
+                'there is already a controller with name "{0}"'.format(name))
+
+        for c in self.controllers:
+            if c is controller:
+                raise ValueError("the controller is already in this world")
+
+        for j in joints:
+            controller._dof_indices.extend(range(j._dof.start, j._dof.stop))
+        self.controllers[name] = controller
+
+    def add_constraint(self, constraint, frames):
+        constraint._frames = frames #TODO: do some consistency checks
+        self._constraints.append(constraint)
+        
 
     def geometric(self):
         """
@@ -157,7 +221,7 @@ class World(object):
         
         This will recursively update each body pose attribute.
         """
-        self.bodies[0].geometric(np.eye(4))
+        self.bodies[0].geometric(eye(4))
 
 
     def kinematic(self):
@@ -167,7 +231,7 @@ class World(object):
         This will recursively update all each body pose and jacobian
         attributes.
         """
-        self.bodies[0].kinematic(np.eye(4),np.zeros((6,self._ndof)))
+        self.bodies[0].kinematic(eye(4),zeros((6,self._ndof)))
 
 
     def dynamic(self):
@@ -176,9 +240,9 @@ class World(object):
         
         This will recursively update 
         
-        - each body pose, jacobian, djacobian, twist and nleffect 
+        - each body pose, jacobian, djacobian, twist and nleffects 
           attributes 
-        - the world mass, viscosity and nleffect attributes
+        - the world mass, viscosity and nleffects attributes
 
         >>> import worldfactory
         >>> w = worldfactory.triplehinge()
@@ -315,14 +379,14 @@ class World(object):
                [-0.87022993, -0.12367396,  0.        ],
                [-0.08538479, -0.15717745,  0.        ],
                [ 0.        ,  0.        ,  0.        ]])
-        >>> w.bodies[0].nleffect
+        >>> w.bodies[0].nleffects
         array([[ 0.,  0.,  0.,  0.,  0.,  0.],
                [ 0.,  0.,  0.,  0.,  0.,  0.],
                [ 0.,  0.,  0.,  0.,  0.,  0.],
                [ 0.,  0.,  0.,  0.,  0.,  0.],
                [ 0.,  0.,  0.,  0.,  0.,  0.],
                [ 0.,  0.,  0.,  0.,  0.,  0.]])
-        >>> w.bodies[1].nleffect
+        >>> w.bodies[1].nleffects
         array([[  0.00000000e+00,  -1.04166667e-03,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   0.00000000e+00],
                [  5.26041667e-02,   0.00000000e+00,   0.00000000e+00,
@@ -335,7 +399,7 @@ class World(object):
                   2.50000000e+00,   0.00000000e+00,   0.00000000e+00],
                [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   0.00000000e+00]])
-        >>> w.bodies[2].nleffect
+        >>> w.bodies[2].nleffects
         array([[  0.00000000e+00,  -3.20000000e-04,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   0.00000000e+00],
                [  1.61600000e-02,   0.00000000e+00,   0.00000000e+00,
@@ -348,7 +412,7 @@ class World(object):
                   1.20000000e+00,   0.00000000e+00,   0.00000000e+00],
                [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   0.00000000e+00]])
-        >>> w.bodies[3].nleffect
+        >>> w.bodies[3].nleffects
         array([[  0.00000000e+00,  -1.33333333e-05,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   0.00000000e+00],
                [  6.73333333e-04,   0.00000000e+00,   0.00000000e+00,
@@ -361,37 +425,201 @@ class World(object):
                   2.00000000e-01,   0.00000000e+00,   0.00000000e+00],
                [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   0.00000000e+00]])
-        >>> w.nleffect
+        >>> w.nleffects
         array([[ 0.11838112, -0.15894538, -0.01490104],
                [ 0.27979997,  0.00247348, -0.00494696],
                [ 0.03230564,  0.00742044,  0.        ]])
 
         """        
         self.bodies[0].dynamic(
-            np.eye(4),
-            np.zeros((6,self._ndof)),
-            np.zeros((6,self._ndof)),
-            np.zeros(6))
+            eye(4),
+            zeros((6,self._ndof)),
+            zeros((6,self._ndof)),
+            zeros(6))
         
-        self._mass = np.zeros((self._ndof,self._ndof))
-        self._viscosity = np.zeros((self._ndof,self._ndof))
-        self._nleffect = np.zeros((self._ndof,self._ndof))
+        self._mass = zeros((self._ndof,self._ndof))
+        self._viscosity = zeros((self._ndof,self._ndof))
+        self._nleffects = zeros((self._ndof,self._ndof))
         for b in self.bodies:
-            self._mass += np.dot(
-                np.dot(b.jacobian.transpose(), b.mass),
+            self._mass += dot(
+                dot(b.jacobian.transpose(), b.mass),
                 b.jacobian)
-            self._viscosity += np.dot(
-                np.dot(b.jacobian.transpose(), b.viscosity),
+            self._viscosity += dot(
+                dot(b.jacobian.transpose(), b.viscosity),
                 b.jacobian)
-            self._nleffect += np.dot(
+            self._nleffects += dot(
                 b.jacobian.transpose(),
-                np.dot(
+                dot(
                     b.mass,
                     b.djacobian) \
-                + np.dot(
-                    b.viscosity+b.nleffect,
+                + dot(
+                    b.viscosity+b.nleffects,
                     b.jacobian))
 
+    def update_controllers(self):
+        """
+
+        TODO: check the two last tests results!
+        >>> from worldfactory import triplehinge
+        >>> w = triplehinge()
+        >>> c0 = ProportionalDerivativeController()
+        >>> w.add_jointcontroller(c0, w.joints[1:2], 'my controller')
+        >>> w.dynamic()
+        >>> w.update_controllers()
+        >>> w._controller_viscosity
+        array([[ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 0.,  0.,  0.]])
+        >>> w._impedance
+        array([[ 0.68698833,  0.22344667,  0.02067333],
+               [ 0.22344667,  0.09344667,  0.01067333],
+               [ 0.02067333,  0.01067333,  0.00267333]])
+        >>> w._admittance
+        array([[   7.32464279,  -20.30368091,   24.42013927],
+               [ -20.30368091,   75.95335802, -146.23344565],
+               [  24.42013927, -146.23344565,  769.05958752]])
+
+        """
+        # todo: move to simu
+        self._controller_viscosity = zeros((self._ndof,self._ndof))
+        self._controller_torque = zeros(self._ndof)
+        for c in self.controllers.itervalues():
+            c.update(dt=self._dt)
+            self._controller_viscosity[
+                ix_(c._dof_indices,c._dof_indices)] += c.viscosity()
+            self._controller_torque[c._dof_indices] += c.torque()
+        
+        self._impedance = self._mass + self._dt * ( 
+            self._viscosity - self._controller_viscosity + self._nleffects)
+        self._admittance = numpy.linalg.inv(self._impedance)
+
+
+    def integrate(self):
+        """
+        TODO: add support for kinematic controllers
+        TODO: add support fo external wrenches
+        TODO: check the last test!
+        >>> from worldfactory import triplehinge
+        >>> w = triplehinge()
+        >>> c0 = ProportionalDerivativeController()
+        >>> w.add_jointcontroller(c0, w.joints[1:2], 'my controller')
+        >>> w.dynamic()
+        >>> w.update_controllers()
+        >>> w.integrate()
+        >>> w._gvel
+        array([-0.02030368,  0.07595336, -0.14623345])
+        """
+        b = dot(self._mass, self._gvel) + self._dt * self._controller_torque
+        # A = self._impedance
+        # self._gvel = numpy.linalg.solve(A,b)
+        self._gvel = dot(self._admittance,b)
+        for j in self.joints:
+            j.integrate(self._dt)
+
+
+    def solve_constraints(self):
+        
+        """
+
+        We assume a first order model:
+        cQ_pred_i
+        cv_pred_i = cv_pred0_i + cY_i: * cf_pred
+
+        cf = cf_pred + delta_cf
+        cv_i = cv_pred_i + delta_cv_i
+        delta_cv_i = cY_i: * delta_cf
+        cH_i = cQ_pred_i*exp(dt*delta_cv_i)
+        where cf_pred is kept from the last timestep or is zero.
+
+        we'll then udate delta_cf iteratively
+        
+
+        for each constraint, one has
+
+        cv_i = cv_pred_i + cY_i: * delta_cf
+        cv_i = cv_pred0_i + cY_ii * delta_cf_i + cY_i! * delta_cf_!
+
+        cv_i = cv_pred0_i + cY_ii * cf_i + cY_i! * cf_!
+        the constraint holds on cv_i, cf_i and cH_i, solving the constraint
+        means updating a delta_cf_i such that the constraints are satisfied
+
+joint-space admitance
+        jv = jY * jf 
+
+        cv = cv_free + cY * cf
+        cv = cv_free_i + coupling + cY_ii * cf_i
+
+        Build cY:
+        f(H_rn, W) + S*V_nr*dt = 0
+        ou cv = S*V_nr = S * ( V_ng - Ad_nr*V_rg  )
+        et W = S' * cf
+
+        J_c = S * (J_nq - Ad_nr * J_g)
+        cY = J_c * jY * J_c'
+
+        for c in active_contraints
+        cY = 0
+        cY += 
+
+        Solve with Gauss-Seidel:
+        dcv = 0
+        for k in iterations:
+            for (i,c) in active_contraints:
+                cf_i_old = c.force
+                cf_i = c.update(cv_i,cY_ii)
+                dcv +=  cY_:i (cf_i - cf_i_old)
+
+        Test:
+        >>> b0 = Body(mass = eye(6))
+        >>> j0 = FreeJoint()
+        >>> w = World()
+        >>> w.add_joint(j0, w.ground.frames[0], b0.frames[0])
+        >>> j1 = FreeJoint()
+        >>> b1 = Body(mass = 2*eye(6))
+        >>> w.add_joint(j1, b0.frames[0], b1.frames[0])
+        >>> c0 = BallAndSocketConstraint()
+        >>> w.add_constraint(c0, (w.ground.frames[0], b0.frames[0]) )
+        >>> w.dynamic()
+        >>> w.update_controllers()
+        >>> w.solve_constraints()
+        """
+
+        ### INIT ###
+        # self._cforce
+        # self._cvel
+        constraints = []
+        ndol = 0
+        for c in self._constraints:
+            if c.is_active():
+                c._dol = slice(ndol, ndol+c.ndol())
+                ndol = ndol+c.ndol()
+                constraints.append(c)
+
+        dvel = zeros(ndol)
+        jac = zeros((ndol,self._ndof))
+        admittance = zeros((ndol,ndol))
+        for c in constraints:
+            c.init()
+            jac[c._dol,:] = c.jacobian()
+        admittance = dot(jac, dot(self._admittance, jac.T))
+
+        k=0
+        while k <20: #TODO change the condition
+            for c in constraints:
+                ddforce = c.solve(dvel[c._dol], admittance[c._dol,c._dol],
+                                  self._dt)
+                dvel += dot(admittance[:,c._dol], ddforce)
+                k+=1
+
+#        if isinstance(BodyConstraint):
+            #     self._cforce(c._slice)
+            #
+            #elif isinstance(jointConstraint):
+                #    raise NotImplemented
+            
+           # else:
+               #     raise ValueError
+ 
 
 class Frame(object):
 
@@ -409,7 +637,7 @@ class Frame(object):
 
         The ``pose`` argument must be an homogeneous matrix:
         >>> b = Body()
-        >>> f = Frame(b, np.ones((4,4)))
+        >>> f = Frame(b, ones((4,4)))
         Traceback (most recent call last):
             ...
         ValueError: [[ 1.  1.  1.  1.]
@@ -419,7 +647,7 @@ class Frame(object):
 
         """
         if pose == None:
-            pose = np.eye(4)
+            pose = eye(4)
         if name == None: 
             self.name = None
         else:
@@ -431,30 +659,35 @@ class Frame(object):
         else:
             self.body = body
 
+    def twist(self):
+        return dot(Hg.iadjoint(self.pose), self.body.twist)
+
+    def jacobian(self):
+        return dot(Hg.iadjoint(self.pose), self.body.jacobian)
 
 class Body(object):
 
     def __init__(self, name=None, mass=None, viscosity=None):
         if mass == None:
-            mass = np.zeros((6,6))
+            mass = zeros((6,6))
         else:
             pass #TODO: check the mass matrix
         if viscosity == None:
-            viscosity = np.zeros((6,6))
+            viscosity = zeros((6,6))
         else:
             pass #TODO: check the viscosity matrix
 
         self.name = unicode(name)
-        self.frames = [Frame(self, np.eye(4), unicode(name))]
+        self.frames = [Frame(self, eye(4), unicode(name))]
         self.parentjoint = None
         self.childrenjoints = []
         self.mass = mass
         self.viscosity = viscosity
-        self._pose = None # updated by self.geometric()/self.kinematic()/self.dynamic()
-        self._jacobian = None # updated by self.kinematic()/self.dynamic()
-        self._djacobian = None # updated by self.dynamic()
+        self._pose = None # updated by geometric()/kinematic()/dynamic()
+        self._jacobian = None # updated by kinematic()/dynamic()
+        self._djacobian = None # updated by dynamic()
         self._twist = None # updated by self.dynamic() 
-        self._nleffect = None # updated by self.dynamic() 
+        self._nleffects = None # updated by self.dynamic() 
 
     def descendants(self):
         """Iterate over all descendant bodies, with a depth-first strategy"""
@@ -489,15 +722,18 @@ class Body(object):
         return self._twist
 
     @property
-    def nleffect(self):
-        return self._nleffect
+    def nleffects(self):
+        return self._nleffects
 
     def reset(self):
+        """
+        TODO: reset everythong or remove the method
+        """
         self._pose = None
         self._jacobian = None
         self._djacobian = None
         self._twist = None
-        self._nleffect = None
+        self._nleffects = None
 
     def newframe(self,pose,name=None):
         frame = Frame(self,pose,name)
@@ -523,8 +759,8 @@ class Body(object):
             H_cn = j._new_frame.pose
             H_pr = j._ref_frame.pose
             H_rn = j.pose()
-            H_pc = np.dot(H_pr, np.dot(H_rn, Hg.inv(H_cn)))
-            child_pose = np.dot(H_gp, H_pc)
+            H_pc = dot(H_pr, dot(H_rn, Hg.inv(H_cn)))
+            child_pose = dot(H_gp, H_pc)
             j._new_frame.body.geometric(child_pose)
         
     def kinematic(self,pose,jac):
@@ -572,19 +808,19 @@ class Body(object):
         self._jacobian = jac
         self._djacobian = djac
         self._twist = twist
-        wx = np.array(
+        wx = array(
             [[             0,-self.twist[2], self.twist[1]],
              [ self.twist[2],             0,-self.twist[0]],
              [-self.twist[1], self.twist[0],             0]])
         if self.mass[3,3]==0:
-            rx = np.zeros((3,3))
+            rx = zeros((3,3))
         else:
             rx = self.mass[0:3,3:6]/self.mass[3,3] # todo: better solution?
-        self._nleffect = np.zeros((6,6))
-        self._nleffect[0:3,0:3] = wx
-        self._nleffect[3:6,3:6] = wx
-        self._nleffect[0:3,3:6] = np.dot(rx,wx)-np.dot(wx,rx)
-        self._nleffect = np.dot(self.nleffect,self.mass)
+        self._nleffects = zeros((6,6))
+        self._nleffects[0:3,0:3] = wx
+        self._nleffects[3:6,3:6] = wx
+        self._nleffects[0:3,3:6] = dot(rx,wx) - dot(wx,rx)
+        self._nleffects = dot(self.nleffects, self.mass)
 
         H_gp = pose
         J_pg = jac
@@ -594,25 +830,23 @@ class Body(object):
             H_cn = j._new_frame.pose
             H_pr = j._ref_frame.pose
             H_rn = j.pose()
-            H_pc = np.dot(H_pr, np.dot(H_rn, Hg.inv(H_cn)))
-            child_pose = np.dot(H_gp, H_pc)
+            H_pc = dot(H_pr, dot(H_rn, Hg.inv(H_cn)))
+            child_pose = dot(H_gp, H_pc)
             Ad_cp = Hg.iadjoint(H_pc)
             Ad_cn = Hg.adjoint(H_cn)
             Ad_rp = Hg.adjoint(Hg.inv(H_pr))
             dAd_nr = j.idadjoint()
-            dAd_cp = np.dot(Ad_cn, np.dot(dAd_nr, Ad_rp))
+            dAd_cp = dot(Ad_cn, dot(dAd_nr, Ad_rp))
             T_nr = j.twist()
             J_nr = j.jacobian()
             dJ_nr = j.djacobian()
-            child_twist = np.dot(Ad_cp, T_pg) + np.dot(Ad_cn, T_nr)
-            child_jac = np.dot(Ad_cp, J_pg)
-            child_jac[:,j._dof_index] += np.dot(Ad_cn, J_nr)
-            child_djac = np.dot(dAd_cp, J_pg) + np.dot(Ad_cp, dJ_pg)
-            child_djac[:,j._dof_index] += np.dot(Ad_cn, dJ_nr)
+            child_twist = dot(Ad_cp, T_pg) + dot(Ad_cn, T_nr)
+            child_jac = dot(Ad_cp, J_pg)
+            child_jac[:,j._dof] += dot(Ad_cn, J_nr)
+            child_djac = dot(dAd_cp, J_pg) + dot(Ad_cp, dJ_pg)
+            child_djac[:,j._dof] += dot(Ad_cn, dJ_nr)
             j._new_frame.body.dynamic(child_pose, child_jac, child_djac, 
                                      child_twist)
-
-
 
 class Simulation(object):
    

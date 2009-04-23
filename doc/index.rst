@@ -11,6 +11,7 @@ Contents:
    rigidmotion
    rigidmechanism
    modules
+   notations
    devel
    quirks
 

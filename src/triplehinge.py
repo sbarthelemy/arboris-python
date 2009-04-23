@@ -72,7 +72,7 @@ def triplehinge():
     # create a joint between the ground and the arm
     shoulder = arb.HingeJoint()
     # add the new joint to the world (this will also add arm to w.bodies)
-    w.addjoint(joint = shoulder,
+    w.add_joint(joint = shoulder,
                ref_frame = ground.frames[0],
                new_frame = arm.frames[0])
 
@@ -83,7 +83,7 @@ def triplehinge():
         'ElbowLeftFrame')
     # create a joint between the arm and the forearm
     elbow = arb.HingeJoint()
-    w.addjoint(joint = elbow,
+    w.add_joint(joint = elbow,
                ref_frame = f,
                new_frame = forearm.frames[0])
 
@@ -93,7 +93,7 @@ def triplehinge():
         'WristLeftFrame')
     # create a joint between the forearm and the hand
     wrist = arb.HingeJoint()
-    w.addjoint(joint = wrist, 
+    w.add_joint(joint = wrist, 
                ref_frame = f,
                new_frame = hand.frames[0])
 
