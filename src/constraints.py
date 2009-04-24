@@ -59,8 +59,6 @@ class BallAndSocketConstraint(BodyConstraint):
 
     .. math::
         
-        f(\Hg[0]_1) &= 0  
-        \Leftrightarrow 
         \Hg[0]_1 = 
         \begin{bmatrix}
             \pre[0]R_1 & 0\\
@@ -88,37 +86,29 @@ class BallAndSocketConstraint(BodyConstraint):
 
    The constraint jacobian is then given by :math:`( \Ad[0]_1 \; \pre[1]J_{1/g} - \pre[0]J_{0/g} )`
 
-   The algorithm has two phases. First, a prediction of the future constraints states is done, assuming constraints forces won't change from the last time step. We'll then have :math:`\Hg[0]_1(0)`, :math:`\twist[0]_{1/0}(0)` and :math:`f(0)`.
-   Secondly, adjustement of constraint forces :math:`\Delta f` are computed. As
-   the several constraints may interfere one with each other, they are adjusted
-   iteratively until the adjustement forces are small enough to be neglected.
-   We'll note :math:`\Delta f` the variation of constraint force from the
-   prediction and :math:`\Delta v` the variation of contraint velocity due to
-   all the constraints forces adjustements. At each iteration, we'll update
-   :math:`\Delta f` by :math:`\delta f` such that afterward
+   In order to solve the constraint, an adjustement :math:`\Delta f` of the
+   constraint force is computed by the ``solve`` method. 
+   This method is given as argument the current estimation of constraint
+   velocity, which corresponds to :math:`\Delta f = 0` and takes into account
+   the coupling between the contraints.
 
-    
     .. math::
-        f
-        &= f(0) + \Delta f + \delta f  \\
-        \twist[0]_{1/0} 
-        &= \twist[0]_{1/0}(0) + S^T \; (\Delta v + Y \delta f ) \\
-        \Hg[0]_{1/0} 
-        &= \exp( dt \; S^T \; (\Delta v + Y \; \delta f ) ) \; \Hg[0]_{1/0}(0)
+        f^k(t) 
+        &= f^{k-1}(t) + \Delta f\\
+        v^k(t+dt)
+        &= v(t+dt) + Y(t) \Delta f  \\
+        \Hg[0]_{1/0}^k(t+dt)
+        &= \exp( dt \; S^T \; ( v(t+dt) + Y(t) \; \Delta f ) ) \;
+        \Hg[0]_{1/0}(t)
         \\
-        \pre[0]p_1 
-        &= \pre[0]p_1(0) + dt \; (\Delta v +  Y \; \delta f) 
-
-    where :math:`Y` is the constraint admittance matrix. Before the next
-    iteration, the constraint force adjustment is updated: 
-    :math:`\Delta f := \Delta f + \delta f`.
+        \pre[0]p_1^k(t+dt)
+        &= \pre[0]p_1(t) + dt \; (v(t+dt) +  Y(t) \; \Delta f) 
 
     """
    
     def __init__(self, name=None):
-        self._force0 = zeros(3)
+        self._force = zeros(3)
         self._pos0 = None
-        self._dforce = zeros(3)
         Constraint.__init__(self, name)
 
     def ndol(self):
@@ -127,34 +117,19 @@ class BallAndSocketConstraint(BodyConstraint):
     def is_active(self):
         return True
 
-    def force(self):
-        """
-
-        Tests:
-        >>> c = BallAndSocketConstraint()
-        >>> c.force()
-        array([ 0.,  0.,  0.])
-        """
-        return self._force0 + self._dforce
-
-    def predict(self):
-        self._force0 += self._dforce
-        self._dforce[:] = 0.
-        self._pos0 = None
-
     def init(self):
         r"""
         Compute the predicted relative position error between the socket and
-        ball centers, :math:`\pre[0]p_1(0)` and save it in ``self._pos0``.
+        ball centers, :math:`\pre[0]p_1(t)` and save it in ``self._pos0``.
 
         .. math::
 
-            \Hg[0]_1(0) 
-            &= \left(\Hg[g]_1(0)\right)^{-1} \; \Hg[g]_1(0) \\
-            \Hg[0]_1(0) 
+            \Hg[0]_1(t) 
+            &= \left(\Hg[g]_0(t)\right)^{-1} \; \Hg[g]_1(t) \\
+            \Hg[0]_1(t) 
             &=
             \begin{bmatrix}
-            \pre[0]R_1(0) & \pre[0]p_1(0) \\
+            \pre[0]R_1(t) & \pre[0]p_1(t) \\
             0             & 1
             \end{bmatrix}
 
@@ -167,28 +142,28 @@ class BallAndSocketConstraint(BodyConstraint):
         return (dot(Hg.adjoint(H_01)[3:6,:], self._frames[1].jacobian())
                 -self._frames[0].jacobian()[3:6,:])
 
-    def solve(self, dvel, admittance, dt):
+    def solve(self, vel, admittance, dt):
         r"""
 
         from this equation
         
         .. math::
-            \pre[0]p_1 
-             &= \pre[0]p_1(0) + dt \; (\Delta v +  Y \; \delta f) 
+            \pre[0]p_1(t+dt) 
+             &= \pre[0]p_1(t) + dt \; ( v +  Y \; \Delta f) 
 
-        given that we want :math:`\pre[0]p_1 = 0`, we return 
+        given that we want :math:`\pre[0]p_1(t+dt) = 0`, we return 
 
         .. math::
-            \delta f = -Y^{-1} \; 
+            \Delta f = -Y^{-1} \; 
             \left(
-                \frac{\pre[0]p_1(0)}{dt}) + \Delta v 
+                \frac{\pre[0]p_1(t)}{dt} + v 
             \right)
 
         and update the constraint force adjustment :math:`\Delta f` 
 
         The function arguments are
 
-        - ``dvel``: :math:`\Delta v`
+        - ``vel``: :math:`\Delta v`
         - ``admittance``: :math:`Y`
         - ``dt``: :math:`dt`
 
@@ -196,23 +171,22 @@ class BallAndSocketConstraint(BodyConstraint):
 
         >>> c = BallAndSocketConstraint()
         >>> c._pos0 = array([0.1, 0.2, 0.3])
-        >>> c._force0 = array([-0.1, -0.2, -0.3])
-        >>> c._dforce = zeros((3))
-        >>> dvel = zeros((3))
+        >>> c._force = array([-0.1, -0.2, -0.3])
+        >>> vel = zeros((3))
         >>> adm = 0.5*eye(3)
         >>> dt = 0.1
-        >>> ddforce = c.solve(dvel, adm, dt)
-        >>> c._pos0 + dt * ( dvel + dot(adm, ddforce) )
+        >>> dforce = c.solve(vel, adm, dt)
+        >>> c._pos0 + dt * ( vel + dot(adm, dforce) )
         array([ 0.,  0.,  0.])
-        >>> dvel = array([0.05, -0.05, 0.05])
-        >>> ddforce = c.solve(dvel, adm, dt)
-        >>> c._pos0 + dt * ( dvel + dot(adm, ddforce) )
+        >>> vel = array([0.05, -0.05, 0.05])
+        >>> dforce = c.solve(vel, adm, dt)
+        >>> c._pos0 + dt * ( vel + dot(adm, dforce) )
         array([ 0.,  0.,  0.])
 
         """
-        ddforce = solve(-admittance, dvel+self._pos0/dt)
-        self._dforce += ddforce
-        return ddforce
+        dforce = solve(-admittance, vel + self._pos0/dt)
+        self._force += dforce
+        return dforce
 
 if __name__ == "__main__":
     import doctest

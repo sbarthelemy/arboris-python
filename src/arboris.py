@@ -481,10 +481,10 @@ class World(object):
         pass #TODO
 
     def integrate(self):
-        """
+        r"""
         TODO: add support for kinematic controllers
         TODO: add support fo external wrenches
-        TODO: check the last test!
+        TODO: check the last test result!
         >>> from worldfactory import triplehinge
         >>> w = triplehinge()
         >>> c0 = ProportionalDerivativeController('my controller')
@@ -505,9 +505,120 @@ class World(object):
 
     def solve_constraints(self):
         
-        """
+        r"""
 
-        We assume a first order model:
+        In accordance with the integration scheme, we assume a first
+        order model betwen generalized velocities and generalized 
+        forces:
+
+        .. math::
+
+            \GVel(t+dt) 
+            &= Y'(t) 
+            \left( 
+                M(t)  \GVel(t) 
+                + dt \; \GForce(t)
+            \right)
+
+        where 
+        - the admittance matrix  :math:`Y'` takes into account a 
+          first order model of the actuators 
+          
+        - and the actuators generalized forces :math:`\GForce(t)` 
+          are assumed to be constant during the :math:`[t , t+dt ]`
+          time interval.
+        
+        This (constraint-free) model must be completed by constraints 
+        forces :math:`\pre[c]f`, which are mapped to generalized forces
+        by the constraint jacobian :math:`\pre[c]J_c^T`:
+
+        .. math::
+
+            \GVel(t+dt) 
+            &= Y'(t) 
+            \left( 
+                M(t)  \GVel(t) 
+                + dt \; \GForce(t)
+                + \sum_{c} \; \pre[c]J_{c}^T(t) \; \pre[c]f(t)
+            \right)
+  
+        one can also define the constraint velocity  as: 
+        :math:`\pre[c]v = \pre[c]J_c \; \GVel` so that:
+    
+        .. math::
+            
+            \pre[c]v(t+dt) 
+            &= \pre[c]J_c(t) \; \GVel(t+dt)\\
+            &= \pre[c]J_c(t) \; Y'(t) 
+            \left( 
+                M(t)  \GVel(t) 
+                + dt \; \GForce(t)
+            \right)
+            + \sum_d \;
+            \pre[c]J_c(t) \; Y'(t) \; \pre[d]J_d^T(t) 
+            \; \pre[d]f(t)
+        
+        one can define the (global) constraints velocity :math:`v`, 
+        force :math:`f`, jacobian matrix :math:`J` 
+        and admittance matrix :math:`Y'`:
+
+        .. math::
+
+            J(t)
+            &=
+            \begin{bmatrix}
+                \pre[0]J_0(t)\\
+                \vdots\\
+                \pre[c]J_c(t)\\
+                \vdots
+            \end{bmatrix}\\
+            v 
+            &= 
+            \begin{bmatrix}
+                \pre[0]v(t)\\ \vdots \\ \pre[c]v(t) \\ \vdots
+            \end{bmatrix}\\
+            f(t)
+            &= 
+            \begin{bmatrix}
+                \pre[0]f(t)\\ \vdots \\ \pre[c]f(t) \\ \vdots
+            \end{bmatrix}\\
+            Y(t) 
+            &= 
+            J(t) \; Y'(t) \; J(t)^T
+
+        and get a synthetic expression:
+
+        .. math::
+
+            v(t+dt) 
+            &= J(t) \; Y'(t) 
+            \left( 
+                M(t)  \GVel(t) 
+                + dt \; \GForce(t)
+            \right)
+            + Y(t) \; f
+
+
+        This function works in three steps:
+
+        - ask each constraint for its jacobian 
+        - compute :math:`J`, :math:`v`  and :math:`Y`
+        - iterate over each constraint object in order to compute 
+          :math:`\pre[c]f`. At each iteration the force is 
+          updated by :math:`\Delta\pre[c]f`
+        
+        f(\Hg[0]_1) &= 0  
+        \Leftrightarrow 
+        \Hg[0]_1 = 
+        \begin{bmatrix}
+            \pre[0]R_1 & 0\\
+            0          & 1
+        \end{bmatrix}
+        \Leftrightarrow 
+        \pre[0]p_1 = 0
+
+
+
         cQ_pred_i
         cv_pred_i = cv_pred0_i + cY_i: * cf_pred
 
@@ -570,7 +681,6 @@ joint-space admitance
         >>> w.solve_constraints()
         """
 
-        ### INIT ###
         constraints = []
         ndol = 0
         for c in self._constraints:
@@ -579,31 +689,24 @@ joint-space admitance
                 ndol = ndol+c.ndol()
                 constraints.append(c)
 
-        dvel = zeros(ndol)
         jac = zeros((ndol,self._ndof))
         admittance = zeros((ndol,ndol))
         for c in constraints:
             c.init()
             jac[c._dol,:] = c.jacobian()
+        vel = dot(jac, 
+                  dot(self._mass, self._gvel) 
+                  + self._dt * self._controller_torque)
         admittance = dot(jac, dot(self._admittance, jac.T))
 
         k=0
-        while k <20: #TODO change the condition
+        while k < 20: #TODO change the condition
             for c in constraints:
-                ddforce = c.solve(dvel[c._dol], admittance[c._dol,c._dol],
-                                  self._dt)
-                dvel += dot(admittance[:,c._dol], ddforce)
-                k+=1
-
-#        if isinstance(BodyConstraint):
-            #     self._cforce(c._slice)
-            #
-            #elif isinstance(jointConstraint):
-                #    raise NotImplemented
-            
-           # else:
-               #     raise ValueError
- 
+                dforce = c.solve(vel[c._dol], 
+                                 admittance[c._dol,c._dol],
+                                 self._dt)
+                vel += dot(admittance[:,c._dol], dforce)
+                k+=1 
 
 class Frame(object):
 

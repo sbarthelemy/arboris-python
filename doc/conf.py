@@ -187,5 +187,7 @@ pngmath_latex_preamble = r"""\providecommand{\SO}{\text{SO}}
 \providecommand{\GPos}{Q}
 \providecommand{\GPosSet}{\bar{\mathcal{Q}}}
 \providecommand{\GVel}{\nu}
+\providecommand{\GAcc}{\dot{\nu}}
+\providecommand{\GForce}{\tau}
 """
 

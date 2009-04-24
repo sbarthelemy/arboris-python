@@ -44,8 +44,7 @@ Programming
 Name conventions
 ================
 
-  - rename dynamic() to update_dynamic() (idem for geometric, kinematic...))
-  - gvel -> jvel (joint generalized velocities)?
+
   - find better name for controller_viscosity 
   - ``Body.ancestors()`` => ``.iter_ancestor_bodies()``
 
