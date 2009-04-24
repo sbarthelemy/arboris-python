@@ -101,5 +101,5 @@ if __name__ == "__main__":
     w = triplehinge()
     
     #compute dynamic model
-    w.dynamic()
+    w.update_dynamic()
 

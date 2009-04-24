@@ -702,7 +702,7 @@ def human36(height=1.741, mass=73, name='', world=None):
 
     
     >>> (w, bodies, tags) = human36()
-    >>> w.geometric()
+    >>> w.update_geometric()
     >>> def tag_positions(tag_frames):
     ...     \"\"\"The tags absolute position
     ...

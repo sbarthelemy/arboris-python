@@ -57,8 +57,8 @@ class World(object):
     
     >>> from  worldfactory import triplehinge
     >>> w = triplehinge()
-    >>> w.geometric()
-    >>> w.dynamic()
+    >>> w.update_geometric()
+    >>> w.update_dynamic()
     """
 
     def __init__(self,name=None):
@@ -71,10 +71,10 @@ class World(object):
         self._collisions = []
         self._ndof = 0
         self._gvel = array([])
-        self._mass = None # updated by self.dynamic
-        self._viscosity = None # updated by self.dynamic
-        self._controller_viscosity = None # updated by self.dynamic
-        self._nleffects = None # updated by self.dynamic
+        self._mass = None # updated by self.update_dynamic()
+        self._viscosity = None # updated by self.update_dynamic()
+        self._controller_viscosity = None # updated by self.update_dynamic()
+        self._nleffects = None # updated by self.update_dynamic()
         self._dt = 0.001
 
     @property
@@ -199,7 +199,7 @@ class World(object):
         self._constraints.append(constraint)
         
 
-    def geometric(self):
+    def update_geometric(self):
         """
         Compute the forward geometric model. 
         
@@ -208,7 +208,7 @@ class World(object):
         self.bodies[0].geometric(eye(4))
 
 
-    def kinematic(self):
+    def update_kinematic(self):
         """
         Compute the forward geometric and kinematic models. 
         
@@ -218,7 +218,7 @@ class World(object):
         self.bodies[0].kinematic(eye(4),zeros((6,self._ndof)))
 
 
-    def dynamic(self):
+    def update_dynamic(self):
         """
         Compute the forward geometric, kinematic and dynamic models. 
         
@@ -236,7 +236,7 @@ class World(object):
         >>> w.joints[1].gvel[0]=-1.0
         >>> w.joints[2].gpos[0]=2.0/3.0
         >>> w.joints[2].gvel[0]=-0.5
-        >>> w.dynamic()
+        >>> w.update_dynamic()
         >>> w.bodies[1].pose
         array([[ 0.87758256, -0.47942554,  0.        ,  0.        ],
                [ 0.47942554,  0.87758256,  0.        ,  0.        ],
@@ -415,7 +415,7 @@ class World(object):
                [ 0.03230564,  0.00742044,  0.        ]])
 
         """        
-        self.ground.dynamic(
+        self.ground.update_dynamic(
             eye(4),
             zeros((6,self._ndof)),
             zeros((6,self._ndof)),
@@ -448,7 +448,7 @@ class World(object):
         >>> w = triplehinge()
         >>> c0 = ProportionalDerivativeController('my controller')
         >>> w.add_jointcontroller(c0, w.joints[1:2])
-        >>> w.dynamic()
+        >>> w.update_dynamic()
         >>> w.update_controllers()
         >>> w._controller_viscosity
         array([[ 0.,  0.,  0.],
@@ -477,6 +477,8 @@ class World(object):
             self._viscosity - self._controller_viscosity + self._nleffects)
         self._admittance = numpy.linalg.inv(self._impedance)
 
+    def update_prediction(self):
+        pass #TODO
 
     def integrate(self):
         """
@@ -487,7 +489,7 @@ class World(object):
         >>> w = triplehinge()
         >>> c0 = ProportionalDerivativeController('my controller')
         >>> w.add_jointcontroller(c0, w.joints[1:2])
-        >>> w.dynamic()
+        >>> w.update_dynamic()
         >>> w.update_controllers()
         >>> w.integrate()
         >>> w._gvel
@@ -563,7 +565,7 @@ joint-space admitance
         >>> w.add_joint(j1, (b0.frames[0], b1.frames[0]) )
         >>> c0 = BallAndSocketConstraint()
         >>> w.add_constraint(c0, (w.ground.frames[0], b0.frames[0]) )
-        >>> w.dynamic()
+        >>> w.update_dynamic()
         >>> w.update_controllers()
         >>> w.solve_constraints()
         """
@@ -670,11 +672,11 @@ class Body(object):
         self.childrenjoints = []
         self.mass = mass
         self.viscosity = viscosity
-        self._pose = None # updated by geometric()/kinematic()/dynamic()
-        self._jacobian = None # updated by kinematic()/dynamic()
-        self._djacobian = None # updated by dynamic()
-        self._twist = None # updated by self.dynamic() 
-        self._nleffects = None # updated by self.dynamic() 
+        self._pose = None # updated by update_{geometric,kinematic,dynamic}
+        self._jacobian = None # updated by update_{geometric,kinematic,dynamic}
+        self._djacobian = None # updated by update_dynamic
+        self._twist = None # updated by update_dynamic
+        self._nleffects = None # updated by update_dynamic
 
     def descendants(self):
         """Iterate over all descendant bodies, with a depth-first strategy"""
@@ -753,7 +755,7 @@ class Body(object):
     def kinematic(self,pose,jac):
         raise NotImplemented #TODO: remove the method or implement it
     
-    def dynamic(self,pose,jac,djac,twist):
+    def update_dynamic(self,pose,jac,djac,twist):
         """
         T_ab: velocity of {a} relative to {b} expressed in {a} (body twist)
 
@@ -832,7 +834,7 @@ class Body(object):
             child_jac[:,j._dof] += dot(Ad_cn, J_nr)
             child_djac = dot(dAd_cp, J_pg) + dot(Ad_cp, dJ_pg)
             child_djac[:,j._dof] += dot(Ad_cn, dJ_nr)
-            j._frames[1].body.dynamic(child_pose, child_jac, child_djac, 
+            j._frames[1].body.update_dynamic(child_pose, child_jac, child_djac, 
                                      child_twist)
 
 
@@ -857,8 +859,8 @@ def simulate(world, time):
         previous_t = time[0]
         for t in time[1:]:
             dt = t - previous_t
-            world.dynamic()
-            world.predict() #TODO: !!
+            world.update_dynamic()
+            world.update_prediction() #TODO: !!
             world.update_controllers()
             world.integrate()
             
@@ -866,7 +868,7 @@ def simulate(world, time):
         previous_t = time[0]
         for t in time[1:]:
             dt = t - previous_t
-            world.dynamic()
+            world.update_dynamic()
             world.update_controllers()
             world.integrate()
             previous_t = t

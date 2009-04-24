@@ -28,7 +28,16 @@ Programming
 ===========
 
 - find a way/class to collect states
-- return dicts of frames/joints/bodies
+
+  - states are positions and (someteimes) velocities.
+  - velocities are already grouped in Wordl._gvel
+  - positions might be grouped 
+
+- do the prediction,
+
+  - need predicted bodies poses and twists, no joint-space model (kinematic)
+
+- returns dicts of frames/joints/bodies
 - Create a virtual class ``Named`` for ``*._name`` handling ?
 - implement a true recursive-newton-euler linearized algorithm?
 
