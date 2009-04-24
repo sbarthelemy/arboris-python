@@ -62,11 +62,11 @@ class World(object):
     """
 
     def __init__(self,name=None):
-        self.name = unicode(name)
+        self._name = name
         self.ground = Body(u"ground")
         self.bodies = [self.ground] 
-        self.joints = [] 
-        self.controllers = {}
+        self.joints = []
+        self._controllers = []
         self._constraints = []
         self._collisions = []
         self._ndof = 0
@@ -98,7 +98,7 @@ class World(object):
         self._nleffects = None
         self._controllers_viscosity = None 
         self._controllers_torque = None
-        for b in self.bodies:
+        for b in self.ground.descendants():
             b.reset()
 
 
@@ -106,7 +106,7 @@ class World(object):
         return self._ndof
 
 
-    def add_joint(self, joint, ref_frame, new_frame, name=None):
+    def add_joint(self, joint, frames):
         """Add a joint and its new-attached body to the world.
 
         :arguments:
@@ -124,47 +124,44 @@ class World(object):
         array([ 2.])
 
         """
-        if not(isinstance(joint,Joint)):
+        if not(isinstance(joint, Joint)):
             raise ValueError("{0} is not an instance of Joint".format(
                 joint))
-        if not(isinstance(ref_frame,Frame)):
+        if not(isinstance(frames[0], Frame)):
             raise ValueError("{0} is not an instance of Frame".format(
-                ref_frame))
-        if not(isinstance(new_frame,Frame)):
+                frames[0]))
+        if not(isinstance(frames[1], Frame)):
             raise ValueError("{0} is not an instance of Frame".format(
-                new_frame))
+                frames[1]))
 
-        # check the reference frame for the joint is already in world
-        ref_frame_is_in_world = False
+        # check the reference/base/parent frame for the joint is already 
+        # in world
+        frame0_is_in_world = False
         for b in self.bodies:
-            if ref_frame.body is b:
-               ref_frame_is_in_world = True
-        if not(ref_frame_is_in_world):
-            raise ValueError("The reference frame is attached to a body that is not in world")
+            if frames[0].body is b:
+               frame0_is_in_world = True
+        if not(frame0_is_in_world):
+            raise ValueError("The reference/base/parent frame is attached to a body that is not in world")
         
-        new_body = new_frame.body
-        # check the new frame is not already in world
-        new_frame_is_in_world = False
+        new_body = frames[1].body
+        # check the new/local/child frame is not already in world
         for b in self.bodies:
             if new_body is b:
-               raise ValueError("The new frame is attached to a body that is already in world")
-
+               raise ValueError("The new/local/child  frame is attached to a body that is already in world")
         if (new_body.parentjoint != None):
-            raise ValueError("The new frame is attached to a body that already has a parent joint")
+            raise ValueError("The new/local/child frame is attached to a body that already has a parent joint")
         if new_body.childrenjoints != []:
-            raise ValueError("The new frame is attached to a body that already has a children joints")
+            raise ValueError("The new/local/child frame is attached to a body that already has a children joints")
         
         # extend the world generalized velocities
         old_ndof = self._ndof
         self._ndof = self._ndof + joint.ndof()
         
         # add the joint and the moving frame to the world
-        joint.name = unicode(name)
-        joint._ref_frame = ref_frame
-        joint._new_frame = new_frame
+        joint._frames = frames
         joint._dof = slice(old_ndof, self._ndof)
         self.joints.append(joint)
-        joint._ref_frame.body.childrenjoints.append(joint)
+        joint._frames[0].body.childrenjoints.append(joint)
         self.bodies.append(new_body)
         new_body.parentjoint = joint
 
@@ -173,7 +170,7 @@ class World(object):
             self._gvel[j._dof] = j.gvel[:]
             j.gvel = self._gvel[j._dof]
 
-    def add_jointcontroller(self, controller, joints, name=None):
+    def add_jointcontroller(self, controller, joints):
         """
         Add a joint controller to the world
 
@@ -181,34 +178,21 @@ class World(object):
 
         >>> from worldfactory import triplehinge
         >>> w = triplehinge()
-        >>> c0 = ProportionalDerivativeController()
-        >>> w.add_jointcontroller(c0, w.joints[1:3], 'my controller')
+        >>> c0 = ProportionalDerivativeController(name = 'my controller')
+        >>> w.add_jointcontroller(c0, w.joints[1:3])
         >>> c1 = ProportionalDerivativeController()
         >>> w.add_jointcontroller(c1, w.joints[0:1])
-        >>> c2 = ProportionalDerivativeController()
-        >>> w.add_jointcontroller(c2, w.joints[0:1], 1)
-        Traceback (most recent call last):
-            ...
-        ValueError: there is already a controller with name "1"
-
+        
         """
-        controller._dof_indices = []
-        if name == None:
-            # if no name was given, give a number
-            name = len(self.controllers)
-            while self.controllers.has_key(name):
-                name = name + 1
-        elif self.controllers.has_key(name):
-            raise ValueError(
-                'there is already a controller with name "{0}"'.format(name))
-
-        for c in self.controllers:
+        controller._dof = []
+        for c in self._controllers:
             if c is controller:
                 raise ValueError("the controller is already in this world")
 
         for j in joints:
-            controller._dof_indices.extend(range(j._dof.start, j._dof.stop))
-        self.controllers[name] = controller
+            controller._dof.extend(range(j._dof.start, j._dof.stop))
+        self._controllers.append(controller)
+
 
     def add_constraint(self, constraint, frames):
         constraint._frames = frames #TODO: do some consistency checks
@@ -431,7 +415,7 @@ class World(object):
                [ 0.03230564,  0.00742044,  0.        ]])
 
         """        
-        self.bodies[0].dynamic(
+        self.ground.dynamic(
             eye(4),
             zeros((6,self._ndof)),
             zeros((6,self._ndof)),
@@ -440,7 +424,7 @@ class World(object):
         self._mass = zeros((self._ndof,self._ndof))
         self._viscosity = zeros((self._ndof,self._ndof))
         self._nleffects = zeros((self._ndof,self._ndof))
-        for b in self.bodies:
+        for b in self.ground.descendants():
             self._mass += dot(
                 dot(b.jacobian.transpose(), b.mass),
                 b.jacobian)
@@ -462,8 +446,8 @@ class World(object):
         TODO: check the two last tests results!
         >>> from worldfactory import triplehinge
         >>> w = triplehinge()
-        >>> c0 = ProportionalDerivativeController()
-        >>> w.add_jointcontroller(c0, w.joints[1:2], 'my controller')
+        >>> c0 = ProportionalDerivativeController('my controller')
+        >>> w.add_jointcontroller(c0, w.joints[1:2])
         >>> w.dynamic()
         >>> w.update_controllers()
         >>> w._controller_viscosity
@@ -483,11 +467,11 @@ class World(object):
         # todo: move to simu
         self._controller_viscosity = zeros((self._ndof,self._ndof))
         self._controller_torque = zeros(self._ndof)
-        for c in self.controllers.itervalues():
+        for c in self._controllers:
             c.update(dt=self._dt)
             self._controller_viscosity[
-                ix_(c._dof_indices,c._dof_indices)] += c.viscosity()
-            self._controller_torque[c._dof_indices] += c.torque()
+                ix_(c._dof, c._dof)] += c.viscosity()
+            self._controller_torque[c._dof] += c.torque()
         
         self._impedance = self._mass + self._dt * ( 
             self._viscosity - self._controller_viscosity + self._nleffects)
@@ -501,8 +485,8 @@ class World(object):
         TODO: check the last test!
         >>> from worldfactory import triplehinge
         >>> w = triplehinge()
-        >>> c0 = ProportionalDerivativeController()
-        >>> w.add_jointcontroller(c0, w.joints[1:2], 'my controller')
+        >>> c0 = ProportionalDerivativeController('my controller')
+        >>> w.add_jointcontroller(c0, w.joints[1:2])
         >>> w.dynamic()
         >>> w.update_controllers()
         >>> w.integrate()
@@ -512,7 +496,7 @@ class World(object):
         b = dot(self._mass, self._gvel) + self._dt * self._controller_torque
         # A = self._impedance
         # self._gvel = numpy.linalg.solve(A,b)
-        self._gvel = dot(self._admittance,b)
+        self._gvel[:] = dot(self._admittance,b)
         for j in self.joints:
             j.integrate(self._dt)
 
@@ -573,10 +557,10 @@ joint-space admitance
         >>> b0 = Body(mass = eye(6))
         >>> j0 = FreeJoint()
         >>> w = World()
-        >>> w.add_joint(j0, w.ground.frames[0], b0.frames[0])
+        >>> w.add_joint(j0, (w.ground.frames[0], b0.frames[0]) )
         >>> j1 = FreeJoint()
         >>> b1 = Body(mass = 2*eye(6))
-        >>> w.add_joint(j1, b0.frames[0], b1.frames[0])
+        >>> w.add_joint(j1, (b0.frames[0], b1.frames[0]) )
         >>> c0 = BallAndSocketConstraint()
         >>> w.add_constraint(c0, (w.ground.frames[0], b0.frames[0]) )
         >>> w.dynamic()
@@ -585,8 +569,6 @@ joint-space admitance
         """
 
         ### INIT ###
-        # self._cforce
-        # self._cvel
         constraints = []
         ndol = 0
         for c in self._constraints:
@@ -623,7 +605,7 @@ joint-space admitance
 
 class Frame(object):
 
-    def __init__(self, body, pose=None, name=None):
+    def __init__(self, body, bpose=None, name=None):
         """Create a frame rigidly fixed to a body. 
         
         >>> b = Body()
@@ -646,24 +628,29 @@ class Frame(object):
          [ 1.  1.  1.  1.]] is not an homogeneous matrix
 
         """
-        if pose == None:
-            pose = eye(4)
-        if name == None: 
-            self.name = None
-        else:
-            self.name = unicode(name)
-        Hg.checkishomogeneousmatrix(pose)
-        self.pose = pose
+        if bpose == None:
+            bpose = eye(4)
+        
+        self._name = name
+        Hg.checkishomogeneousmatrix(bpose)
+        self._bpose = bpose
         if not(isinstance(body,Body)):
             raise ValueError("The ``body`` argument must be an instance of the ``Boby`` class")
         else:
             self.body = body
+    
+    @property
+    def bpose(self):
+        return self._bpose.copy()
 
+    def wpose(self):
+        return dot(self.body.pose, self._bpose)
+    
     def twist(self):
-        return dot(Hg.iadjoint(self.pose), self.body.twist)
+        return dot(Hg.iadjoint(self._bpose), self.body.twist)
 
     def jacobian(self):
-        return dot(Hg.iadjoint(self.pose), self.body.jacobian)
+        return dot(Hg.iadjoint(self._bpose), self.body.jacobian)
 
 class Body(object):
 
@@ -692,7 +679,7 @@ class Body(object):
     def descendants(self):
         """Iterate over all descendant bodies, with a depth-first strategy"""
         from itertools import imap
-        for b in imap(lambda x: x._new_frame.body, self.childrenjoints):
+        for b in imap(lambda x: x._frames[1].body, self.childrenjoints):
             yield b
             for bb in b.descendants():
                 yield bb
@@ -700,7 +687,7 @@ class Body(object):
     def ancestors(self):
         from itertools import imap
         if self.parentjoint != None:
-            parent = self.parentjoint._ref_frame.body
+            parent = self.parentjoint._frames[0].body
             yield parent
             for a in parent.ancestors():
                 yield a
@@ -756,12 +743,12 @@ class Body(object):
         self._pose = pose
         H_gp = pose
         for j in self.childrenjoints:
-            H_cn = j._new_frame.pose
-            H_pr = j._ref_frame.pose
+            H_cn = j._frames[1]._bpose
+            H_pr = j._frames[0]._bpose
             H_rn = j.pose()
             H_pc = dot(H_pr, dot(H_rn, Hg.inv(H_cn)))
             child_pose = dot(H_gp, H_pc)
-            j._new_frame.body.geometric(child_pose)
+            j._frames[1].body.geometric(child_pose)
         
     def kinematic(self,pose,jac):
         raise NotImplemented #TODO: remove the method or implement it
@@ -827,8 +814,8 @@ class Body(object):
         dJ_pg = djac
         T_pg = twist
         for j in self.childrenjoints:
-            H_cn = j._new_frame.pose
-            H_pr = j._ref_frame.pose
+            H_cn = j._frames[1]._bpose
+            H_pr = j._frames[0]._bpose
             H_rn = j.pose()
             H_pc = dot(H_pr, dot(H_rn, Hg.inv(H_cn)))
             child_pose = dot(H_gp, H_pc)
@@ -845,41 +832,45 @@ class Body(object):
             child_jac[:,j._dof] += dot(Ad_cn, J_nr)
             child_djac = dot(dAd_cp, J_pg) + dot(Ad_cp, dJ_pg)
             child_djac[:,j._dof] += dot(Ad_cn, dJ_nr)
-            j._new_frame.body.dynamic(child_pose, child_jac, child_djac, 
+            j._frames[1].body.dynamic(child_pose, child_jac, child_djac, 
                                      child_twist)
 
-class Simulation(object):
-   
-    """A simulation
-    Just a placeholder, not working yet !
+
+
+def simulate(world, time):
+
     """
-    def __init__(self,world):
-        self.world = world
-        self.time = (0,1,2,3,4)
+    TODO: add support for collisions
 
-    def run(self):
+    Example:
+    >>> from triplehinge import triplehinge
+    >>> w = triplehinge()
+    >>> simulate(w, numpy.arange(0,0.1,0.001))
+    """
 
-        for t in time:
+    if len(world._constraints) == 0:
+        with_constraints = False
+    else:
+        with_constraints = True
 
-            # compute the world model
-            self.world.geometric()
-            self.world.dynamic()
+    if with_constraints:
+        previous_t = time[0]
+        for t in time[1:]:
+            dt = t - previous_t
+            world.dynamic()
+            world.predict() #TODO: !!
+            world.update_controllers()
+            world.integrate()
+            
+    else:
+        previous_t = time[0]
+        for t in time[1:]:
+            dt = t - previous_t
+            world.dynamic()
+            world.update_controllers()
+            world.integrate()
+            previous_t = t
 
-            # compute torques and wrenches from controllers
-            #controlers...
-
-            #integrate without contacts wrenches
-            world2 = self.world.copy()
-            world2 = world2.integrate()
-
-            # compute explicit contraints wrenches
-            world2.geometric()
-            wr = contact_wrenches(world2)
-
-            # integrate back
-            self.world.integrate(wr)
-
-            # emit signal, for visu or snapshot saving...
 
 if __name__ == "__main__":
     import doctest

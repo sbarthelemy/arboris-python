@@ -14,6 +14,9 @@ class Joint(RigidMotion):
     """    
     __metaclass__ = ABCMeta
 
+    def __init__(self, name=None):
+        self._name = name
+
     def twist(self):
         return dot(self.jacobian(), self.gvel)
 
@@ -50,7 +53,7 @@ class FreeJoint(Joint):
 
     """Free joint (6-dof)
     """
-    def __init__(self, gpos=None, gvel=None):
+    def __init__(self, gpos=None, gvel=None, name=None):
         """
         example:
         >>> j = FreeJoint()
@@ -68,6 +71,7 @@ class FreeJoint(Joint):
             gvel = zeros((6))
         self.gpos = array(gpos).reshape((4,4))
         self.gvel = array(gvel).reshape((6))
+        Joint.__init__(self, name)
 
     def ndof(self):
         return 6
@@ -103,9 +107,10 @@ class RzRyRxJoint(RealJoint):
 
     the resulting homogeneous matrix is given by H = Rz*Ry*Rx
     """
-    def __init__(self, gpos=[0.,0.,0.], gvel=[0.,0.,0.]):
+    def __init__(self, gpos=[0.,0.,0.], gvel=[0.,0.,0.], name=None):
         self.gpos = array(gpos).reshape((3))
         self.gvel = array(gvel).reshape((3))
+        Joint.__init__(self, name)
 
     def ndof(self):
         return 3
@@ -150,9 +155,10 @@ class RzRyJoint(RealJoint):
 
     the resulting homogeneous matrix is given by H = Rz*Ry
     """
-    def __init__(self, gpos=[0.,0.], gvel=[0.,0.]):
+    def __init__(self, gpos=[0.,0.], gvel=[0.,0.], name=None):
         self.gpos = array(gpos).reshape((2))
         self.gvel = array(gvel).reshape((2))
+        Joint.__init__(self, name)
 
     def ndof(self):
         return 2
@@ -192,9 +198,10 @@ class RzRxJoint(RealJoint):
 
     the resulting homogeneous matrix is given by H = Rz*Rx
     """
-    def __init__(self, gpos=[0.,0.], gvel=[0.,0.]):
+    def __init__(self, gpos=[0.,0.], gvel=[0.,0.], name=None):
         self.gpos = array(gpos).reshape((2))
         self.gvel = array(gvel).reshape((2))
+        Joint.__init__(self, name)
 
     def ndof(self):
         return 2
@@ -234,9 +241,10 @@ class RyRxJoint(RealJoint):
 
     the resulting homogeneous matrix is given by H = Rz*Ry
     """
-    def __init__(self, gpos=[0.,0.], gvel=[0.,0.]):
+    def __init__(self, gpos=[0.,0.], gvel=[0.,0.], name=None):
         self.gpos = array(gpos).reshape((2))
         self.gvel = array(gvel).reshape((2))
+        Joint.__init__(self, name)
 
     def ndof(self):
         return 2
@@ -275,7 +283,7 @@ class HingeJoint(RealJoint):
 
     """Hinge (1-dof) with axis in the z-direction
     """
-    def __init__(self, gpos=0., gvel=0.):
+    def __init__(self, gpos=0., gvel=0., name=None):
         """
         example:
         >>> j = HingeJoint(gpos = 3.14/2., gvel = 1.)
@@ -286,6 +294,7 @@ class HingeJoint(RealJoint):
         """
         self.gpos = array(gpos).reshape((1))
         self.gvel = array(gvel).reshape((1))
+        Joint.__init__(self, name)
     
     def ndof(self):
         return 1

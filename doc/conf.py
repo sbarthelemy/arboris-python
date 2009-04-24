@@ -178,9 +178,9 @@ latex_preamble = ''
 #latex_use_modindex = True
 
 pngmath_latex_preamble = r"""\providecommand{\SO}{\text{SO}}
-\providecommand{\pre}[2][{}]{\vphantom{#2}^{#1}#2}
-\providecommand{\twist}[1][{}]{\vphantom{V}^{#1}V}
-\providecommand{\wrench}[1][{}]{\vphantom{W}^{#1}W}
+\providecommand{\pre}[2][{}]{\vphantom{#2}^{#1}\!#2}
+\providecommand{\twist}[1][{}]{\vphantom{V}^{#1}\!V}
+\providecommand{\wrench}[1][{}]{\vphantom{W}^{#1}\!W}
 \providecommand{\vect}[2]{\vphantom{#2}^{#1}#2}
 \providecommand{\Hg}[1][{}]{\vphantom{H}^{#1}H}
 \providecommand{\Ad}[1][{}]{\,\vphantom{Ad}^{#1}\!\!Ad}

@@ -697,7 +697,7 @@ def _humans_bodies(height, mass):
          "GyrationRadius": [0.303, 0.261, 0.315]})
     return bodies
 
-def human36(height=1.741, mass=73, name=''): 
+def human36(height=1.741, mass=73, name='', world=None): 
     """
 
     
@@ -714,7 +714,7 @@ def human36(height=1.741, mass=73, name=''):
     ...     from numpy import dot
     ...     pos_dict= {}
     ...     for (key, val) in tag_frames.iteritems():
-    ...         pos_dict[key] = dot(val.body.pose, val.pose)[0:3,3]
+    ...         pos_dict[key] = dot(val.body.pose, val._bpose)[0:3,3]
     ...
     ...     pos_array = np.zeros((len(tag_frames),3))
     ...     for t in _humans_tags(1.741):
@@ -858,63 +858,69 @@ Tags(q)
             Hg.transl(t['Position']),
             t['HumansName'])
 
-    w = arb.World()
+    # Create a world
+    if world == None:
+        w = arb.World()
+    elif isinstance(world, arb.World):
+        w = world
+    else:
+        raise ValueError('the world argument must be an instance of the World class')
 
     rf = w.bodies[0].newframe(
         Hg.transl((0, L['yfootL']+L['ytibiaL']+L['yfemurL'], 0)))
-    w.add_joint(arb.FreeJoint(), rf, bodies['LPT'].frames[0])
+    w.add_joint(arb.FreeJoint(), (rf, bodies['LPT'].frames[0]) )
     
     rf = bodies['LPT'].newframe(Hg.transl((0, 0, L['zhip']/2.)))
-    w.add_joint(arb.RzRyRxJoint(),rf,bodies['ThighR'].frames[0])
+    w.add_joint(arb.RzRyRxJoint(), (rf,bodies['ThighR'].frames[0]) )
     
     rf = bodies['ThighR'].newframe(Hg.transl((0, -L['yfemurR'], 0)))
-    w.add_joint(arb.HingeJoint(), rf, bodies['ShankR'].frames[0])
+    w.add_joint(arb.HingeJoint(), (rf, bodies['ShankR'].frames[0]) )
     
     rf = bodies['ShankR'].newframe(Hg.transl((0, -L['ytibiaR'], 0)))
-    w.add_joint(arb.RzRxJoint(), rf, bodies['FootR'].frames[0])
+    w.add_joint(arb.RzRxJoint(), (rf, bodies['FootR'].frames[0]) )
     
     rf = bodies['LPT'].newframe(Hg.transl((0, 0, -L['zhip']/2.)))
-    w.add_joint(arb.RzRyRxJoint(), rf, bodies['ThighL'].frames[0])
+    w.add_joint(arb.RzRyRxJoint(), (rf, bodies['ThighL'].frames[0]) )
     
     rf = bodies['ThighL'].newframe(Hg.transl((0, -L['yfemurL'], 0)))
-    w.add_joint(arb.HingeJoint(),rf,bodies['ShankL'].frames[0])
+    w.add_joint(arb.HingeJoint(), (rf,bodies['ShankL'].frames[0]) )
     
     rf = bodies['ShankL'].newframe(Hg.transl((0, -L['ytibiaL'], 0)))
-    w.add_joint(arb.RzRxJoint(), rf, bodies['FootL'].frames[0])
+    w.add_joint(arb.RzRxJoint(), (rf, bodies['FootL'].frames[0]) )
     
     rf = bodies['LPT'].newframe(Hg.transl((-L['xvT10'], L['yvT10'], 0)))
-    w.add_joint(arb.RzRyRxJoint(), rf, bodies['UPT'].frames[0])
+    w.add_joint(arb.RzRyRxJoint(), (rf, bodies['UPT'].frames[0]) )
     
     rf = bodies['UPT'].newframe(
         Hg.transl((L['xsternoclavR'], L['ysternoclavR'], L['zsternoclavR'])))
-    w.add_joint(arb.FreeJoint(), rf, bodies['ScapulaR'].frames[0])
+    w.add_joint(arb.FreeJoint(), (rf, bodies['ScapulaR'].frames[0]) )
     
     rf = bodies['ScapulaR'].newframe(
         Hg.transl((-L['xshoulderR'], L['yshoulderR'], L['zshoulderR'])))
-    w.add_joint(arb.RzRyRxJoint(), rf, bodies['ArmR'].frames[0])
+    w.add_joint(arb.RzRyRxJoint(), (rf, bodies['ArmR'].frames[0]) )
     
     rf = bodies['ArmR'].newframe(Hg.transl((0, -L['yhumerusR'], 0)))
-    w.add_joint(arb.RzRyJoint(), rf, bodies['ForearmR'].frames[0])
+    w.add_joint(arb.RzRyJoint(), (rf, bodies['ForearmR'].frames[0]) )
     
     rf = bodies['ForearmR'].newframe(Hg.transl((0, -L['yforearmR'], 0)))
-    w.add_joint(arb.RzRxJoint(), rf, bodies['HandR'].frames[0])
+    w.add_joint(arb.RzRxJoint(), (rf, bodies['HandR'].frames[0]) )
     
     rf = bodies['UPT'].newframe(
         Hg.transl((L['xsternoclavL'], L['ysternoclavL'], -L['zsternoclavL'])))
-    w.add_joint(arb.RyRxJoint(), rf, bodies['ScapulaL'].frames[0])
+    w.add_joint(arb.RyRxJoint(), (rf, bodies['ScapulaL'].frames[0]) )
     
     rf = bodies['ScapulaL'].newframe(
         Hg.transl((-L['xshoulderL'], L['yshoulderL'], -L['zshoulderL'])))
-    w.add_joint(arb.RzRyRxJoint(), rf, bodies['ArmL'].frames[0])
+    w.add_joint(arb.RzRyRxJoint(), (rf, bodies['ArmL'].frames[0]) )
     
     rf = bodies['ArmL'].newframe(Hg.transl((0, -L['yhumerusL'], 0)))
-    w.add_joint(arb.RzRyJoint(), rf, bodies['ForearmL'].frames[0])
+    w.add_joint(arb.RzRyJoint(), (rf, bodies['ForearmL'].frames[0]) )
     
     rf = bodies['ForearmL'].newframe(Hg.transl((0, -L['yforearmL'], 0)))
-    w.add_joint(arb.RzRxJoint(), rf, bodies['HandL'].frames[0])
+    w.add_joint(arb.RzRxJoint(), (rf, bodies['HandL'].frames[0]) )
     
     rf = bodies['UPT'].newframe(Hg.transl((L['xvT10'], L['yvC7'], 0)))
-    w.add_joint(arb.RzRyRxJoint(), rf, bodies['Head'].frames[0])
+    w.add_joint(arb.RzRyRxJoint(), (rf, bodies['Head'].frames[0]) )
     
     return (w, bodies, tags)
 

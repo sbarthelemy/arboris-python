@@ -3,10 +3,16 @@
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
 from abc import ABCMeta, abstractmethod
-from numpy import zeros, eye
+from numpy import array, zeros, eye, dot
 from numpy.linalg import solve
+import homogeneousmatrix as Hg
 
-class BodyConstraint(object):
+class Constraint(object):
+
+    def __init__(self, name=None):
+        self._name = name
+
+class BodyConstraint(Constraint):
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -45,8 +51,7 @@ class BodyConstraint(object):
 class BallAndSocketConstraint(BodyConstraint):
     r"""
     This class describes and solves a ball and socket kinematic constraint
-    between two bodies (more precisely, between two frames rigidly fixed to two
-    distinct bodies).
+    between two frames which are rigidly fixed to two distinct bodies.
 
     Let's denote 0 and 1 these two frames. The constraint can be expressed as a
     condition on their relative pose, requiring  than the ball and socket
@@ -59,7 +64,7 @@ class BallAndSocketConstraint(BodyConstraint):
         \Hg[0]_1 = 
         \begin{bmatrix}
             \pre[0]R_1 & 0\\
-            0            & 1
+            0          & 1
         \end{bmatrix}
         \Leftrightarrow 
         \pre[0]p_1 = 0
@@ -103,25 +108,18 @@ class BallAndSocketConstraint(BodyConstraint):
         \\
         \pre[0]p_1 
         &= \pre[0]p_1(0) + dt \; (\Delta v +  Y \; \delta f) 
+
     where :math:`Y` is the constraint admittance matrix. Before the next
     iteration, the constraint force adjustment is updated: 
     :math:`\Delta f := \Delta f + \delta f`.
 
-    W_10: constraint wrench exerted by 0 on 1, expressed in 1. Thus, the power
-    dissipated in the constraint is V_10 * W_01
-
-    p_01 = p_01_0 + dt*dvel_10
-        p_01_next == p_01_0 + dt*dvel + dt*Y*ddforce
-        we want p_01_next == 0 so we choose
-        ddforce = -Y^{-1} *(p_0/dt + dvel) 
-
-    its linearization gives
     """
    
-    def __init__(self):
+    def __init__(self, name=None):
         self._force0 = zeros(3)
-        self._pos0 = zeros(3)
+        self._pos0 = None
         self._dforce = zeros(3)
+        Constraint.__init__(self, name)
 
     def ndol(self):
         return 3
@@ -130,6 +128,13 @@ class BallAndSocketConstraint(BodyConstraint):
         return True
 
     def force(self):
+        """
+
+        Tests:
+        >>> c = BallAndSocketConstraint()
+        >>> c.force()
+        array([ 0.,  0.,  0.])
+        """
         return self._force0 + self._dforce
 
     def predict(self):
@@ -138,14 +143,29 @@ class BallAndSocketConstraint(BodyConstraint):
         self._pos0 = None
 
     def init(self):
-        pass
-        #TODO: update self._pos0
+        r"""
+        Compute the predicted relative position error between the socket and
+        ball centers, :math:`\pre[0]p_1(0)` and save it in ``self._pos0``.
+
+        .. math::
+
+            \Hg[0]_1(0) 
+            &= \left(\Hg[g]_1(0)\right)^{-1} \; \Hg[g]_1(0) \\
+            \Hg[0]_1(0) 
+            &=
+            \begin{bmatrix}
+            \pre[0]R_1(0) & \pre[0]p_1(0) \\
+            0             & 1
+            \end{bmatrix}
+
+        """
+        H_01 = dot(Hg.inv(self._frames[0].wpose()), self._frames[1].wpose())
+        self._pos0 = H_01[0:3,3]
 
     def jacobian(self):
-        pass
-        #TODO: add adjoint
-        return (self._frames[0].jacobian()[3:6,:]
-                -self._frames[1].jacobian()[3:6,:])
+        H_01 = dot(Hg.inv(self._frames[0].wpose()), self._frames[1].wpose())
+        return (dot(Hg.adjoint(H_01)[3:6,:], self._frames[1].jacobian())
+                -self._frames[0].jacobian()[3:6,:])
 
     def solve(self, dvel, admittance, dt):
         r"""
@@ -166,8 +186,34 @@ class BallAndSocketConstraint(BodyConstraint):
 
         and update the constraint force adjustment :math:`\Delta f` 
 
+        The function arguments are
+
+        - ``dvel``: :math:`\Delta v`
+        - ``admittance``: :math:`Y`
+        - ``dt``: :math:`dt`
+
+        Tests:
+
+        >>> c = BallAndSocketConstraint()
+        >>> c._pos0 = array([0.1, 0.2, 0.3])
+        >>> c._force0 = array([-0.1, -0.2, -0.3])
+        >>> c._dforce = zeros((3))
+        >>> dvel = zeros((3))
+        >>> adm = 0.5*eye(3)
+        >>> dt = 0.1
+        >>> ddforce = c.solve(dvel, adm, dt)
+        >>> c._pos0 + dt * ( dvel + dot(adm, ddforce) )
+        array([ 0.,  0.,  0.])
+        >>> dvel = array([0.05, -0.05, 0.05])
+        >>> ddforce = c.solve(dvel, adm, dt)
+        >>> c._pos0 + dt * ( dvel + dot(adm, ddforce) )
+        array([ 0.,  0.,  0.])
+
         """
         ddforce = solve(-admittance, dvel+self._pos0/dt)
         self._dforce += ddforce
         return ddforce
 
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

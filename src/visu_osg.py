@@ -11,6 +11,15 @@ import numpy as np
 import visu
 
 
+def pose_2_mat(pose):
+    m = osg.Matrixd()
+    m.set(pose[0,0], pose[1,0], pose[2,0], pose[3,0],
+          pose[0,1], pose[1,1], pose[2,1], pose[3,1],
+          pose[0,2], pose[1,2], pose[2,2], pose[3,2],
+          pose[0,3], pose[1,3], pose[2,3], pose[3,3],
+          ) # here we do the f***ing transposition: beware of error
+    return m
+
 
 #we create the frame node and we will re-use it for every frame created
 def create_generic_frame(scale=1.):
@@ -44,60 +53,24 @@ def create_generic_frame(scale=1.):
     geo_frame.addChild(geo_z)
     return geo_frame
     
-class World(visu.World):
-    """ A drawable version of rigidmotion.World
-    """
-    def __init__(self, world, scale):
-        self._world = world
-        self._scale = scale
-        self.bodies = []
-        self._root = osg.Group()    # we save the root node of our osg
-        # create the bodies and save them
-        gen_frame = create_generic_frame(self._scale)
-        self._color_set = [(1,1,1), (1,0,0), (0,1,0), (0,0,1)]
-        i=0
-        for b in self._world.bodies:
-            color = self._color_set[i%len(self._color_set)]
-            self.add_body(b, scale, color, gen_frame)
-            i+=1
-        # create the osg viewer
-        self.viewer = osgViewer.Viewer()
-        self.viewer.setSceneData(self._root)
-        self.viewer.setCameraManipulator(osgGA.TrackballManipulator())
-        self.viewer.setUpViewInWindow(100,100, 800, 600)
-        
-    def add_body(self, added_body, scale, color, gen_frame):
-        new_vbody = Body(added_body, scale, color, gen_frame)
-        self._root.addChild(new_vbody.body_node)
-        self.bodies.append(new_vbody)
-
-    def update(self, showFrames = None, showLinks = None):
-        for b in self.bodies:
-            b.update(showFrames, showLinks)
-
-def pose_2_mat(pose):
-    m = osg.Matrixd()
-    m.set(pose[0,0], pose[1,0], pose[2,0], pose[3,0],
-          pose[0,1], pose[1,1], pose[2,1], pose[3,1],
-          pose[0,2], pose[1,2], pose[2,2], pose[3,2],
-          pose[0,3], pose[1,3], pose[2,3], pose[3,3],
-          ) # here we do the f***ing transposition: good to do some error
-    return m
     
 def draw_frame(pose=None, text=None, gen_frame=None, scale = 1.):
     """Draw the arrows and label of a frame.
     """
     if gen_frame == None:
         gen_frame = create_generic_frame()
-    #create the text geode and add it as frame child
-    frame_text = osgText.Text()
-    frame_text.setCharacterSize(scale)
-    frame_text.setText(str(text))
-    frame_text.setDrawMode(osgText.Text.TEXT | osgText.Text.BOUNDINGBOX)
-    frame_text.setAlignment(osgText.Text.LEFT_TOP)
-    #frame_text.setAxisAlignment(osgText.Text.SCREEN)   # decomment if want HUD version
-    geo_text = osg.Geode()
-    geo_text.addDrawable(frame_text)
+    
+    if text != None:
+        #create the text geode and add it as frame child
+        frame_text = osgText.Text()
+        frame_text.setCharacterSize(scale)
+        frame_text.setText(str(text))
+        frame_text.setDrawMode(osgText.Text.TEXT | osgText.Text.BOUNDINGBOX)
+        frame_text.setAlignment(osgText.Text.CENTER_TOP)
+        #frame_text.setAxisAlignment(osgText.Text.SCREEN)   # un-comment if want HUD version
+        geo_text = osg.Geode()
+        geo_text.addDrawable(frame_text)
+
     # set position
     if pose==None:
         pose = np.eye(4)
@@ -106,7 +79,8 @@ def draw_frame(pose=None, text=None, gen_frame=None, scale = 1.):
     frame.addChild(gen_frame) #add childs
     frame.addChild(geo_text)  #
     return frame
-
+    
+    
 def draw_link(start, end, scale, color):
     z = np.array([0.,0.,1.])
     v = np.array([end[0,3]-start[0,3], end[1,3]-start[1,3], end[2,3]-start[2,3]])
@@ -131,7 +105,57 @@ def draw_link(start, end, scale, color):
         link.addChild(geo)
         return link
     else:
-        return None
+        return None    
+
+    
+    
+    
+    
+class World(visu.World):
+    """ A drawable version of rigidmotion.World
+    """
+    def __init__(self, world, scale):
+        self._world = world
+        self._scale = scale
+        self.bodies = []
+        self.COI = np.array([0., 0., 0.])
+        self._root = osg.Group()    # we save the root node of our osg
+        # create the bodies and save them
+        gen_frame = create_generic_frame(self._scale)
+        self._color_set = [(1,1,1), (1,0,0), (0,1,0), (0,0,1)]
+        i=0
+        for b in self._world.bodies:
+            color = self._color_set[i%len(self._color_set)]
+            self.COI = self.COI + self.add_body(b, scale, color, gen_frame)
+            i+=1
+        self.COI = self.COI/len(self._world.bodies)
+        # create the osg viewer
+        self.viewer = osgViewer.Viewer()
+        self.viewer.setUpViewInWindow(100,100, 800, 600)
+        manipulator = osgGA.TrackballManipulator()
+        self.viewer.setCameraManipulator(manipulator)
+        manipulator.setHomePosition(osg.Vec3d(self.COI[0]+25*scale, self.COI[1]+25*scale, self.COI[2]+25*scale),
+                                    osg.Vec3d(self.COI[0]  , self.COI[1], self.COI[2]),
+                                    osg.Vec3d(0,1,0))
+        self.viewer.home()
+        self.viewer.setSceneData(self._root) # we give the root_node to show
+        
+        
+    def add_body(self, added_body, scale, color, gen_frame):
+        new_vbody = Body(added_body, scale, color, gen_frame)
+        self._root.addChild(new_vbody.body_node)
+        self.bodies.append(new_vbody)
+        return new_vbody.COI
+
+
+    def update(self, showFrames = None, showLinks = None):
+        for b in self.bodies:
+            b.update(showFrames, showLinks)
+# end of class World()
+
+
+
+
 
 class Body(visu.Body):
     """ A drawable version of rigidmotion.Body
@@ -142,6 +166,7 @@ class Body(visu.Body):
         self.links = []
         self._color = color
         self._scale = scale
+        self.COI = np.array([0., 0., 0.])
         # create the osg body sub tree
         self.body_node = osg.MatrixTransform()
         self.switcher = osg.Switch()
@@ -160,6 +185,7 @@ class Body(visu.Body):
     def draw_body(self, gen_frame):
         # set the matrixTransform
         self.body_node.setMatrix(pose_2_mat(self._body.pose))
+        self.COI = self._body.pose[0:3,3]
         for f in self._body.frames:
             nf = draw_frame(f.pose, f.name, gen_frame, self._scale)
             self.group_frames.addChild(nf)
@@ -176,6 +202,10 @@ class Body(visu.Body):
             self.switcher.setChildValue(self.group_frames, showFrames)
         if showLinks != None:
             self.switcher.setChildValue(self.group_links, showLinks)
+# end of class Body()
+
+
+
 
 
 if __name__=='__main__':
@@ -206,7 +236,7 @@ if __name__=='__main__':
             w.joints[3].gpos=[t, t]
             
         w.geometric()
-        vw.update(False, True) #(showframe, showBody)
+        vw.update(True, True) #(showframe, showBody)
         vw.viewer.frame()
         
         

@@ -29,7 +29,7 @@ def mass_parallelepiped(m,lengths):
         m/12.*(a**2+b**2),
         m, m, m))
 
-def triplehinge():
+def triplehinge(world=None):
     """Build a  planar 3-R robot."""
 
     arm_length=0.5
@@ -40,10 +40,12 @@ def triplehinge():
     hand_mass=0.2
 
     # Create a world
-    w = arb.World()
-    
-    # the world already has a ground body
-    ground = w.bodies[0]
+    if world == None:
+        w = arb.World()
+    elif isinstance(world, arb.World):
+        w = world
+    else:
+        raise ValueError('the world argument must be an instance of the World class')
 
     # create other bodies
     arm = arb.Body(
@@ -70,11 +72,10 @@ def triplehinge():
 
 
     # create a joint between the ground and the arm
-    shoulder = arb.HingeJoint()
+    shoulder = arb.HingeJoint(name='Shoulder')
     # add the new joint to the world (this will also add arm to w.bodies)
     w.add_joint(joint = shoulder,
-               ref_frame = ground.frames[0],
-               new_frame = arm.frames[0])
+                frames = (w.ground.frames[0], arm.frames[0]) )
 
     
     # add a frame to the arm, where the forearm will be anchored
@@ -82,20 +83,16 @@ def triplehinge():
         arb.Hg.transl((0,arm_length,0)),
         'ElbowLeftFrame')
     # create a joint between the arm and the forearm
-    elbow = arb.HingeJoint()
-    w.add_joint(joint = elbow,
-               ref_frame = f,
-               new_frame = forearm.frames[0])
+    elbow = arb.HingeJoint(name='Elbow')
+    w.add_joint(joint = elbow, frames = (f, forearm.frames[0]) )
 
     # add a frame to the forearm, where the hand will be anchored
     f = forearm.newframe(
         arb.Hg.transl((0,forearm_length,0)),
         'WristLeftFrame')
     # create a joint between the forearm and the hand
-    wrist = arb.HingeJoint()
-    w.add_joint(joint = wrist, 
-               ref_frame = f,
-               new_frame = hand.frames[0])
+    wrist = arb.HingeJoint(name = 'Wrist')
+    w.add_joint( wrist, (f, hand.frames[0]) )
 
     return w
 

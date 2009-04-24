@@ -5,9 +5,11 @@ class JointController(object):
     __metaclass__ = ABCMeta
 
     def ndof(self):
-        return len(self._dof_indices)
+        return len(self._dof)
 
-
+    def __init__(self, name=None):
+        self._name = name
+        
     @abstractmethod
     def update(self, dt):
         pass
@@ -25,7 +27,9 @@ class JointController(object):
 
 class ProportionalDerivativeController(JointController):
 
-    
+    def __init__(self, name=None):
+        JointController.__init__(self, name)
+
     def torque(self):
         return ones(self.ndof())
 
