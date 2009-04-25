@@ -6,8 +6,9 @@ from numpy import array, zeros, eye, dot, sin, cos
 from rigidmotion import RigidMotion
 from abc import ABCMeta, abstractmethod
 import homogeneousmatrix
+from misc import NamedObject
 
-class Joint(RigidMotion):
+class Joint(RigidMotion, NamedObject):
     """any joint
     H
     T_
@@ -15,7 +16,7 @@ class Joint(RigidMotion):
     __metaclass__ = ABCMeta
 
     def __init__(self, name=None):
-        self._name = name
+        NamedObject.__init__(self, name)
 
     def twist(self):
         return dot(self.jacobian(), self.gvel)
@@ -65,9 +66,9 @@ class FreeJoint(Joint):
         >>> j.gvel
         array([ 0.,  0.,  0.,  0.,  0.,  0.])
         """
-        if gpos == None:
+        if gpos is None:
             gpos = eye(4)
-        if gvel == None:
+        if gvel is None:
             gvel = zeros((6))
         self.gpos = array(gpos).reshape((4,4))
         self.gvel = array(gvel).reshape((6))

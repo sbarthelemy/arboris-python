@@ -57,14 +57,14 @@ class World(visu.World):
 def draw_frame(pose=None, text=None, parent=None, scale=1):
     """Draw the arrows and label of a frame.
     """
-    if pose==None:
+    if pose is None:
         pose = np.eye(4)
     (pos,axis,up) = htr_to_visual(pose)
     f = visual.frame(frame=parent, pos=pos, axis=axis, up=up)
     visual.arrow(frame=f, axis=(scale,0,0), color=visual.color.red)
     visual.arrow(frame=f, axis=(0,scale,0), color=visual.color.green)
     visual.arrow(frame=f, axis=(0,0,scale), color=visual.color.blue)
-    if text !=None:
+    if text is not None:
         visual.label(frame=f, yoffset=-10, box=0, line=0, text=str(text))
     return f
     
@@ -116,7 +116,7 @@ class Body(visu.Body):
         self.frames[0].up = up
         
 
-if __name__=='__main__':
+if __name__ == '__main__':
     # testing!
     from worldfactory import triplehinge
     w = triplehinge()

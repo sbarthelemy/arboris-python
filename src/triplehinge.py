@@ -12,6 +12,7 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
 import arboris as arb
 import numpy as np
+from joints import HingeJoint
 
 def transport_mass_matrix(mass,H):
     """Transport (express) the mass matrix into another frame."""
@@ -40,7 +41,7 @@ def triplehinge(world=None):
     hand_mass=0.2
 
     # Create a world
-    if world == None:
+    if world is None:
         w = arb.World()
     elif isinstance(world, arb.World):
         w = world
@@ -72,7 +73,7 @@ def triplehinge(world=None):
 
 
     # create a joint between the ground and the arm
-    shoulder = arb.HingeJoint(name='Shoulder')
+    shoulder = HingeJoint(name='Shoulder')
     # add the new joint to the world (this will also add arm to w.bodies)
     w.add_joint(joint = shoulder,
                 frames = (w.ground.frames[0], arm.frames[0]) )
@@ -83,7 +84,7 @@ def triplehinge(world=None):
         arb.Hg.transl((0,arm_length,0)),
         'ElbowLeftFrame')
     # create a joint between the arm and the forearm
-    elbow = arb.HingeJoint(name='Elbow')
+    elbow = HingeJoint(name='Elbow')
     w.add_joint(joint = elbow, frames = (f, forearm.frames[0]) )
 
     # add a frame to the forearm, where the hand will be anchored
@@ -91,7 +92,7 @@ def triplehinge(world=None):
         arb.Hg.transl((0,forearm_length,0)),
         'WristLeftFrame')
     # create a joint between the forearm and the hand
-    wrist = arb.HingeJoint(name = 'Wrist')
+    wrist = HingeJoint(name = 'Wrist')
     w.add_joint( wrist, (f, hand.frames[0]) )
 
     return w

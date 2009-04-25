@@ -45,11 +45,12 @@ import twistvector as T
 import adjointmatrix
 from abc import ABCMeta, abstractmethod
 from math import pi
-from controllers import *
-from joints import *
-from constraints import *
+from controllers import Controller
+from joints import Joint
+from constraints import Constraint
+from misc import NamedObject
 
-class World(object):
+class World(NamedObject):
 
     """
 
@@ -61,8 +62,8 @@ class World(object):
     >>> w.update_dynamic()
     """
 
-    def __init__(self,name=None):
-        self._name = name
+    def __init__(self, name=None):
+        NamedObject.__init__(self, name)
         self.ground = Body(u"ground")
         self.bodies = [self.ground] 
         self.joints = []
@@ -148,9 +149,9 @@ class World(object):
         for b in self.bodies:
             if new_body is b:
                raise ValueError("The new/local/child  frame is attached to a body that is already in world")
-        if (new_body.parentjoint != None):
+        if (new_body.parentjoint is not None):
             raise ValueError("The new/local/child frame is attached to a body that already has a parent joint")
-        if new_body.childrenjoints != []:
+        if len(new_body.childrenjoints) > 0:
             raise ValueError("The new/local/child frame is attached to a body that already has a children joints")
         
         # extend the world generalized velocities
@@ -178,6 +179,7 @@ class World(object):
 
         >>> from worldfactory import triplehinge
         >>> w = triplehinge()
+        >>> from controllers import ProportionalDerivativeController
         >>> c0 = ProportionalDerivativeController(name = 'my controller')
         >>> w.add_jointcontroller(c0, w.joints[1:3])
         >>> c1 = ProportionalDerivativeController()
@@ -446,6 +448,7 @@ class World(object):
         TODO: check the two last tests results!
         >>> from worldfactory import triplehinge
         >>> w = triplehinge()
+        >>> from controllers import ProportionalDerivativeController
         >>> c0 = ProportionalDerivativeController('my controller')
         >>> w.add_jointcontroller(c0, w.joints[1:2])
         >>> w.update_dynamic()
@@ -487,6 +490,7 @@ class World(object):
         TODO: check the last test result!
         >>> from worldfactory import triplehinge
         >>> w = triplehinge()
+        >>> from controllers import ProportionalDerivativeController
         >>> c0 = ProportionalDerivativeController('my controller')
         >>> w.add_jointcontroller(c0, w.joints[1:2])
         >>> w.update_dynamic()
@@ -503,9 +507,10 @@ class World(object):
             j.integrate(self._dt)
 
 
-    def solve_constraints(self):
-        
+    def update_constraints(self):
         r"""
+        
+        Algorithm:
 
         In accordance with the integration scheme, we assume a first
         order model betwen generalized velocities and generalized 
@@ -520,11 +525,10 @@ class World(object):
                 + dt \; \GForce(t)
             \right)
 
-        where 
+        where
         - the admittance matrix  :math:`Y'` takes into account a 
-          first order model of the actuators 
-          
-        - and the actuators generalized forces :math:`\GForce(t)` 
+          first order model of the actuators,
+        - the actuators generalized forces :math:`\GForce(t)` 
           are assumed to be constant during the :math:`[t , t+dt ]`
           time interval.
         
@@ -599,7 +603,7 @@ class World(object):
             + Y(t) \; f
 
 
-        This function works in three steps:
+        This method computes the constraint forces in three steps:
 
         - ask each constraint for its jacobian 
         - compute :math:`J`, :math:`v`  and :math:`Y`
@@ -607,78 +611,23 @@ class World(object):
           :math:`\pre[c]f`. At each iteration the force is 
           updated by :math:`\Delta\pre[c]f`
         
-        f(\Hg[0]_1) &= 0  
-        \Leftrightarrow 
-        \Hg[0]_1 = 
-        \begin{bmatrix}
-            \pre[0]R_1 & 0\\
-            0          & 1
-        \end{bmatrix}
-        \Leftrightarrow 
-        \pre[0]p_1 = 0
-
-
-
-        cQ_pred_i
-        cv_pred_i = cv_pred0_i + cY_i: * cf_pred
-
-        cf = cf_pred + delta_cf
-        cv_i = cv_pred_i + delta_cv_i
-        delta_cv_i = cY_i: * delta_cf
-        cH_i = cQ_pred_i*exp(dt*delta_cv_i)
-        where cf_pred is kept from the last timestep or is zero.
-
-        we'll then udate delta_cf iteratively
-        
-
-        for each constraint, one has
-
-        cv_i = cv_pred_i + cY_i: * delta_cf
-        cv_i = cv_pred0_i + cY_ii * delta_cf_i + cY_i! * delta_cf_!
-
-        cv_i = cv_pred0_i + cY_ii * cf_i + cY_i! * cf_!
-        the constraint holds on cv_i, cf_i and cH_i, solving the constraint
-        means updating a delta_cf_i such that the constraints are satisfied
-
-joint-space admitance
-        jv = jY * jf 
-
-        cv = cv_free + cY * cf
-        cv = cv_free_i + coupling + cY_ii * cf_i
-
-        Build cY:
-        f(H_rn, W) + S*V_nr*dt = 0
-        ou cv = S*V_nr = S * ( V_ng - Ad_nr*V_rg  )
-        et W = S' * cf
-
-        J_c = S * (J_nq - Ad_nr * J_g)
-        cY = J_c * jY * J_c'
-
-        for c in active_contraints
-        cY = 0
-        cY += 
-
-        Solve with Gauss-Seidel:
-        dcv = 0
-        for k in iterations:
-            for (i,c) in active_contraints:
-                cf_i_old = c.force
-                cf_i = c.update(cv_i,cY_ii)
-                dcv +=  cY_:i (cf_i - cf_i_old)
 
         Test:
         >>> b0 = Body(mass = eye(6))
+        >>> from joints import FreeJoint
         >>> j0 = FreeJoint()
         >>> w = World()
         >>> w.add_joint(j0, (w.ground.frames[0], b0.frames[0]) )
         >>> j1 = FreeJoint()
         >>> b1 = Body(mass = 2*eye(6))
         >>> w.add_joint(j1, (b0.frames[0], b1.frames[0]) )
+        >>> from constraints import BallAndSocketConstraint 
         >>> c0 = BallAndSocketConstraint()
         >>> w.add_constraint(c0, (w.ground.frames[0], b0.frames[0]) )
         >>> w.update_dynamic()
         >>> w.update_controllers()
-        >>> w.solve_constraints()
+        >>> w.update_constraints()
+        >>> c0._force
         """
 
         constraints = []
@@ -694,21 +643,22 @@ joint-space admitance
         for c in constraints:
             c.init()
             jac[c._dol,:] = c.jacobian()
+
         vel = dot(jac, 
                   dot(self._mass, self._gvel) 
                   + self._dt * self._controller_torque)
         admittance = dot(jac, dot(self._admittance, jac.T))
 
         k=0
-        while k < 20: #TODO change the condition
+        while k < 2: #TODO change the break condition
             for c in constraints:
                 dforce = c.solve(vel[c._dol], 
                                  admittance[c._dol,c._dol],
                                  self._dt)
                 vel += dot(admittance[:,c._dol], dforce)
-                k+=1 
+            k+=1 
 
-class Frame(object):
+class Frame(NamedObject):
 
     def __init__(self, body, bpose=None, name=None):
         """Create a frame rigidly fixed to a body. 
@@ -733,10 +683,10 @@ class Frame(object):
          [ 1.  1.  1.  1.]] is not an homogeneous matrix
 
         """
-        if bpose == None:
+        if bpose is None:
             bpose = eye(4)
         
-        self._name = name
+        NamedObject.__init__(self, name)
         Hg.checkishomogeneousmatrix(bpose)
         self._bpose = bpose
         if not(isinstance(body,Body)):
@@ -757,20 +707,21 @@ class Frame(object):
     def jacobian(self):
         return dot(Hg.iadjoint(self._bpose), self.body.jacobian)
 
-class Body(object):
+class Body(NamedObject):
 
     def __init__(self, name=None, mass=None, viscosity=None):
-        if mass == None:
+        if mass is None:
             mass = zeros((6,6))
         else:
             pass #TODO: check the mass matrix
-        if viscosity == None:
+        if viscosity is None:
             viscosity = zeros((6,6))
         else:
             pass #TODO: check the viscosity matrix
 
-        self.name = unicode(name)
-        self.frames = [Frame(self, eye(4), unicode(name))]
+        NamedObject.__init__(self, name)
+        # the object will have a frame, with the same name as the object itself
+        self.frames = [Frame(self, eye(4), name)]
         self.parentjoint = None
         self.childrenjoints = []
         self.mass = mass
@@ -791,7 +742,7 @@ class Body(object):
 
     def ancestors(self):
         from itertools import imap
-        if self.parentjoint != None:
+        if self.parentjoint is not None:
             parent = self.parentjoint._frames[0].body
             yield parent
             for a in parent.ancestors():
@@ -950,31 +901,16 @@ def simulate(world, time):
     Example:
     >>> from triplehinge import triplehinge
     >>> w = triplehinge()
-    >>> simulate(w, numpy.arange(0,0.1,0.001))
+    >>> simulate(w, numpy.arange(0,0.01,0.001))
     """
 
-    if len(world._constraints) == 0:
-        with_constraints = False
-    else:
-        with_constraints = True
-
-    if with_constraints:
-        previous_t = time[0]
-        for t in time[1:]:
-            dt = t - previous_t
-            world.update_dynamic()
-            world.update_prediction() #TODO: !!
-            world.update_controllers()
-            world.integrate()
-            
-    else:
-        previous_t = time[0]
-        for t in time[1:]:
-            dt = t - previous_t
-            world.update_dynamic()
-            world.update_controllers()
-            world.integrate()
-            previous_t = t
+    previous_t = time[0]
+    for t in time[1:]:
+        dt = t - previous_t
+        world.update_dynamic()
+        world.update_controllers()
+        world.update_constraints()
+        world.integrate()
 
 
 if __name__ == "__main__":

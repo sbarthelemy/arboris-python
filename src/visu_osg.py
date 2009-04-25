@@ -57,10 +57,10 @@ def create_generic_frame(scale=1.):
 def draw_frame(pose=None, text=None, gen_frame=None, scale = 1.):
     """Draw the arrows and label of a frame.
     """
-    if gen_frame == None:
+    if gen_frame is None:
         gen_frame = create_generic_frame()
     
-    if text != None:
+    if text is not None:
         #create the text geode and add it as frame child
         frame_text = osgText.Text()
         frame_text.setCharacterSize(scale)
@@ -72,7 +72,7 @@ def draw_frame(pose=None, text=None, gen_frame=None, scale = 1.):
         geo_text.addDrawable(frame_text)
 
     # set position
-    if pose==None:
+    if pose is None:
         pose = np.eye(4)
     frame = osg.MatrixTransform()   #create frame node
     frame.setMatrix(pose_2_mat(pose))
@@ -178,7 +178,7 @@ class Body(visu.Body):
         self.switcher.addChild(self.group_frames) # ... and link them with the tree
         self.switcher.addChild(self.group_links)
         self.switcher.addChild(self.group_shapes)
-        if gen_frame == None:
+        if gen_frame is None:
             gen_frame = create_generic_frame()
         self.draw_body(gen_frame)
         
@@ -191,16 +191,16 @@ class Body(visu.Body):
             self.group_frames.addChild(nf)
             self.frames.append(nf)
             lf = draw_link(np.eye(4), f.pose, self._scale, self._color)
-            if lf != None:
+            if lf is not None:
                 self.group_links.addChild(lf)
                 self.links.append(lf)
 
     def update(self, showFrames, showLinks):
         pose = self._body.pose
         self.body_node.setMatrix(pose_2_mat(pose))
-        if showFrames != None:
+        if showFrames is not None:
             self.switcher.setChildValue(self.group_frames, showFrames)
-        if showLinks != None:
+        if showLinks is not None:
             self.switcher.setChildValue(self.group_links, showLinks)
 # end of class Body()
 

@@ -1,15 +1,21 @@
 from abc import ABCMeta, abstractmethod
 from numpy import array, zeros, ones, eye, dot
+from misc import NamedObject
 
-class JointController(object):
+class Controller(NamedObject):
+    def __init__(self, name=None):
+        NamedObject.__init__(self, name)
+
+class BodyController(Controller):
+    pass
+
+class JointController(Controller):
     __metaclass__ = ABCMeta
 
     def ndof(self):
         return len(self._dof)
 
-    def __init__(self, name=None):
-        self._name = name
-        
+            
     @abstractmethod
     def update(self, dt):
         pass
@@ -24,6 +30,9 @@ class JointController(object):
     def torque(self):
         pass
 
+
+class WeightController(BodyController):
+    pass
 
 class ProportionalDerivativeController(JointController):
 

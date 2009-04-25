@@ -6,11 +6,12 @@ from abc import ABCMeta, abstractmethod
 from numpy import array, zeros, eye, dot
 from numpy.linalg import solve
 import homogeneousmatrix as Hg
+from misc import NamedObject
 
-class Constraint(object):
+class Constraint(NamedObject):
 
     def __init__(self, name=None):
-        self._name = name
+        NamedObject.__init__(self, name)
 
 class BodyConstraint(Constraint):
     __metaclass__ = ABCMeta
