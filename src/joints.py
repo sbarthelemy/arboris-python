@@ -2,7 +2,7 @@
 
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
-from numpy import array, zeros, eye, dot, sin, cos
+from numpy import array, zeros, eye, dot, sin, cos, dot
 from rigidmotion import RigidMotion
 from abc import ABCMeta, abstractmethod
 import homogeneousmatrix
@@ -90,8 +90,8 @@ class FreeJoint(Joint):
         return zeros((6,6))
 
     def integrate(self, dt):
-        from vectortwist import exp
-        self.gpos = self.gpos * exp( dt*self.gvel)
+        from twistvector import exp
+        self.gpos = dot(self.gpos, exp( dt*self.gvel))
 
 #class PivotJoint(Joint):
 #

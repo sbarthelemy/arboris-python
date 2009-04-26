@@ -17,6 +17,10 @@ class BodyConstraint(Constraint):
     __metaclass__ = ABCMeta
 
     @abstractmethod
+    def gforce(self):
+        pass
+
+    @abstractmethod
     def jacobian(self):
         pass
 
@@ -188,6 +192,9 @@ class BallAndSocketConstraint(BodyConstraint):
         dforce = solve(-admittance, vel + self._pos0/dt)
         self._force += dforce
         return dforce
+
+    def gforce(self):
+        return dot(self.jacobian().T, self._force)
 
 if __name__ == "__main__":
     import doctest

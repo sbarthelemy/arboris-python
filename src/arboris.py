@@ -76,7 +76,6 @@ class World(NamedObject):
         self._viscosity = None # updated by self.update_dynamic()
         self._controller_viscosity = None # updated by self.update_dynamic()
         self._nleffects = None # updated by self.update_dynamic()
-        self._dt = 0.001
 
     @property
     def mass(self):
@@ -171,7 +170,7 @@ class World(NamedObject):
             self._gvel[j._dof] = j.gvel[:]
             j.gvel = self._gvel[j._dof]
 
-    def add_jointcontroller(self, controller, joints):
+    def add_jointcontroller(self, controller, joints=None):
         """
         Add a joint controller to the world
 
@@ -186,13 +185,17 @@ class World(NamedObject):
         >>> w.add_jointcontroller(c1, w.joints[0:1])
         
         """
-        controller._dof = []
         for c in self._controllers:
             if c is controller:
-                raise ValueError("the controller is already in this world")
+                raise ValueError("the controller is already in the world")
 
-        for j in joints:
-            controller._dof.extend(range(j._dof.start, j._dof.stop))
+        if joints is None:
+            controller._dof = range(self.ndof())
+        else:
+            controller._dof = []
+            for j in joints:
+                controller._dof.extend(range(j._dof.start, j._dof.stop))
+        
         self._controllers.append(controller)
 
 
@@ -442,7 +445,7 @@ class World(NamedObject):
                     b.viscosity+b.nleffects,
                     b.jacobian))
 
-    def update_controllers(self):
+    def update_controllers(self, dt):
         """
 
         TODO: check the two last tests results!
@@ -452,62 +455,36 @@ class World(NamedObject):
         >>> c0 = ProportionalDerivativeController('my controller')
         >>> w.add_jointcontroller(c0, w.joints[1:2])
         >>> w.update_dynamic()
-        >>> w.update_controllers()
+        >>> w.update_controllers(0.001)
         >>> w._controller_viscosity
         array([[ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.]])
         >>> w._impedance
-        array([[ 0.68698833,  0.22344667,  0.02067333],
-               [ 0.22344667,  0.09344667,  0.01067333],
-               [ 0.02067333,  0.01067333,  0.00267333]])
+        array([[ 686.98833333,  223.44666667,   20.67333333],
+               [ 223.44666667,   93.44666667,   10.67333333],
+               [  20.67333333,   10.67333333,    2.67333333]])
         >>> w._admittance
-        array([[   7.32464279,  -20.30368091,   24.42013927],
-               [ -20.30368091,   75.95335802, -146.23344565],
-               [  24.42013927, -146.23344565,  769.05958752]])
+        array([[ 0.00732464, -0.02030368,  0.02442014],
+               [-0.02030368,  0.07595336, -0.14623345],
+               [ 0.02442014, -0.14623345,  0.76905959]])
 
         """
         # todo: move to simu
         self._controller_viscosity = zeros((self._ndof,self._ndof))
-        self._controller_torque = zeros(self._ndof)
+        self._gforce = zeros(self._ndof)
         for c in self._controllers:
-            c.update(dt=self._dt)
+            c.update(dt)
+
             self._controller_viscosity[
                 ix_(c._dof, c._dof)] += c.viscosity()
-            self._controller_torque[c._dof] += c.torque()
+            self._gforce[c._dof] += c.gforce()
         
-        self._impedance = self._mass + self._dt * ( 
-            self._viscosity - self._controller_viscosity + self._nleffects)
+        self._impedance = self._mass/dt + self._viscosity - \
+                self._controller_viscosity + self._nleffects
         self._admittance = numpy.linalg.inv(self._impedance)
 
-    def update_prediction(self):
-        pass #TODO
-
-    def integrate(self):
-        r"""
-        TODO: add support for kinematic controllers
-        TODO: add support fo external wrenches
-        TODO: check the last test result!
-        >>> from worldfactory import triplehinge
-        >>> w = triplehinge()
-        >>> from controllers import ProportionalDerivativeController
-        >>> c0 = ProportionalDerivativeController('my controller')
-        >>> w.add_jointcontroller(c0, w.joints[1:2])
-        >>> w.update_dynamic()
-        >>> w.update_controllers()
-        >>> w.integrate()
-        >>> w._gvel
-        array([-0.02030368,  0.07595336, -0.14623345])
-        """
-        b = dot(self._mass, self._gvel) + self._dt * self._controller_torque
-        # A = self._impedance
-        # self._gvel = numpy.linalg.solve(A,b)
-        self._gvel[:] = dot(self._admittance,b)
-        for j in self.joints:
-            j.integrate(self._dt)
-
-
-    def update_constraints(self):
+    def update_constraints(self, dt):
         r"""
         
         Algorithm:
@@ -568,38 +545,30 @@ class World(NamedObject):
 
         .. math::
 
-            J(t)
-            &=
+            J(t) &=
             \begin{bmatrix}
                 \pre[0]J_0(t)\\
                 \vdots\\
                 \pre[c]J_c(t)\\
                 \vdots
             \end{bmatrix}\\
-            v 
-            &= 
+            v &= 
             \begin{bmatrix}
                 \pre[0]v(t)\\ \vdots \\ \pre[c]v(t) \\ \vdots
             \end{bmatrix}\\
-            f(t)
-            &= 
+            f(t) &= 
             \begin{bmatrix}
                 \pre[0]f(t)\\ \vdots \\ \pre[c]f(t) \\ \vdots
             \end{bmatrix}\\
-            Y(t) 
-            &= 
+            Y(t) &= 
             J(t) \; Y'(t) \; J(t)^T
 
         and get a synthetic expression:
 
         .. math::
 
-            v(t+dt) 
-            &= J(t) \; Y'(t) 
-            \left( 
-                M(t)  \GVel(t) 
-                + dt \; \GForce(t)
-            \right)
+            v(t+dt) &= J(t) \; Y'(t) 
+            \left( M(t)  \GVel(t) + dt \; \GForce(t) \right)
             + Y(t) \; f
 
 
@@ -619,15 +588,32 @@ class World(NamedObject):
         >>> w = World()
         >>> w.add_joint(j0, (w.ground.frames[0], b0.frames[0]) )
         >>> j1 = FreeJoint()
-        >>> b1 = Body(mass = 2*eye(6))
+        >>> b1 = Body(mass = eye(6))
         >>> w.add_joint(j1, (b0.frames[0], b1.frames[0]) )
+        >>> from controllers import WeightController
+        >>> ctrl =  WeightController(w.ground)
+        >>> w.add_jointcontroller(ctrl)
         >>> from constraints import BallAndSocketConstraint 
         >>> c0 = BallAndSocketConstraint()
         >>> w.add_constraint(c0, (w.ground.frames[0], b0.frames[0]) )
         >>> w.update_dynamic()
-        >>> w.update_controllers()
-        >>> w.update_constraints()
+        >>> dt = 0.001
+        >>> w.update_controllers(dt)
+        >>> w.update_constraints(dt)
         >>> c0._force
+        array([ 0.  ,  9.81,  0.  ])
+        >>> w.integrate(dt)
+        >>> w.update_dynamic()
+        >>> b0.pose
+        array([[  1.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00],
+               [  0.00000000e+00,   1.00000000e+00,   0.00000000e+00,
+                 -3.09167026e-22],
+               [  0.00000000e+00,   0.00000000e+00,   1.00000000e+00,
+                  0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  1.00000000e+00]])
+
         """
 
         constraints = []
@@ -635,28 +621,52 @@ class World(NamedObject):
         for c in self._constraints:
             if c.is_active():
                 c._dol = slice(ndol, ndol+c.ndol())
-                ndol = ndol+c.ndol()
+                ndol = ndol + c.ndol()
                 constraints.append(c)
 
-        jac = zeros((ndol,self._ndof))
-        admittance = zeros((ndol,ndol))
+        jac = zeros((ndol, self._ndof))
+        admittance = zeros((ndol, ndol))
         for c in constraints:
             c.init()
             jac[c._dol,:] = c.jacobian()
 
-        vel = dot(jac, 
-                  dot(self._mass, self._gvel) 
-                  + self._dt * self._controller_torque)
+        vel = dot(jac, dot(self._admittance, 
+                           dot(self._mass, self._gvel/dt) + self._gforce))
         admittance = dot(jac, dot(self._admittance, jac.T))
 
         k=0
-        while k < 2: #TODO change the break condition
-            for c in constraints:
-                dforce = c.solve(vel[c._dol], 
-                                 admittance[c._dol,c._dol],
-                                 self._dt)
-                vel += dot(admittance[:,c._dol], dforce)
+        while k < 20: #TODO change the break condition
             k+=1 
+            for c in constraints:
+                dforce = c.solve(vel[c._dol], admittance[c._dol,c._dol], dt)
+                vel += dot(admittance[:,c._dol], dforce)
+        for c in constraints:
+            self._gforce += c.gforce()
+
+
+    def integrate(self, dt):
+        r"""
+        TODO: add support for kinematic controllers
+        TODO: add support fo external wrenches
+        TODO: check the last test result!
+        >>> from worldfactory import triplehinge
+        >>> w = triplehinge()
+        >>> from controllers import ProportionalDerivativeController
+        >>> c0 = ProportionalDerivativeController('my controller')
+        >>> w.add_jointcontroller(c0, w.joints[1:2])
+        >>> w.update_dynamic()
+        >>> dt = 0.001
+        >>> w.update_controllers(dt)
+        >>> w.integrate(dt)
+        >>> w._gvel
+        array([-0.02030368,  0.07595336, -0.14623345])
+        """
+        self._gvel[:] = dot(self._admittance, 
+                            dot(self._mass, self._gvel/dt) + self._gforce)
+        for j in self.joints:
+            j.integrate(dt)
+
+
 
 class Frame(NamedObject):
 
@@ -908,9 +918,9 @@ def simulate(world, time):
     for t in time[1:]:
         dt = t - previous_t
         world.update_dynamic()
-        world.update_controllers()
-        world.update_constraints()
-        world.integrate()
+        world.update_controllers(dt)
+        world.update_constraints(dt)
+        world.integrate(dt)
 
 
 if __name__ == "__main__":
