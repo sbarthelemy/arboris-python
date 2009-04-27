@@ -75,7 +75,6 @@ def draw_frame(pose=None, text=None, gen_frame=None, scale = 1.):
         geo_text = osg.Geode()
         geo_text.addDrawable(frame_text)
         frame.addChild(gen_frame) #add childs
-        frame.addChild(geo_text)  #
     return frame
     
     
@@ -91,7 +90,7 @@ def draw_link(start, end, scale, color):
         theta = np.arctan2(sin_theta, cos_theta)
         # create the cylinder
         cyl = osg.ShapeDrawable(osg.Cylinder(osg.Vec3(0.,0.,length/2), 0.1*scale, length))
-        cyl.setColor(osg.Vec4(color[0], color[1], color[2], 1.))
+        cyl.setColor(osg.Vec4(color[0], color[1], color[2], color[3]))
         geo = osg.Geode()
         geo.addDrawable( cyl )
         link = osg.PositionAttitudeTransform()
@@ -103,10 +102,7 @@ def draw_link(start, end, scale, color):
         link.addChild(geo)
         return link
     else:
-        return None    
-
-    
-    
+        return None
     
     
 class World(visu.World):
@@ -116,35 +112,17 @@ class World(visu.World):
         self._world = world
         self._scale = scale
         self.bodies = []
-        self.COI = np.array([0., 0., 0.])
         self._root = osg.Group()    # we save the root node of our osg
-        # create the bodies and save them
-        gen_frame = create_generic_frame(self._scale)
-        self._color_set = [(1,1,1), (1,0,0), (0,1,0), (0,0,1)]
-        i=0
-        for b in self._world.bodies:
-            color = self._color_set[i%len(self._color_set)]
-            self.COI = self.COI + self.add_body(b, scale, color, gen_frame)
-            i+=1
-        self.COI = self.COI/len(self._world.bodies)
         # create the osg viewer
         self.viewer = osgViewer.Viewer()
-        self.viewer.setUpViewInWindow(100,100, 800, 600)
-        manipulator = osgGA.TrackballManipulator()
-        self.viewer.setCameraManipulator(manipulator)
-        manipulator.setHomePosition(osg.Vec3d(self.COI[0]+25*scale, self.COI[1]+25*scale, self.COI[2]+25*scale),
-                                    osg.Vec3d(self.COI[0]  , self.COI[1], self.COI[2]),
-                                    osg.Vec3d(0,1,0))
-        self.viewer.home()
         self.viewer.setSceneData(self._root) # we give the root_node to show
+        self.manipulator = osgGA.TrackballManipulator()
+        self.viewer.setCameraManipulator(self.manipulator)
         
-        
-    def add_body(self, added_body, scale, color, gen_frame):
-        new_vbody = Body(added_body, scale, color, gen_frame)
+    def add_body(self, added_body, color, gen_frame):
+        new_vbody = Body(added_body, self._scale, color, gen_frame)
         self._root.addChild(new_vbody.body_node)
         self.bodies.append(new_vbody)
-        return new_vbody.COI
-
 
     def update(self, showFrames = None, showLinks = None):
         for b in self.bodies:
@@ -158,13 +136,12 @@ class World(visu.World):
 class Body(visu.Body):
     """ A drawable version of rigidmotion.Body
     """
-    def __init__(self, body, scale=1., color=(1,1,1), gen_frame=None):
+    def __init__(self, body, scale=1., color=(1.,1.,1.,1.), gen_frame=None):
         self._body = body
         self.frames = []
         self.links = []
         self._color = color
         self._scale = scale
-        self.COI = np.array([0., 0., 0.])
         # create the osg body sub tree
         self.body_node = osg.MatrixTransform()
         self.switcher = osg.Switch()
@@ -183,7 +160,6 @@ class Body(visu.Body):
     def draw_body(self, gen_frame):
         # set the matrixTransform
         self.body_node.setMatrix(pose_2_mat(self._body.pose))
-        self.COI = self._body.pose[0:3,3]
         for f in self._body.frames:
             nf = draw_frame(f.bpose, f.name, gen_frame, self._scale)
             self.group_frames.addChild(nf)
@@ -203,10 +179,45 @@ class Body(visu.Body):
 # end of class Body()
 
 
+# World Factory
+def World_Factory(arb_world, scale=1., color_set=None, 
+                  windowed=(0,0,800,600), COI=None, cam=None, up = (0,1,0)):
+    #create the visual world
+    v_world = World(arb_world, scale)
+    #check if we want to see simulation in a window
+    if (windowed is not False) & (windowed is not None):
+        v_world.viewer.setUpViewInWindow(windowed[0], windowed[1], 
+                                         windowed[2], windowed[3])
+    #check if color_set exist
+    if color_set is None:
+        color_set = [(1.,1.,1.,1.), (1.,0.,0.,1.), (0.,1.,0.,1.), (0.,0.,1.,1.)]
+    # create the bodies and save them
+    i=0
+    gen_frame = create_generic_frame(scale)
+    for b in v_world._world.bodies:
+        color = color_set[i%len(color_set)]
+        v_world.add_body(b, color, gen_frame)
+        i+=1
+    #check if COI and cam relative distance are set
+    if COI is None:
+        COI = np.array([0., 0., 0.])
+        for b in v_world._world.bodies:
+            COI = COI + b.pose[0:3,3]
+        COI = COI/len(v_world._world.bodies)
+    if cam is None:
+        cam = [25*scale, 25*scale, 25*scale]
+    
+    #we set the position of the beginning camera/view
+    v_world.manipulator.setHomePosition(osg.Vec3d(COI[0]+cam[0], COI[1]+cam[1], COI[2]+cam[2]),
+                                    osg.Vec3d(COI[0], COI[1], COI[2]),
+                                    osg.Vec3d(up[0],up[1],up[2]))
+    v_world.viewer.home()
+        
+    return v_world
+# end of World Factory
 
 
-
-if __name__=='__main__':
+if __name__ == '__main__':
     # testing!
     if 0:       # choose between triplehinge and human36
         from worldfactory import triplehinge
@@ -218,7 +229,8 @@ if __name__=='__main__':
     w.update_geometric()
 
     import visu_osg
-    vw = visu_osg.World(w, 0.1)
+    colors = [(1.,1.,1.,.0), (1.,0.,0.,.7), (0.,1.,0.,.4), (0.,0.,1.,1.)]
+    vw = visu_osg.World_Factory(w, 0.1, colors, (200, 100, 600, 600), (0,0,0), (2,2,2), (0,1,1))
     t = 0.
     vw.viewer.realize()
     while(not(vw.viewer.done())):
@@ -234,7 +246,7 @@ if __name__=='__main__':
             w.joints[3].gpos=[t, t]
             
         w.update_geometric()
-        vw.update(True, True) #(showframe, showBody)
+        vw.update(False, True) #(showframe, showBody)
         vw.viewer.frame()
         
         

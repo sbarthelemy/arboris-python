@@ -97,7 +97,7 @@ class World(NamedObject):
         self._viscosity = None
         self._nleffects = None
         self._controllers_viscosity = None 
-        self._controllers_torque = None
+        self._controllers_gforce = None
         for b in self.ground.descendants():
             b.reset()
 
