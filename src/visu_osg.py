@@ -57,9 +57,13 @@ def create_generic_frame(scale=1.):
 def draw_frame(pose=None, text=None, gen_frame=None, scale = 1.):
     """Draw the arrows and label of a frame.
     """
+    frame = osg.MatrixTransform()   #create frame node
+    # set position
+    if pose is None:
+        pose = np.eye(4)
+    frame.setMatrix(pose_2_mat(pose))
     if gen_frame is None:
         gen_frame = create_generic_frame()
-    
     if text is not None:
         #create the text geode and add it as frame child
         frame_text = osgText.Text()
@@ -70,14 +74,8 @@ def draw_frame(pose=None, text=None, gen_frame=None, scale = 1.):
         #frame_text.setAxisAlignment(osgText.Text.SCREEN)   # un-comment if want HUD version
         geo_text = osg.Geode()
         geo_text.addDrawable(frame_text)
-
-    # set position
-    if pose is None:
-        pose = np.eye(4)
-    frame = osg.MatrixTransform()   #create frame node
-    frame.setMatrix(pose_2_mat(pose))
-    frame.addChild(gen_frame) #add childs
-    frame.addChild(geo_text)  #
+        frame.addChild(gen_frame) #add childs
+        frame.addChild(geo_text)  #
     return frame
     
     
@@ -187,10 +185,10 @@ class Body(visu.Body):
         self.body_node.setMatrix(pose_2_mat(self._body.pose))
         self.COI = self._body.pose[0:3,3]
         for f in self._body.frames:
-            nf = draw_frame(f.pose, f.name, gen_frame, self._scale)
+            nf = draw_frame(f.bpose, f.name, gen_frame, self._scale)
             self.group_frames.addChild(nf)
             self.frames.append(nf)
-            lf = draw_link(np.eye(4), f.pose, self._scale, self._color)
+            lf = draw_link(np.eye(4), f.bpose, self._scale, self._color)
             if lf is not None:
                 self.group_links.addChild(lf)
                 self.links.append(lf)
@@ -217,7 +215,7 @@ if __name__=='__main__':
         import human36
         (w, bd, tags) = human36.human36() # or also: "w = human36.human36()[0]
         
-    w.geometric()
+    w.update_geometric()
 
     import visu_osg
     vw = visu_osg.World(w, 0.1)
@@ -235,7 +233,7 @@ if __name__=='__main__':
             w.joints[2].gpos=[t]
             w.joints[3].gpos=[t, t]
             
-        w.geometric()
+        w.update_geometric()
         vw.update(True, True) #(showframe, showBody)
         vw.viewer.frame()
         
