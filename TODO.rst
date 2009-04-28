@@ -36,6 +36,26 @@ Programming
 - returns dicts of frames/joints/bodies
 - implement a true recursive-newton-euler linearized algorithm?
 
+Controller interface
+====================
+
+Most users will interact with arboris through controllers. Current controller 
+API is quite bad, for several reasons:
+
+- we have to give ``joints`` argument two times::
+
+    c0 = ProportionalDerivativeController(w.joints[0:3], Kp, Kd, gpos_des)
+    w.add_jointcontroller(c0, w.joints[0:3])
+
+- ``joint._dof`` is initialized by  ``w.add_jointcontroller`` and is not 
+  available at the joint ``__init__()``
+- currently, we have too much or too litte encapsulation
+- the controller does not know the world
+
+
+A solution might be to remove the encapsulation: every controller would produce gforces and viscosity for every joint. We could also provide an "encapsulator" controller class which would do the encapsulation.
+
+We could also give to the controller views of the global gforce and viscosity that it would update.
 
 Name conventions
 ================

@@ -72,10 +72,12 @@ class World(NamedObject):
         self._collisions = []
         self._ndof = 0
         self._gvel = array([])
-        self._mass = None # updated by self.update_dynamic()
-        self._viscosity = None # updated by self.update_dynamic()
-        self._controller_viscosity = None # updated by self.update_dynamic()
-        self._nleffects = None # updated by self.update_dynamic()
+        self._mass =  array([])# updated by self.update_dynamic()
+        self._gforce =  array([])
+        self._viscosity = array([]) # updated by self.update_dynamic()
+        self._controller_viscosity = array([]) # updated by self.update_dynamic()
+        self._nleffects = array([]) # updated by self.update_dynamic()
+
 
     @property
     def mass(self):
@@ -88,18 +90,6 @@ class World(NamedObject):
     @property
     def nleffects(self):
         return self._nleffects
-
-    def reset(self):
-        """
-        Set all state-dependent data to None
-        """
-        self._mass = None
-        self._viscosity = None
-        self._nleffects = None
-        self._controllers_viscosity = None 
-        self._controllers_gforce = None
-        for b in self.ground.descendants():
-            b.reset()
 
 
     def ndof(self):
@@ -166,9 +156,16 @@ class World(NamedObject):
         new_body.parentjoint = joint
 
         self._gvel = zeros(self._ndof)
+        self._mass = zeros((self._ndof,self._ndof))
+        self._nleffects =  zeros((self._ndof,self._ndof))
+        self._viscosity = zeros((self._ndof,self._ndof))
+        self._controller_viscosity = zeros((self._ndof,self._ndof))
+        self._gforce = zeros(self._ndof)
+
         for j in self.joints:
             self._gvel[j._dof] = j.gvel[:]
             j.gvel = self._gvel[j._dof]
+
 
     def add_jointcontroller(self, controller, joints=None):
         """
@@ -179,9 +176,9 @@ class World(NamedObject):
         >>> from worldfactory import triplehinge
         >>> w = triplehinge()
         >>> from controllers import ProportionalDerivativeController
-        >>> c0 = ProportionalDerivativeController(name = 'my controller')
+        >>> c0 = ProportionalDerivativeController(w.joints[1:3], name = 'my controller')
         >>> w.add_jointcontroller(c0, w.joints[1:3])
-        >>> c1 = ProportionalDerivativeController()
+        >>> c1 = ProportionalDerivativeController(w.joints[0:1])
         >>> w.add_jointcontroller(c1, w.joints[0:1])
         
         """
@@ -426,24 +423,19 @@ class World(NamedObject):
             zeros((6,self._ndof)),
             zeros(6))
         
-        self._mass = zeros((self._ndof,self._ndof))
-        self._viscosity = zeros((self._ndof,self._ndof))
-        self._nleffects = zeros((self._ndof,self._ndof))
+        self._mass[:] = 0.
+        self._viscosity[:] = 0.
+        self._nleffects[:] = 0.
         for b in self.ground.descendants():
             self._mass += dot(
-                dot(b.jacobian.transpose(), b.mass),
+                dot(b.jacobian.T, b.mass),
                 b.jacobian)
             self._viscosity += dot(
-                dot(b.jacobian.transpose(), b.viscosity),
+                dot(b.jacobian.T, b.viscosity),
                 b.jacobian)
             self._nleffects += dot(
-                b.jacobian.transpose(),
-                dot(
-                    b.mass,
-                    b.djacobian) \
-                + dot(
-                    b.viscosity+b.nleffects,
-                    b.jacobian))
+                b.jacobian.T,
+                dot(b.mass, b.djacobian) + dot(b.nleffects, b.jacobian))
 
     def update_controllers(self, dt):
         """
@@ -452,7 +444,7 @@ class World(NamedObject):
         >>> from worldfactory import triplehinge
         >>> w = triplehinge()
         >>> from controllers import ProportionalDerivativeController
-        >>> c0 = ProportionalDerivativeController('my controller')
+        >>> c0 = ProportionalDerivativeController( w.joints[1:2], 2.)
         >>> w.add_jointcontroller(c0, w.joints[1:2])
         >>> w.update_dynamic()
         >>> w.update_controllers(0.001)
@@ -470,9 +462,8 @@ class World(NamedObject):
                [ 0.02442014, -0.14623345,  0.76905959]])
 
         """
-        # todo: move to simu
-        self._controller_viscosity = zeros((self._ndof,self._ndof))
-        self._gforce = zeros(self._ndof)
+        self._controller_viscosity[:] = 0.
+        self._gforce[:] = 0.
         for c in self._controllers:
             c.update(dt)
 
@@ -651,15 +642,16 @@ class World(NamedObject):
         TODO: check the last test result!
         >>> from worldfactory import triplehinge
         >>> w = triplehinge()
+        >>> w.joints[1].gpos[:] = -1.
         >>> from controllers import ProportionalDerivativeController
-        >>> c0 = ProportionalDerivativeController('my controller')
+        >>> c0 = ProportionalDerivativeController(w.joints[1:2], 1.)
         >>> w.add_jointcontroller(c0, w.joints[1:2])
         >>> w.update_dynamic()
         >>> dt = 0.001
         >>> w.update_controllers(dt)
         >>> w.integrate(dt)
         >>> w._gvel
-        array([-0.02030368,  0.07595336, -0.14623345])
+        array([-0.00709132,  0.03355273, -0.09131555])
         """
         self._gvel[:] = dot(self._admittance, 
                             dot(self._mass, self._gvel/dt) + self._gforce)

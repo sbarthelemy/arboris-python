@@ -40,7 +40,7 @@ class Joint(RigidMotion, NamedObject):
     def integrate(self, dt):
         pass
 
-class RealJoint(Joint):
+class LinearConfigurationSpaceJoint(Joint):
     """
     joints whose space is diffeomorph to the real set.
     """
@@ -103,7 +103,7 @@ class FreeJoint(Joint):
 #    """Ball and socket (3-dof)
 #    """
 
-class RzRyRxJoint(RealJoint):
+class RzRyRxJoint(LinearConfigurationSpaceJoint):
     """Ball and socket (3-dof) implemented with 3 serial hinges
 
     the resulting homogeneous matrix is given by H = Rz*Ry*Rx
@@ -151,7 +151,7 @@ class RzRyRxJoint(RealJoint):
              [ 0.   ,  0. ,  0.    ]])
 
 
-class RzRyJoint(RealJoint):
+class RzRyJoint(LinearConfigurationSpaceJoint):
     """Fingered Ball (2-dof) implemented with 2 serial hinges
 
     the resulting homogeneous matrix is given by H = Rz*Ry
@@ -194,7 +194,7 @@ class RzRyJoint(RealJoint):
              [ 0.   ,  0.   ]])
              
              
-class RzRxJoint(RealJoint):
+class RzRxJoint(LinearConfigurationSpaceJoint):
     """Fingered Ball (2-dof) implemented with 2 serial hinges
 
     the resulting homogeneous matrix is given by H = Rz*Rx
@@ -237,7 +237,7 @@ class RzRxJoint(RealJoint):
              [ 0.   ,  0.   ]])
              
              
-class RyRxJoint(RealJoint):
+class RyRxJoint(LinearConfigurationSpaceJoint):
     """Fingered Ball (2-dof) implemented with 2 serial hinges
 
     the resulting homogeneous matrix is given by H = Rz*Ry
@@ -280,7 +280,7 @@ class RyRxJoint(RealJoint):
              [ 0.   , 0.    ]])
              
              
-class HingeJoint(RealJoint):
+class HingeJoint(LinearConfigurationSpaceJoint):
 
     """Hinge (1-dof) with axis in the z-direction
     """

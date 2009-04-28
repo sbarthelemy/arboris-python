@@ -104,7 +104,7 @@ class Body(visu.Body):
             self._body.pose, 
             self._body.name, scale = scale))
         for f in self._body.frames[1:]:
-            nf = draw_frame(f.pose, f.name, self.frames[0], scale)
+            nf = draw_frame(f.bpose, f.name, self.frames[0], scale)
             self.frames.append(nf)
             self.links.append(draw_link(self.frames[0], (0,0,0), nf.pos, color, scale))
 
@@ -120,14 +120,14 @@ if __name__ == '__main__':
     # testing!
     from worldfactory import triplehinge
     w = triplehinge()
-    w.geometric()
+    w.update_geometric()
 
     import visu_vpython as vpy
     vw = vpy.World(w, 0.1)
     for t in range(100):
         w.joints[0].gpos=[t/20.]
         w.joints[1].gpos=[t/20.]
-        w.geometric()
+        w.update_geometric()
         vw.update()
 
     

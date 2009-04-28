@@ -60,38 +60,69 @@ class WeightController(JointController):
 
 class ProportionalDerivativeController(JointController):
 
-    def __init__(self, joints, Kp=0., Kd=0., ref_gpos=0., ref_gvel=0., name=None):
+    def __init__(self, joints, Kp=None, Kd=None, gpos_des=None, 
+                 gvel_des=None, name=None):
+            ndof = 0
+            from joints import LinearConfigurationSpaceJoint
+            for j in joints:
+                if not isinstance(j, LinearConfigurationSpaceJoint):
+                    raise ValueError('Joints must be LinearConfigurationSpaceJoint instances')
+                ndof += j.ndof()
             JointController.__init__(self, name)
-            self.joint = joints
-            self.Kp = Kp
-            self.Kd = Kd
-            self.ref_gpos = ref_gpos
-            self.ref_gvel = ref_gvel
+            self.joints = joints
+            if Kp is None:
+                self.Kp = zeros((ndof, ndof))
+            else:
+                self.Kp = array(Kp)
+
+            if Kd is None:
+                self.Kd = zeros((ndof,ndof))
+            else:
+                self.Kd = array(Kd)
+
+            if gpos_des is None:
+                self.gpos_des = zeros(ndof)
+            else:
+                self.gpos_des = array(gpos_des)
+
+            if gvel_des is None:
+                self.gvel_des = zeros(ndof)
+            else:
+                self.gvel_des = array(gvel_des)
             
     def update(self, dt):
         pass
 
     
     def viscosity(self):
+        """
+        TODO: return non-zero viscosity
+        """
         return zeros( (self.ndof(), self.ndof()) )
 
 
     def gforce(self):
-        return self.Kp*(self.ref_gpos-self.joint.gpos) + self.Kd*(self.ref_gvel-self.joint.gvel)
-
+        
+        gpos = []
+        gvel = []
+        for j in self.joints:
+            gpos.append(j.gpos)
+            gvel.append(j.gvel)
+        gpos = array(gpos).reshape(self.ndof())
+        gvel = array(gvel).reshape(self.ndof())
+        return dot(self.Kp, self.gpos_des - gpos) + \
+               dot(self.Kd, self.gvel_des - gvel)
 
 if __name__ == "__main__":
     
     from worldfactory import triplehinge
+    from numpy import diag
     w = triplehinge()
-    Kp = 10.
-    Kd = 2.5
-    c0 = ProportionalDerivativeController(w.joints[0], Kp, Kd, 1.)
-    c1 = ProportionalDerivativeController(w.joints[1], Kp, Kd, 2.)
-    c2 = ProportionalDerivativeController(w.joints[2], Kp, Kd, 3.)
-    w.add_jointcontroller(c0, w.joints[0:1])
-    w.add_jointcontroller(c1, w.joints[1:2])
-    w.add_jointcontroller(c2, w.joints[2:3])
+    Kp = diag([10.,5.,1.],0)
+    Kd = diag([2.5,1.,0.1],0)
+    gpos_des = [1.,2.,3.]
+    c0 = ProportionalDerivativeController(w.joints[0:3], Kp, Kd, gpos_des)
+    w.add_jointcontroller(c0, w.joints[0:3])
     w.update_dynamic()
     
     import visu_osg
@@ -104,5 +135,4 @@ if __name__ == "__main__":
         w.update_controllers(dt)
         w.integrate(dt)
         vw.update(True, True)
-        print w.joints[0].gpos[0]
         vw.viewer.frame()
