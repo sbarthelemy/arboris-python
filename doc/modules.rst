@@ -34,10 +34,4 @@ Modules
 .. automodule:: twistvector
    :members:
 
-:mod:`constraints`
-==================
-
-.. automodule:: constraints
-   :members:
-
 

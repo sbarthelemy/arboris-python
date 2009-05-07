@@ -10,6 +10,7 @@ Contents:
    intro
    rigidmotion
    rigidmechanism
+   constraints
    modules
    notations
    devel
