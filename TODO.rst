@@ -17,7 +17,8 @@ Packaging
 =========
 
 - Move from make to setuptools or scons
-- make a python package (with an __init__.py) instead of a modulde
+- make a python package (with an __init__.py) instead of a module
+- fix program version in sphinx doc
 - generate a package with
   - changelog
   - version numbers
@@ -27,17 +28,21 @@ Packaging
 Programming
 ===========
 
+Small changes
+-------------
+
 - find a way/class to collect states
 
   - states are positions and (someteimes) velocities.
   - velocities are already grouped in Wordl._gvel
   - positions might be grouped 
 
-- returns dicts of frames/joints/bodies
+- create a function that returns dicts of frames/joints/bodies
+- create functions to merge bodies/worlds etc.
 - implement a true recursive-newton-euler linearized algorithm?
 
 Controller interface
-====================
+--------------------
 
 Most users will interact with arboris through controllers. Current controller 
 API is quite bad, for several reasons:
@@ -57,8 +62,18 @@ A solution might be to remove the encapsulation: every controller would produce 
 
 We could also give to the controller views of the global gforce and viscosity that it would update.
 
-Name conventions
-================
+Frame interface
+---------------
+
+I'm not happy with the current Body.frame[0] thing. Frame[0].bpose is pointles and may lead to errors if one user changes it.
+
+A solution might be to: 
+- make the :class:`Frame` class astract
+- make :class:`Body` class inherit from it 
+- the current ``Body.frame[1:]`` would then be of another class (say SubFrame) which also inherits from the :class:`Frame` class
+
+Naming conventions
+------------------
 
   - find better name for controller_viscosity 
   - ``Body.ancestors()`` => ``.iter_ancestor_bodies()``
@@ -72,13 +87,13 @@ Done (and kept for reference)
   - ``prev_frame``,
   - ``parent_frame``,
   - ``base_frame``
-  - ``frames[0]``
+  - ``frames[0]`` (the one we chose)
 
 - find a better name for ``Body._new_frame``. Current suggestions:
   
   - ``next_frame``,
   - ``moving_frame``,
   - ``local_frame``,
-  - ``frames[1]``
+  - ``frames[1]`` (the one we chose)
 
 
