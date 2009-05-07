@@ -477,19 +477,25 @@ class World(NamedObject):
 
     def update_constraints(self, dt):
         r"""
+        
+        Algorithm:
+
         In accordance with the integration scheme, we assume a first
         order model betwen generalized velocities and generalized 
         forces:
 
         .. math::
-            \GVel(t+dt) &= Y'(t) 
-            \left( M(t) \GVel(t) + dt \; \GForce(t) \right)
 
-        where:
+            \GVel(t+dt) 
+            &= Y'(t) 
+            \left( 
+                M(t)  \GVel(t) 
+                + dt \; \GForce(t)
+            \right)
 
+        where
         - the admittance matrix  :math:`Y'` takes into account a 
           first order model of the actuators,
-
         - the actuators generalized forces :math:`\GForce(t)` 
           are assumed to be constant during the :math:`[t , t+dt ]`
           time interval.
@@ -499,10 +505,12 @@ class World(NamedObject):
         by the constraint jacobian :math:`\pre[c]J_c^T`:
 
         .. math::
+
             \GVel(t+dt) 
             &= Y'(t) 
             \left( 
-                M(t)  \GVel(t) + dt \; \GForce(t)
+                M(t)  \GVel(t) 
+                + dt \; \GForce(t)
                 + \sum_{c} \; \pre[c]J_{c}^T(t) \; \pre[c]f(t)
             \right)
   
@@ -510,13 +518,16 @@ class World(NamedObject):
         :math:`\pre[c]v = \pre[c]J_c \; \GVel` so that:
     
         .. math::
+            
             \pre[c]v(t+dt) 
             &= \pre[c]J_c(t) \; \GVel(t+dt)\\
             &= \pre[c]J_c(t) \; Y'(t) 
             \left( 
-                M(t)  \GVel(t) + dt \; \GForce(t)
+                M(t)  \GVel(t) 
+                + dt \; \GForce(t)
             \right)
-            + \sum_d \; \pre[c]J_c(t) \; Y'(t) \; \pre[d]J_d^T(t) 
+            + \sum_d \;
+            \pre[c]J_c(t) \; Y'(t) \; \pre[d]J_d^T(t) 
             \; \pre[d]f(t)
         
         one can define the (global) constraints velocity :math:`v`, 
@@ -524,6 +535,7 @@ class World(NamedObject):
         and admittance matrix :math:`Y'`:
 
         .. math::
+
             J(t) &=
             \begin{bmatrix}
                 \pre[0]J_0(t)\\
@@ -545,6 +557,7 @@ class World(NamedObject):
         and get a synthetic expression:
 
         .. math::
+
             v(t+dt) &= J(t) \; Y'(t) 
             \left( M(t)  \GVel(t) + dt \; \GForce(t) \right)
             + Y(t) \; f
@@ -552,54 +565,51 @@ class World(NamedObject):
 
         This method computes the constraint forces in three steps:
 
-        - ask each constraint for its jacobian,
-
-        - compute :math:`J`, :math:`v`  and :math:`Y`,
-
+        - ask each constraint for its jacobian 
+        - compute :math:`J`, :math:`v`  and :math:`Y`
         - iterate over each constraint object in order to compute 
           :math:`\pre[c]f`. At each iteration the force is 
           updated by :math:`\Delta\pre[c]f`
         
 
-        Test::
-            >>> b0 = Body(mass = eye(6))
-            >>> from joints import FreeJoint
-            >>> j0 = FreeJoint()
-            >>> w = World()
-            >>> w.add_joint(j0, (w.ground.frames[0], b0.frames[0]) )
-            >>> j1 = FreeJoint()
-            >>> b1 = Body(mass = eye(6))
-            >>> w.add_joint(j1, (b0.frames[0], b1.frames[0]) )
-            >>> from controllers import WeightController
-            >>> ctrl =  WeightController(w.ground)
-            >>> w.add_jointcontroller(ctrl)
-            >>> from constraints import BallAndSocketConstraint 
-            >>> c0 = BallAndSocketConstraint()
-            >>> w.add_constraint(c0, (w.ground.frames[0], b0.frames[0]) )
-            >>> w.update_dynamic()
-            >>> dt = 0.001
-            >>> w.update_controllers(dt)
-            >>> w.update_constraints(dt)
-            >>> c0._force
-            array([ 0.  ,  9.81,  0.  ])
-            >>> w.integrate(dt)
-            >>> w.update_dynamic()
-            >>> b0.pose
-            array([[  1.00000000e+00,   0.00000000e+00,   0.00000000e+00,
-                      0.00000000e+00],
-                   [  0.00000000e+00,   1.00000000e+00,   0.00000000e+00,
-                     -3.09167026e-22],
-                   [  0.00000000e+00,   0.00000000e+00,   1.00000000e+00,
-                      0.00000000e+00],
-                   [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
-                      1.00000000e+00]])
+        Test:
+        >>> b0 = Body(mass = eye(6))
+        >>> from joints import FreeJoint
+        >>> j0 = FreeJoint()
+        >>> w = World()
+        >>> w.add_joint(j0, (w.ground.frames[0], b0.frames[0]) )
+        >>> j1 = FreeJoint()
+        >>> b1 = Body(mass = eye(6))
+        >>> w.add_joint(j1, (b0.frames[0], b1.frames[0]) )
+        >>> from controllers import WeightController
+        >>> ctrl =  WeightController(w.ground)
+        >>> w.add_jointcontroller(ctrl)
+        >>> from constraints import BallAndSocketConstraint 
+        >>> c0 = BallAndSocketConstraint()
+        >>> w.add_constraint(c0, (w.ground.frames[0], b0.frames[0]) )
+        >>> w.update_dynamic()
+        >>> dt = 0.001
+        >>> w.update_controllers(dt)
+        >>> w.update_constraints(dt)
+        >>> c0._force
+        array([ 0.  ,  9.81,  0.  ])
+        >>> w.integrate(dt)
+        >>> w.update_dynamic()
+        >>> b0.pose
+        array([[  1.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  0.00000000e+00],
+               [  0.00000000e+00,   1.00000000e+00,   0.00000000e+00,
+                 -3.09167026e-22],
+               [  0.00000000e+00,   0.00000000e+00,   1.00000000e+00,
+                  0.00000000e+00],
+               [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+                  1.00000000e+00]])
 
         """
 
         constraints = []
         ndol = 0
         for c in self._constraints:
-            c.update()
             if c.is_active():
                 c._dol = slice(ndol, ndol+c.ndol())
                 ndol = ndol + c.ndol()
@@ -608,6 +618,7 @@ class World(NamedObject):
         jac = zeros((ndol, self._ndof))
         admittance = zeros((ndol, ndol))
         for c in constraints:
+            c.init()
             jac[c._dol,:] = c.jacobian()
 
         vel = dot(jac, dot(self._admittance, 
@@ -615,7 +626,7 @@ class World(NamedObject):
         admittance = dot(jac, dot(self._admittance, jac.T))
 
         k=0
-        while k < 20: #TODO: change the break condition
+        while k < 20: #TODO change the break condition
             k+=1 
             for c in constraints:
                 dforce = c.solve(vel[c._dol], admittance[c._dol,c._dol], dt)

@@ -76,28 +76,28 @@ def sphere_sphere_collision(H_g0, H_g1, radius0, radius1):
     """
     vec = H_g1[0:3,3] - H_g0[0:3,3]
     sdist = norm(vec) - radius0 - radius1
-    H_gc0 = eye(4)
-    x = H_gc0[0:3,0]
-    y = H_gc0[0:3,1]
-    z = H_gc0[0:3,2]
-    p = H_gc0[0:3,3]
-    # z-axis, normal to the tangeant plane:
-    z = vec/norm(vec)
-    idx = argsort(absolute(z))
-    # x axis, normal to z-axis
-    x[idx[0]] = 0
-    x[idx[1]] = z[idx[2]]
-    x[idx[2]] = -z[idx[1]]
-    x /= norm(x)
-    y = cross(z, x)
-    p = H_gc0[0:3,3] + radius0*z
-    H_gc1 = H_rc0.copy()
-    H_gc1[2,3] += sdist
-    return (sdist, H_gc0, H_gc1)
-#H_0c0 = dot(Hg.inv(H_g0), H_gc0)
-#H_1c1 = H_0c0.copy()
-#H_1c1[2,3] += sdist
-#return (sdist, H_0c0, H_1c1)
+    if sdist < proximity:
+        H_gc0 = eye(4)
+        x = H_gc0[0:3,0]
+        y = H_gc0[0:3,1]
+        z = H_gc0[0:3,2]
+        p = H_gc0[0:3,3]
+        # z-axis, normal to the tangeant plane:
+        z = vec/norm(vec)
+        idx = argsort(absolute(z))
+        # x axis, normal to z-axis
+        x[idx[0]] = 0
+        x[idx[1]] = z[idx[2]]
+        x[idx[2]] = -z[idx[1]]
+        x /= norm(x)
+        y = cross(z, x)
+        p = H_gc0[0:3,3] + radius0*z
+        H_0c0 = dot(Hg.inv(H_g0), H_gc0)
+        H_1c1 = H_0c0.copy()
+        H_1c1[2,3] += sdist
+        return (H_0c0, H_1c1, sdist)
+    else:
+        return None
 
 def point_box_collision():
     pass
