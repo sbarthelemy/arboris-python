@@ -7,14 +7,13 @@ TODO: add ellipse and pill shapes
 
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
+from arboris import Shape
 from misc import NamedObject
 from numpy.linalg import norm
 from numpy import zeros, eye, dot, absolute, argsort, cross
 import homogeneousmatrix as Hg
 proximity = 0.01
 
-class Shape(NamedObject):
-    pass
 
 
 class Point(Shape):

@@ -10,13 +10,14 @@ When ran as a script, the module shows the robot in motion.
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
-import arboris as arb
+from arboris import World, Body, SubFrame
 import numpy as np
+import homogeneousmatrix as Hg
 from joints import HingeJoint
 
 def transport_mass_matrix(mass,H):
     """Transport (express) the mass matrix into another frame."""
-    Ad = arb.Hg.iadjoint(H)
+    Ad = Hg.iadjoint(H)
     return np.dot(
         Ad.transpose(),
         np.dot(mass, Ad))
@@ -42,58 +43,56 @@ def triplehinge(world=None):
 
     # Create a world
     if world is None:
-        w = arb.World()
-    elif isinstance(world, arb.World):
+        w = World()
+    elif isinstance(world, World):
         w = world
     else:
         raise ValueError('the world argument must be an instance of the World class')
 
     # create other bodies
-    arm = arb.Body(
+    arm = Body(
         name='Arm',
         mass=transport_mass_matrix(
             mass_parallelepiped(
                 arm_mass, 
                 (arm_length/10,arm_length,arm_length/10)),
-            arb.Hg.transl((0,arm_length/2,0))))
-    forearm = arb.Body(
+                Hg.transl((0,arm_length/2,0))))
+    forearm = Body(
         name='ForeArm',
         mass=transport_mass_matrix(
             mass_parallelepiped(
                 forearm_mass, 
                 (forearm_length/10,forearm_length,forearm_length/10)),
-                arb.Hg.transl((0,forearm_length/2,0))))
-    hand = arb.Body(
+                Hg.transl((0,forearm_length/2,0))))
+    hand = Body(
         name='Hand',
         mass=transport_mass_matrix(
             mass_parallelepiped(
                 hand_mass, 
                 (hand_length/10,hand_length,hand_length/10)),
-                arb.Hg.transl((0,hand_length/2,0))))
+                Hg.transl((0,hand_length/2,0))))
 
 
     # create a joint between the ground and the arm
     shoulder = HingeJoint(name='Shoulder')
     # add the new joint to the world (this will also add arm to w.bodies)
-    w.add_joint(joint = shoulder,
-                frames = (w.ground.frames[0], arm.frames[0]) )
-
+    w.add_joint(joint=shoulder, frames=(w.ground, arm) )
     
     # add a frame to the arm, where the forearm will be anchored
-    f = arm.newframe(
-        arb.Hg.transl((0,arm_length,0)),
+    f = SubFrame(arm,
+        Hg.transl((0,arm_length,0)),
         'ElbowLeftFrame')
     # create a joint between the arm and the forearm
     elbow = HingeJoint(name='Elbow')
-    w.add_joint(joint = elbow, frames = (f, forearm.frames[0]) )
+    w.add_joint(joint=elbow, frames=(f, forearm) )
 
     # add a frame to the forearm, where the hand will be anchored
-    f = forearm.newframe(
-        arb.Hg.transl((0,forearm_length,0)),
+    f = SubFrame(forearm,
+        Hg.transl((0,forearm_length,0)),
         'WristLeftFrame')
     # create a joint between the forearm and the hand
     wrist = HingeJoint(name = 'Wrist')
-    w.add_joint( wrist, (f, hand.frames[0]) )
+    w.add_joint( wrist, (f, hand) )
 
     return w
 

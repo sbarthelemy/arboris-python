@@ -139,13 +139,13 @@ class BallAndSocketConstraint(BodyConstraint):
             \end{bmatrix}
 
         """
-        H_01 = dot(Hg.inv(self._frames[0].wpose()), self._frames[1].wpose())
+        H_01 = dot(Hg.inv(self._frames[0].pose), self._frames[1].pose)
         self._pos0 = H_01[0:3,3]
 
     def jacobian(self):
-        H_01 = dot(Hg.inv(self._frames[0].wpose()), self._frames[1].wpose())
-        return (dot(Hg.adjoint(H_01)[3:6,:], self._frames[1].jacobian())
-                -self._frames[0].jacobian()[3:6,:])
+        H_01 = dot(Hg.inv(self._frames[0].pose), self._frames[1].pose)
+        return (dot(Hg.adjoint(H_01)[3:6,:], self._frames[1].jacobian)
+                -self._frames[0].jacobian[3:6,:])
 
     def solve(self, vel, admittance, dt):
         r"""

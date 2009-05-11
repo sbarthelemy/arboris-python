@@ -43,12 +43,15 @@ import homogeneousmatrix as Hg
 import homogeneousmatrix
 import twistvector as T
 import adjointmatrix
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, abstractproperty
 from math import pi
 from controllers import Controller
 from joints import Joint
 from constraints import Constraint
 from misc import NamedObject
+
+class Shape(object):
+    pass
 
 class World(NamedObject):
 
@@ -56,7 +59,7 @@ class World(NamedObject):
 
     TODO: provide ability to merge worlds or subtrees
     
-    >>> from  worldfactory import triplehinge
+    >>> from  triplehinge import triplehinge
     >>> w = triplehinge()
     >>> w.update_geometric()
     >>> w.update_dynamic()
@@ -70,6 +73,8 @@ class World(NamedObject):
         self._controllers = []
         self._constraints = []
         self._collisions = []
+        self._subframes = []
+        self._shapes = []
         self._ndof = 0
         self._gvel = array([])
         self._mass =  array([])# updated by self.update_dynamic()
@@ -78,6 +83,18 @@ class World(NamedObject):
         self._controller_viscosity = array([]) # updated by self.update_dynamic()
         self._nleffects = array([]) # updated by self.update_dynamic()
 
+    def register(self, obj):
+        """
+        TODO: for subframes, check is the parent body is registered?
+        """
+        if isinstance(obj, SubFrame):
+            if not obj in self._subframes:
+                self._subframes.append(obj)
+
+        if isinstance(obj, Shape):
+            if not obj in self._shapes:
+                self._shapes.append(obj)
+            self.register(obj.frame)
 
     @property
     def mass(self):
@@ -104,7 +121,7 @@ class World(NamedObject):
                 the joint that will be added
 
         Examples:
-        >>> from  worldfactory import triplehinge
+        >>> from  triplehinge import triplehinge
         >>> w = triplehinge()
         >>> w.joints[0].gvel[0] = 1.
         >>> w._gvel
@@ -126,13 +143,25 @@ class World(NamedObject):
 
         # check the reference/base/parent frame for the joint is already 
         # in world
+        frame0_body_is_in_world = False
         frame0_is_in_world = False
-        for b in self.bodies:
-            if frames[0].body is b:
-               frame0_is_in_world = True
-        if not(frame0_is_in_world):
+        if isinstance(frames[0], Body):
+            for b in self.bodies:
+                if frames[0] is b:
+                   frame0_body_is_in_world = True
+                   frame0_is_in_world = True
+        elif isinstance(frames[0], SubFrame):
+            for b in self.bodies:
+                if frames[0].body is b:
+                   frame0_body_is_in_world = True
+            for sf in self._subframes:
+                if frames[0] is sf:
+                   frame0_body_is_in_world = True
+        if not(frame0_body_is_in_world):
             raise ValueError("The reference/base/parent frame is attached to a body that is not in world")
-        
+        if not(frame0_is_in_world):
+            self.register(frames[0])
+
         new_body = frames[1].body
         # check the new/local/child frame is not already in world
         for b in self.bodies:
@@ -143,6 +172,9 @@ class World(NamedObject):
         if len(new_body.childrenjoints) > 0:
             raise ValueError("The new/local/child frame is attached to a body that already has a children joints")
         
+        if isinstance(frames[1], SubFrame):
+            self.register(frames[1])
+
         # extend the world generalized velocities
         old_ndof = self._ndof
         self._ndof = self._ndof + joint.ndof()
@@ -173,7 +205,7 @@ class World(NamedObject):
 
         Example:
 
-        >>> from worldfactory import triplehinge
+        >>> from triplehinge import triplehinge
         >>> w = triplehinge()
         >>> from controllers import ProportionalDerivativeController
         >>> c0 = ProportionalDerivativeController(w.joints[1:3], name = 'my controller')
@@ -230,8 +262,8 @@ class World(NamedObject):
           attributes 
         - the world mass, viscosity and nleffects attributes
 
-        >>> import worldfactory
-        >>> w = worldfactory.triplehinge()
+        >>> from triplehinge import triplehinge
+        >>> w = triplehinge()
         >>> w.joints[0].gpos[0]=0.5
         >>> w.joints[0].gvel[0]=2.5
         >>> w.joints[1].gpos[0]=1.0
@@ -441,7 +473,7 @@ class World(NamedObject):
         """
 
         TODO: check the two last tests results!
-        >>> from worldfactory import triplehinge
+        >>> from triplehinge import triplehinge
         >>> w = triplehinge()
         >>> from controllers import ProportionalDerivativeController
         >>> c0 = ProportionalDerivativeController( w.joints[1:2], 2.)
@@ -577,16 +609,16 @@ class World(NamedObject):
         >>> from joints import FreeJoint
         >>> j0 = FreeJoint()
         >>> w = World()
-        >>> w.add_joint(j0, (w.ground.frames[0], b0.frames[0]) )
+        >>> w.add_joint(j0, (w.ground, b0) )
         >>> j1 = FreeJoint()
         >>> b1 = Body(mass = eye(6))
-        >>> w.add_joint(j1, (b0.frames[0], b1.frames[0]) )
+        >>> w.add_joint(j1, (b0, b1) )
         >>> from controllers import WeightController
         >>> ctrl =  WeightController(w.ground)
         >>> w.add_jointcontroller(ctrl)
         >>> from constraints import BallAndSocketConstraint 
         >>> c0 = BallAndSocketConstraint()
-        >>> w.add_constraint(c0, (w.ground.frames[0], b0.frames[0]) )
+        >>> w.add_constraint(c0, (w.ground, b0) )
         >>> w.update_dynamic()
         >>> dt = 0.001
         >>> w.update_controllers(dt)
@@ -640,7 +672,7 @@ class World(NamedObject):
         TODO: add support for kinematic controllers
         TODO: add support fo external wrenches
         TODO: check the last test result!
-        >>> from worldfactory import triplehinge
+        >>> from triplehinge import triplehinge
         >>> w = triplehinge()
         >>> w.joints[1].gpos[:] = -1.
         >>> from controllers import ProportionalDerivativeController
@@ -660,23 +692,47 @@ class World(NamedObject):
 
 
 
-class Frame(NamedObject):
+class Frame(object):
+    __metaclass__ = ABCMeta
+
+    @abstractproperty
+    def pose(self):
+        pass
+
+    @abstractproperty
+    def jacobian(self):
+        pass
+
+    @abstractproperty
+    def twist(self):
+        pass
+
+    @abstractproperty
+    def body(self):
+        pass
+
+    @abstractproperty
+    def bpose(self):
+        pass
+
+
+class SubFrame(NamedObject, Frame):
 
     def __init__(self, body, bpose=None, name=None):
         """Create a frame rigidly fixed to a body. 
         
         >>> b = Body()
-        >>> f = Frame(b,Hg.rotz(3.14/3.),'Brand New Frame')
+        >>> f = SubFrame(b,Hg.rotz(3.14/3.),'Brand New Frame')
         
         The ``body`` argument must be a member of the ``Body`` class:
-        >>> f = Frame(None, Hg.rotz(3.14/3.))
+        >>> f = SubFrame(None, Hg.rotz(3.14/3.))
         Traceback (most recent call last):
             ...
         ValueError: The ``body`` argument must be an instance of the ``Boby`` class
 
-        The ``pose`` argument must be an homogeneous matrix:
+        The ``bpose`` argument must be an homogeneous matrix:
         >>> b = Body()
-        >>> f = Frame(b, ones((4,4)))
+        >>> f = SubFrame(b, ones((4,4)))
         Traceback (most recent call last):
             ...
         ValueError: [[ 1.  1.  1.  1.]
@@ -694,22 +750,30 @@ class Frame(NamedObject):
         if not(isinstance(body,Body)):
             raise ValueError("The ``body`` argument must be an instance of the ``Boby`` class")
         else:
-            self.body = body
+            self._body = body
+
+    @property
+    def pose(self):
+        return dot(self._body.pose, self._bpose)
     
+    @property
+    def twist(self):
+        return dot(Hg.iadjoint(self._bpose), self._body._twist)
+
+    @property
+    def jacobian(self):
+        return dot(Hg.iadjoint(self._bpose), self._body._jacobian)
+
+    @property
+    def body(self):
+        return self._body
+
     @property
     def bpose(self):
         return self._bpose.copy()
 
-    def wpose(self):
-        return dot(self.body.pose, self._bpose)
-    
-    def twist(self):
-        return dot(Hg.iadjoint(self._bpose), self.body.twist)
 
-    def jacobian(self):
-        return dot(Hg.iadjoint(self._bpose), self.body.jacobian)
-
-class Body(NamedObject):
+class Body(NamedObject, Frame):
 
     def __init__(self, name=None, mass=None, viscosity=None):
         if mass is None:
@@ -723,7 +787,6 @@ class Body(NamedObject):
 
         NamedObject.__init__(self, name)
         # the object will have a frame, with the same name as the object itself
-        self.frames = [Frame(self, eye(4), name)]
         self.parentjoint = None
         self.childrenjoints = []
         self.mass = mass
@@ -770,6 +833,14 @@ class Body(NamedObject):
     def nleffects(self):
         return self._nleffects
 
+    @property
+    def bpose(self):
+        return eye(4)
+
+    @property
+    def body(self):
+        return self
+
     def reset(self):
         """
         TODO: reset everythong or remove the method
@@ -780,11 +851,6 @@ class Body(NamedObject):
         self._twist = None
         self._nleffects = None
 
-    def newframe(self,pose,name=None):
-        frame = Frame(self,pose,name)
-        self.frames.append(frame)
-        return frame
-        
     def geometric(self,pose):
         """
         - g: ground body
@@ -801,8 +867,8 @@ class Body(NamedObject):
         self._pose = pose
         H_gp = pose
         for j in self.childrenjoints:
-            H_cn = j._frames[1]._bpose
-            H_pr = j._frames[0]._bpose
+            H_cn = j._frames[1].bpose
+            H_pr = j._frames[0].bpose
             H_rn = j.pose()
             H_pc = dot(H_pr, dot(H_rn, Hg.inv(H_cn)))
             child_pose = dot(H_gp, H_pc)
@@ -872,8 +938,8 @@ class Body(NamedObject):
         dJ_pg = djac
         T_pg = twist
         for j in self.childrenjoints:
-            H_cn = j._frames[1]._bpose
-            H_pr = j._frames[0]._bpose
+            H_cn = j._frames[1].bpose
+            H_pr = j._frames[0].bpose
             H_rn = j.pose()
             H_pc = dot(H_pr, dot(H_rn, Hg.inv(H_cn)))
             child_pose = dot(H_gp, H_pc)

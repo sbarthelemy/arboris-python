@@ -45,8 +45,7 @@ function ``SetModelSize`` from the file
     Human Motion Analysis and Simulation toolbox
 
 """
-
-import arboris as arb
+from arboris import World, Body, SubFrame
 import numpy as np
 import homogeneousmatrix as Hg
 from joints import *
@@ -845,7 +844,7 @@ Tags(q)
     bodies = {}
     humansbodyid_to_humansbodyname_map = {}
     for b in _humans_bodies(height, mass):
-        bodies[b['HumansName']] = arb.Body(
+        bodies[b['HumansName']] = Body(
         name = b['HumansName'])
         humansbodyid_to_humansbodyname_map[b['HumansId']] = b['HumansName']
         #'Mass'=b['Mass'],
@@ -855,73 +854,74 @@ Tags(q)
     tags = {}
     for t in _humans_tags(height):
         bodyname = humansbodyid_to_humansbodyname_map[t['HumansBodyId']]
-        tags[t['HumansName']] = bodies[bodyname].newframe(
+        tags[t['HumansName']] = SubFrame(
+            bodies[bodyname],
             Hg.transl(t['Position']),
             t['HumansName'])
 
     # Create a world
     if world is None:
-        w = arb.World()
-    elif isinstance(world, arb.World):
+        w = World()
+    elif isinstance(world, World):
         w = world
     else:
         raise ValueError('the world argument must be an instance of the World class')
 
-    rf = w.bodies[0].newframe(
+    rf = SubFrame(w.ground,
         Hg.transl((0, L['yfootL']+L['ytibiaL']+L['yfemurL'], 0)))
-    w.add_joint(FreeJoint(), (rf, bodies['LPT'].frames[0]) )
+    w.add_joint(FreeJoint(), (rf, bodies['LPT']) )
     
-    rf = bodies['LPT'].newframe(Hg.transl((0, 0, L['zhip']/2.)))
-    w.add_joint(RzRyRxJoint(), (rf,bodies['ThighR'].frames[0]) )
+    rf = SubFrame(bodies['LPT'], Hg.transl((0, 0, L['zhip']/2.)))
+    w.add_joint(RzRyRxJoint(), (rf,bodies['ThighR']) )
     
-    rf = bodies['ThighR'].newframe(Hg.transl((0, -L['yfemurR'], 0)))
-    w.add_joint(HingeJoint(), (rf, bodies['ShankR'].frames[0]) )
+    rf = SubFrame(bodies['ThighR'], Hg.transl((0, -L['yfemurR'], 0)))
+    w.add_joint(HingeJoint(), (rf, bodies['ShankR']) )
     
-    rf = bodies['ShankR'].newframe(Hg.transl((0, -L['ytibiaR'], 0)))
-    w.add_joint(RzRxJoint(), (rf, bodies['FootR'].frames[0]) )
+    rf = SubFrame(bodies['ShankR'], Hg.transl((0, -L['ytibiaR'], 0)))
+    w.add_joint(RzRxJoint(), (rf, bodies['FootR']) )
     
-    rf = bodies['LPT'].newframe(Hg.transl((0, 0, -L['zhip']/2.)))
-    w.add_joint(RzRyRxJoint(), (rf, bodies['ThighL'].frames[0]) )
+    rf = SubFrame(bodies['LPT'], Hg.transl((0, 0, -L['zhip']/2.)))
+    w.add_joint(RzRyRxJoint(), (rf, bodies['ThighL']) )
     
-    rf = bodies['ThighL'].newframe(Hg.transl((0, -L['yfemurL'], 0)))
-    w.add_joint(HingeJoint(), (rf,bodies['ShankL'].frames[0]) )
+    rf = SubFrame(bodies['ThighL'], Hg.transl((0, -L['yfemurL'], 0)))
+    w.add_joint(HingeJoint(), (rf,bodies['ShankL']) )
     
-    rf = bodies['ShankL'].newframe(Hg.transl((0, -L['ytibiaL'], 0)))
-    w.add_joint(RzRxJoint(), (rf, bodies['FootL'].frames[0]) )
+    rf = SubFrame(bodies['ShankL'], Hg.transl((0, -L['ytibiaL'], 0)))
+    w.add_joint(RzRxJoint(), (rf, bodies['FootL']) )
     
-    rf = bodies['LPT'].newframe(Hg.transl((-L['xvT10'], L['yvT10'], 0)))
-    w.add_joint(RzRyRxJoint(), (rf, bodies['UPT'].frames[0]) )
+    rf = SubFrame(bodies['LPT'], Hg.transl((-L['xvT10'], L['yvT10'], 0)))
+    w.add_joint(RzRyRxJoint(), (rf, bodies['UPT']) )
     
-    rf = bodies['UPT'].newframe(
+    rf = SubFrame(bodies['UPT'], 
         Hg.transl((L['xsternoclavR'], L['ysternoclavR'], L['zsternoclavR'])))
-    w.add_joint(FreeJoint(), (rf, bodies['ScapulaR'].frames[0]) )
+    w.add_joint(FreeJoint(), (rf, bodies['ScapulaR']) )
     
-    rf = bodies['ScapulaR'].newframe(
+    rf = SubFrame(bodies['ScapulaR'], 
         Hg.transl((-L['xshoulderR'], L['yshoulderR'], L['zshoulderR'])))
-    w.add_joint(RzRyRxJoint(), (rf, bodies['ArmR'].frames[0]) )
+    w.add_joint(RzRyRxJoint(), (rf, bodies['ArmR']) )
     
-    rf = bodies['ArmR'].newframe(Hg.transl((0, -L['yhumerusR'], 0)))
-    w.add_joint(RzRyJoint(), (rf, bodies['ForearmR'].frames[0]) )
+    rf = SubFrame(bodies['ArmR'], Hg.transl((0, -L['yhumerusR'], 0)))
+    w.add_joint(RzRyJoint(), (rf, bodies['ForearmR']) )
     
-    rf = bodies['ForearmR'].newframe(Hg.transl((0, -L['yforearmR'], 0)))
-    w.add_joint(RzRxJoint(), (rf, bodies['HandR'].frames[0]) )
+    rf = SubFrame(bodies['ForearmR'], Hg.transl((0, -L['yforearmR'], 0)))
+    w.add_joint(RzRxJoint(), (rf, bodies['HandR']) )
     
-    rf = bodies['UPT'].newframe(
+    rf = SubFrame(bodies['UPT'], 
         Hg.transl((L['xsternoclavL'], L['ysternoclavL'], -L['zsternoclavL'])))
-    w.add_joint(RyRxJoint(), (rf, bodies['ScapulaL'].frames[0]) )
+    w.add_joint(RyRxJoint(), (rf, bodies['ScapulaL']) )
     
-    rf = bodies['ScapulaL'].newframe(
+    rf = SubFrame(bodies['ScapulaL'], 
         Hg.transl((-L['xshoulderL'], L['yshoulderL'], -L['zshoulderL'])))
-    w.add_joint(RzRyRxJoint(), (rf, bodies['ArmL'].frames[0]) )
+    w.add_joint(RzRyRxJoint(), (rf, bodies['ArmL']) )
     
-    rf = bodies['ArmL'].newframe(Hg.transl((0, -L['yhumerusL'], 0)))
-    w.add_joint(RzRyJoint(), (rf, bodies['ForearmL'].frames[0]) )
+    rf = SubFrame(bodies['ArmL'], Hg.transl((0, -L['yhumerusL'], 0)))
+    w.add_joint(RzRyJoint(), (rf, bodies['ForearmL']) )
     
-    rf = bodies['ForearmL'].newframe(Hg.transl((0, -L['yforearmL'], 0)))
-    w.add_joint(RzRxJoint(), (rf, bodies['HandL'].frames[0]) )
+    rf = SubFrame(bodies['ForearmL'], Hg.transl((0, -L['yforearmL'], 0)))
+    w.add_joint(RzRxJoint(), (rf, bodies['HandL']) )
     
-    rf = bodies['UPT'].newframe(Hg.transl((L['xvT10'], L['yvC7'], 0)))
-    w.add_joint(RzRyRxJoint(), (rf, bodies['Head'].frames[0]) )
+    rf = SubFrame(bodies['UPT'], Hg.transl((L['xvT10'], L['yvC7'], 0)))
+    w.add_joint(RzRyRxJoint(), (rf, bodies['Head']) )
     
     return (w, bodies, tags)
 
