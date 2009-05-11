@@ -367,36 +367,36 @@ class World(object):
         return viewer
 
 if __name__ == '__main__':
-    # testing!
-    if 0:       # choose between triplehinge and human36
-        from worldfactory import triplehinge
+    from visu_osg import NodeFactory, World
+    
+    test_triplehinge = False
+    if test_triplehinge:
+        from triplehinge import triplehinge
         w = triplehinge()
     else:
-        import human36
-        (w, bd, tags) = human36.human36() # or also: "w = human36.human36()[0]
-        
+        from human36 import human36
+        (w, bd, tags) = human36()
     w.update_geometric()
+    
+    nf = NodeFactory(scale=.1)
 
-    import visu_osg
-    colors = [Color('velvet'), Color([1.,0.,0.,.7]), Color((0.,1.,0.,), .4), Color('brown',0.2)]
-    #vw = visu_osg.World_Factory(w, 0.1, colors, (200, 100, 600, 600), (0,0,0), (2,2,2), (0,1,1))
-    vw = visu_osg.World_Factory(w, 0.1, colors)
+    vw = World(w, nf)
+    #vw.switch('name', False)
+    viewer = vw.init_viewer()
+    viewer.realize()
     t = 0.
-    vw.viewer.realize()
-    while(not(vw.viewer.done())):
+    while(not(viewer.done())):
         t+=1/800.
-        if 0: #choose witch robot to control: 1=3hinge; 0=human36
-            w.joints[0].gpos=[t]
-            w.joints[1].gpos=[t]
-            w.joints[2].gpos=[t]
+        if test_triplehinge:
+            w.joints[0].gpos[0]=t
+            w.joints[1].gpos[0]=t
+            w.joints[2].gpos[0]=t
         else:
-            #w.joints[0].gpos=array([[1,0,0,t],[0,1,0,t],[0,0,1,t],[0,0,0,1]])
             w.joints[1].gpos=[t, t, t]
             w.joints[2].gpos=[t]
             w.joints[3].gpos=[t, t]
-            
         w.update_geometric()
-        vw.update(True, True) #(showframe, showBody)
-        vw.viewer.frame()
+        vw.update()
+        viewer.frame()
         
         

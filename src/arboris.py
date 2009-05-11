@@ -617,16 +617,16 @@ class World(NamedObject):
             >>> from joints import FreeJoint
             >>> j0 = FreeJoint()
             >>> w = World()
-            >>> w.add_joint(j0, (w.ground.frames[0], b0.frames[0]) )
+            >>> w.add_joint(j0, (w.ground, b0) )
             >>> j1 = FreeJoint()
             >>> b1 = Body(mass = eye(6))
-            >>> w.add_joint(j1, (b0.frames[0], b1.frames[0]) )
+            >>> w.add_joint(j1, (b0, b1) )
             >>> from controllers import WeightController
             >>> ctrl =  WeightController(w.ground)
             >>> w.add_jointcontroller(ctrl)
             >>> from constraints import BallAndSocketConstraint 
             >>> c0 = BallAndSocketConstraint()
-            >>> w.add_constraint(c0, (w.ground.frames[0], b0.frames[0]) )
+            >>> w.add_constraint(c0, (w.ground, b0) )
             >>> w.update_dynamic()
             >>> dt = 0.001
             >>> w.update_controllers(dt)
