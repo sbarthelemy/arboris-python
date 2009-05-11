@@ -922,7 +922,10 @@ Tags(q)
     
     rf = SubFrame(bodies['UPT'], Hg.transl((L['xvT10'], L['yvC7'], 0)))
     w.add_joint(RzRyRxJoint(), (rf, bodies['Head']) )
-    
+   
+    for t in tags.itervalues():
+        w.register(t)
+
     return (w, bodies, tags)
 
 if __name__ == "__main__":

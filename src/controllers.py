@@ -42,7 +42,7 @@ class WeightController(JointController):
 
     def update(self,dt):
         self._gforce = zeros(self.ndof())
-        for b in self.ground.descendants():
+        for b in self.ground.iterdescendants():
             # gravity acceleration expressed in body frame
             g = dot(homogeneousmatrix.iadjoint(b.pose), self._gravity)
             self._gforce += dot(b.jacobian.T, dot(b.mass, g))

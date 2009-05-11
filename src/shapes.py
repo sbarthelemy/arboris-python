@@ -28,8 +28,7 @@ class Box(Shape):
     """
     A box
     """
-    def __init__(self, dims, name=None):
-        NamedObject.__init__(self, name)
+    def __init__(self, dims):
         self.dims = dims
 
 
@@ -37,8 +36,7 @@ class Sphere(Shape):
     """
     A box
     """
-    def __init__(self, radius, name=None):
-        NamedObject.__init__(self, name)
+    def __init__(self, radius):
         self.radius = radius
 
 

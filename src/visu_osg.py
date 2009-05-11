@@ -26,24 +26,24 @@ A geode can contain:
     - Geometry
     - 
 
-Viewer—The Viewer class can manage multiple synchronized cameras to
+The Viewer class can manage multiple synchronized cameras to
 render a single view spanning multiple monitors. Viewer creates its own
 window(s) and graphics context(s) based on the underlying graphics system
 capabilities, so a single Viewer-based application executable runs on single or
 multiple display systems.
 
-TODO: try on windows and fix the import.
+TODO: try on windows
 
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
               "Joseph SALINI <joseph.salini@gmail.com>")
 
-from OpenSceneGraph import osg, osgDB, osgGA, osgViewer, osgText # on linux
-#import osg, osgDB, osgGA, osgViewer, osgText                    # on windows
-import numpy as np
+from OpenSceneGraph import osg, osgDB, osgGA, osgViewer, osgText
+from numpy import pi, arctan2, array, dot, cross, sqrt, eye
 import visu
 import arboris
-import misc
+from misc import Color, NamedObject
+import homogeneousmatrix as Hg
 
 #we create the frame node and we will re-use it for every frame created
 def create_generic_frame(scale=.1):
@@ -64,10 +64,10 @@ def create_generic_frame(scale=.1):
     geo_z.addDrawable( cyl_z )
     # create the transform node for geo_x and geo_y
     trans_x = osg.PositionAttitudeTransform()
-    trans_x.setAttitude(osg.Quat(np.pi/2., osg.Vec3(0.,1.,0.)))
+    trans_x.setAttitude(osg.Quat(pi/2., osg.Vec3(0.,1.,0.)))
     trans_x.addChild(geo_x)
     trans_y = osg.PositionAttitudeTransform()
-    trans_y.setAttitude(osg.Quat(-np.pi/2., osg.Vec3(1.,0.,0.)))
+    trans_y.setAttitude(osg.Quat(-pi/2., osg.Vec3(1.,0.,0.)))
     trans_y.addChild(geo_y)
     # create the group and addChild trans_x and y, z didn't need transform
     frame = osg.Group()
@@ -77,17 +77,6 @@ def create_generic_frame(scale=.1):
     return frame
 
 generic_frame = create_generic_frame()
-
-class Color(visu.Color):
-    """
-    """
-    def __init__(self, var1, var2=1.):
-        visu.Color.__init__(self, var1, var2)
-        
-    def get(self):
-        return osg.Vec4(self.rgba[0], self.rgba[1], self.rgba[2], self.rgba[3])
-        
-
 
 def pose2mat(pose):
     """ Convert an homogeneous transform matrix from python to osg
@@ -106,27 +95,31 @@ def rot2quat(rot):
     q = osg.quat(1.,osg.Vec3d(0.,0.,0.))
     return q
 
+def rgba2vec4(rgba):
+    return osg.Vec4(rgba[0], rgba[1], rgba[2], rgba[3])
 
-def create_generic_arrow(scale=1., color=Color('white')):
+def create_generic_arrow(scale=1., color=None):
     cone = osg.ShapeDrawable(osg.Cylinder(osg.Vec3(0.,0.,scale), 0.05*scale, scale))
-    cone.setColor(color.get())
+    if color is not None:
+        cone.setColor(rgba2vec4(color.rgba))
     geo_cone = osg.Geode()
     geo_cone.addDrawable(cone)
     return geo_cone
     
-def draw_link(start, end, scale, color):
-    z = np.array([0.,0.,1.])
-    v = np.array([end[0,3]-start[0,3], end[1,3]-start[1,3], end[2,3]-start[2,3]])
-    length = np.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
+def draw_link(start, end, scale, color=None):
+    z = array([0.,0.,1.])
+    v = array([end[0,3]-start[0,3], end[1,3]-start[1,3], end[2,3]-start[2,3]])
+    length = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
     if length != 0.:
         v = v/length
-        q = np.cross(z,v)
-        sin_theta = np.sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2])
-        cos_theta = np.dot(z,v)
-        theta = np.arctan2(sin_theta, cos_theta)
+        q = cross(z,v)
+        sin_theta = sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2])
+        cos_theta = dot(z,v)
+        theta = arctan2(sin_theta, cos_theta)
         # create the cylinder
         cyl = osg.ShapeDrawable(osg.Cylinder(osg.Vec3(0.,0.,length/2), 0.1*scale, length))
-        cyl.setColor(color.get())
+        if color is not None:
+            cyl.setColor(rgba2vec4(color.rgba))
         geo = osg.Geode()
         geo.addDrawable( cyl )
         link = osg.PositionAttitudeTransform()
@@ -150,7 +143,7 @@ def draw_shape(shape=None, scale=1.):
     elif shape.name is 'point':
         shp = osg.ShapeDrawable(osg.Sphere(osg.Vec3(0.,0.,0.),0.01*scale))
     
-    shp.setColor(Color('brown', 0.3).get())
+    shp.setColor(osg.Vec4(1,1,0,0.3))
     geo = osg.Geode()
     geo.addDrawable(shp)
     shape_node = osg.MatrixTransform()
@@ -161,94 +154,6 @@ def draw_shape(shape=None, scale=1.):
     
     
     
-class World(visu.World):
-    """ A drawable version of rigidmotion.World
-    """
-    def __init__(self, world, scale=1.):
-        visu.World.__init__(self, world, scale)
-        
-        self._root = osg.Group()    # we save the root node of our osg
-        # enable the transparency/alpha
-        blend = osg.StateSet()
-        blend.setMode(osg.GL_BLEND, osg.StateAttribute.ON)
-        self._root.setStateSet(blend)
-        # create the osg viewer
-        self.viewer = osgViewer.Viewer()
-        self.viewer.setSceneData(self._root) # we give the root_node to show
-        self.manipulator = osgGA.TrackballManipulator()
-        self.viewer.setCameraManipulator(self.manipulator)
-
-    def add_body(self, added_body, color, gen_frame):
-        new_vbody = Body(added_body, self._scale, color, gen_frame)
-        self._root.addChild(new_vbody.body_node)
-        self.bodies.append(new_vbody)
-        
-    def add_wrench(self, added_wrench, gen_force_arrow, gen_moment_arrow):
-        new_wrench = Wrench(added_wrench, self._scale, gen_force_arrow, gen_moment_arrow)
-        self._root.addChild(new_wrench)
-        self.wrenches.append(new_wrench)
-
-    def update(self, showFrames = None, showLinks = None):
-        for b in self.bodies:
-            b.update(showFrames, showLinks)
-# end of class World()
-
-
-
-
-
-class Body(visu.Body):
-    """ A drawable version of rigidmotion.Body
-    """
-    def __init__(self, body, scale=1., color=Color('white'), gen_frame=None):
-        visu.Body.__init__(self, body, scale, color)
-        
-        # create the osg body sub tree
-        self.body_node = osg.MatrixTransform()
-        self.switcher = osg.Switch()
-        self.body_node.addChild(self.switcher)
-        # create the groups ...
-        self.group_frames = osg.Group()
-        self.group_links = osg.Group()
-        self.group_shapes = osg.Group()
-        self.switcher.addChild(self.group_frames) # ... and link them with the tree
-        self.switcher.addChild(self.group_links)
-        self.switcher.addChild(self.group_shapes)
-        if gen_frame is None:
-            gen_frame = create_generic_frame()
-        self.draw_body(gen_frame)
-        
-    def draw_body(self, gen_frame):
-        # set the matrixTransform
-        self.body_node.setMatrix(pose2mat(self._body.pose))
-        #TODO: repair!
-        #for f in self._body.frames:
-        f = self._body
-        nf = draw_frame(f.bpose, f.name, self._scale)
-        self.group_frames.addChild(nf)
-        self.frames.append(nf)
-        nl = draw_link(np.eye(4), f.bpose, self._scale, self._color)
-        if nl is not None:
-            self.group_links.addChild(nl)
-            self.links.append(nl)
-        #for s in self._body.shapes:
-        #    ns = draw_shape(s)
-        #    self.group_shapes.addChild(ns)
-        #    self.shapes.append(ns)
-
-    def update(self, showFrames, showLinks):
-        pose = self._body.pose
-        self.body_node.setMatrix(pose2mat(pose))
-        if showFrames is not None:
-            self.switcher.setChildValue(self.group_frames, showFrames)
-        if showLinks is not None:
-            self.switcher.setChildValue(self.group_links, showLinks)
-# end of class Body()
-
-
-
-
-
 class Wrench(object):
     #TODO: make the Abstract Class in visu.py
     """
@@ -280,64 +185,12 @@ class Wrench(object):
 # end of class Wrench
 
 
-# World Factory
-def World_Factory(arb_world, scale=1., color_set=None, 
-                  windowed=(0,0,800,600), COI=None, cam=None, up = (0,1,0)):
-    #create the visual world
-    v_world = World(arb_world, scale)
-    #check if color_set exist
-    if color_set is None:
-        color_set = [Color('white'), Color('red'), Color('green'), Color('blue')]
-        
-    # create the bodies and save them
-    i=0
-    gen_frame = create_generic_frame(scale)
-    for b in arb_world.bodies:
-        color = color_set[i%len(color_set)]
-        v_world.add_body(b, color, gen_frame)
-        i+=1
-    
-    #create the wrench and save them
-    gen_force = create_generic_arrow(scale, Color('green'))
-    gen_moment = create_generic_arrow(scale, Color('red'))
-    ##### #####
-    if 0: # delete it to test wrenches
-        for w in arb_world.wrenches:
-            v_world.add_wrench(w, gen_force, gen_moment)
-        
-        
-    #check if COI and cam relative distance are set
-    if COI is None:
-        COI = np.array([0., 0., 0.])
-        for b in v_world._world.bodies:
-            COI = COI + b.pose[0:3,3]
-        COI = COI/len(v_world._world.bodies)
-    if cam is None:
-        cam = [25*scale, 25*scale, 25*scale]
-    
-    #we set the position of the beginning camera/view
-    v_world.manipulator.setHomePosition(osg.Vec3d(COI[0]+cam[0], COI[1]+cam[1], COI[2]+cam[2]),
-                                    osg.Vec3d(COI[0], COI[1], COI[2]),
-                                    osg.Vec3d(up[0],up[1],up[2]))     
-    v_world.viewer.home()
-
-    #check if we want to see simulation in a window
-    if (windowed is not False) & (windowed is not None):
-        v_world.viewer.setUpViewInWindow(windowed[0], windowed[1], 
-                                         windowed[2], windowed[3])
-        
-    return v_world
-# end of World Factory
-
-
-####### SEB #######
-
 def draw_frame(pose=None, label=None, scale=1.):
     """Draw the arrows and label of a coordinate frame.
     """
     frame = osg.MatrixTransform()   #create frame node
     if pose is None:
-        pose = np.eye(4)
+        pose = eye(4)
     frame.setMatrix(pose2mat(pose))
     if label is not None:
         frame.addChild(draw_text(label))
@@ -358,29 +211,73 @@ def draw_text(label, scale=1.):
     return geode
 
 
-
 class NodeFactory(object):
+    """
+    Given arboris objects, th
+    """
+    def __init__(self, scale=1., body_palette=None):
+    
+        self.scale = scale
+        if body_palette is None:
+            self.body_palette = [Color('red'), Color('green'), Color('blue')]
+        self.body_colors = {}
+
 
     def convert(self, obj, parent=None):
+        """Given an arboris obect ``obj`` as input, this method
+        return a dictionnary of osg nodes for the rendering of 
+        ``obj``. I also returns a dictionary of osg switches, in
+        order to make it possible to disable the rendering of some nodes.
+        Each node is the child of its corresponding switch.
+
+        If the optional ``parent`` argument is given, the switches are its
+        children
+
+        for instance, if ``obj`` is an instance of :class:`arboris.SubFrame`, 
+        and ``parent`` is given, it will result in the following tree::
+
+            parent
+              |
+              +-----------------+------------------+
+              |                 |                  |
+            switches['name']  switches['frame']  switches['link']
+              |                 |                  |
+            nodes['name']     nodes['frame']     nodes['link']
+
+        """
         
         nodes = {}
-        if isinstance(obj, misc.NamedObject) & (obj.name is not None):
-            nodes['name'] = draw_text(obj.name)
+        switches = {}
+        if isinstance(obj, NamedObject) & (obj.name is not None):
+            switches['name'] = osg.Switch()
+            nodes['name'] = draw_text(obj.name, self.scale)
 
         if isinstance(obj, arboris.Frame):
+            switches['frame'] = osg.Switch()
             nodes['frame'] = generic_frame
 
         if isinstance(obj, arboris.SubFrame):
-            nl = draw_link(np.eye(4), obj.bpose, scale=1., color=Color('white'))
+            if obj.body in self.body_colors:
+                color = self.body_colors[obj.body]
+            else:
+                try:
+                    color = self.body_palette.pop()
+                except IndexError:
+                    color = Color('white')
+                self.body_colors[obj.body] = color
+            nl = draw_link(Hg.inv(obj.bpose), eye(4), self.scale, color)
             if nl is not None:
+                switches['link'] = osg.Switch()
                 nodes['link'] = nl
 
+        for key in nodes.iterkeys():
+            switches[key].addChild(nodes[key])
         if parent is not None:
-            for node in nodes.itervalues():
-                parent.addChild(node)
-        return nodes
+            for switch in switches.itervalues():
+                parent.addChild(switch)
+        return (nodes, switches)
 
-class SebWorld(object):
+class World(object):
     """
     TODO: merge ``body_nodes`` and ``subframe_nodes`` into ``frame_nodes`` (or
     better, ``transform_nodes``)?
@@ -392,71 +289,82 @@ class SebWorld(object):
 
         self.world = world
         self.root_node = osg.Group()
-        self.body_nodes = {}
-        self.subframe_nodes = {}
-        self.drawable_nodes = {'frame':{}, 'name':{}, 'link':{}, 'shape':{}}
-
-        for b in self.world.ground.descendants():
-            bn = osg.MatrixTransform()
-            self.body_nodes[b] = bn
-            self.root_node.addChild(bn)
-            nodes = factory.convert(b, bn)
-            for key, value in nodes.iteritems():
-                self.drawable_nodes[key][b] = nodes[key]
-        for sf in self.world._subframes:
-            sfn = osg.MatrixTransform()
-            self.subframe_nodes[sf] = sfn
-            self.body_nodes[sf.body].addChild(sfn)
-            nodes = factory.convert(sf, sfn)
-            for key, value in nodes.iteritems():
-                self.drawable_nodes[key][b] = nodes[key]
-
-        self.frame_nodes = self.subframe_nodes.copy()
-        self.frame_nodes.update(self.body_nodes)
-        for sh in self.world._shapes:
-            self.drawable_nodes['shape'][sh] = \
-                factory.convert(sh, self.frame_nodes[sh.frame])
-        self.update()
-
-        # testing switch
-        self.switch = osg.Switch()
-        for f in self.drawable_nodes['name'].itervalues():
-            #self.switch.addChild(f, True)
-            self.switch.addChild(f, False)
-
-
-    def update(self):
-        for b in self.world.ground.descendants():
-            self.body_nodes[b].setMatrix(pose2mat(b.pose))
-
-        for sf in self.world._subframes:
-            self.subframe_nodes[sf].setMatrix(pose2mat(sf.bpose))
-
-class SebOsgFactory(object):
-
-    def init(self, world):
-
         # enable the transparency/alpha
         blend = osg.StateSet()
         blend.setMode(osg.GL_BLEND, osg.StateAttribute.ON)
-        world.root_node.setStateSet(blend)
+        self.root_node.setStateSet(blend)
+        self.transforms = {}
+        self.nodes = {'frame':{}, 'name':{}, 'link':{}, 'shape':{}}
+        self.switches = {'frame':{}, 'name':{}, 'link':{}, 'shape':{}}
+
+        for b in self.world.iterbodies():
+            bn = osg.MatrixTransform()
+            self.transforms[b] = bn
+            self.root_node.addChild(bn)
+            (nodes, switches) = factory.convert(b, bn)
+            for key, value in nodes.iteritems():
+                self.nodes[key][b] = value
+            for key, value in switches.iteritems():
+                self.switches[key][b] = value
+
+        for sf in self.world._subframes:
+            sfn = osg.MatrixTransform()
+            self.transforms[sf] = sfn
+            self.transforms[sf.body].addChild(sfn)
+            (nodes, switches) = factory.convert(sf, sfn)
+            for key, value in nodes.iteritems():
+                self.nodes[key][sf] = value
+            for key, value in switches.iteritems():
+                self.switches[key][sf] = value
+
+        for sh in self.world._shapes:
+            self.drawable_nodes['shape'][sh] = \
+                factory.convert(sh, self.transforms[sh.frame])
+        self.update()
+
+    def update(self):
+        for b in self.world.iterbodies():
+            self.transforms[b].setMatrix(pose2mat(b.pose))
+
+        for sf in self.world._subframes:
+            self.transforms[sf].setMatrix(pose2mat(sf.bpose))
+   
+    def switch(self, nodetype, on=True):
+        if on:
+            for sw in self.switches[nodetype].itervalues():
+                sw.setAllChildrenOn()
+        else:
+            for sw in self.switches[nodetype].itervalues():
+                sw.setAllChildrenOff()
+
+    def init_viewer(self, windowed = (0,0,800,600), COI=None, cam=None, up=(0,1,0)):
+
         # create the osg viewer
         viewer = osgViewer.Viewer()
-        viewer.setSceneData(world.root_node)
+        viewer.setSceneData(self.root_node)
         manipulator = osgGA.TrackballManipulator()
         viewer.setCameraManipulator(manipulator)
-        # bodies
+        #check if COI and cam relative distance are set
+        if COI is None:
+            COI = array([0., 0., 0.])
+        nbodies = 0
+        for b in self.world.iterbodies():
+            COI = COI + b.pose[0:3,3]
+            nbodies +=1
+        COI = COI/nbodies
+        if cam is None:
+            cam = [3, 3, 3]
+    
+        #we set the position of the beginning camera/view
+        manipulator.setHomePosition(osg.Vec3d(COI[0]+cam[0], COI[1]+cam[1], COI[2]+cam[2]),
+                                    osg.Vec3d(COI[0], COI[1], COI[2]),
+                                    osg.Vec3d(up[0],up[1],up[2]))     
+        #check if we want to see simulation in a window
+        if (windowed is not False) & (windowed is not None):
+            viewer.setUpViewInWindow(windowed[0], windowed[1], 
+                                     windowed[2], windowed[3])
         viewer.home()
-        viewer.realize()
-        t=0.
-        while(not(viewer.done())):
-            t+=1/800.
-            world.world.joints[0].gpos=[t]
-            world.world.joints[1].gpos=[t]
-            world.world.joints[2].gpos=[t]
-            world.world.update_geometric()
-            world.update()
-            viewer.frame()
+        return viewer
 
 if __name__ == '__main__':
     # testing!
@@ -482,7 +390,7 @@ if __name__ == '__main__':
             w.joints[1].gpos=[t]
             w.joints[2].gpos=[t]
         else:
-            #w.joints[0].gpos=np.array([[1,0,0,t],[0,1,0,t],[0,0,1,t],[0,0,0,1]])
+            #w.joints[0].gpos=array([[1,0,0,t],[0,1,0,t],[0,0,1,t],[0,0,0,1]])
             w.joints[1].gpos=[t, t, t]
             w.joints[2].gpos=[t]
             w.joints[3].gpos=[t, t]

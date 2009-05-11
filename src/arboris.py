@@ -17,7 +17,6 @@ bodies and serve as anchor points to the joints
 
 TODO: 
 
-- put object names in a dict. replace bodies by an iterator
 - import human36 from matlab-arboris
 - add unit tests for human36
 - add support for controllers and integration
@@ -67,8 +66,8 @@ class World(NamedObject):
 
     def __init__(self, name=None):
         NamedObject.__init__(self, name)
-        self.ground = Body(u"ground")
-        self.bodies = [self.ground] 
+        self.ground = Body('ground')
+        self.bodies = [self.ground]
         self.joints = []
         self._controllers = []
         self._constraints = []
@@ -82,6 +81,25 @@ class World(NamedObject):
         self._viscosity = array([]) # updated by self.update_dynamic()
         self._controller_viscosity = array([]) # updated by self.update_dynamic()
         self._nleffects = array([]) # updated by self.update_dynamic()
+
+    def iterbodies(self):
+        """Iterate over all bodies, with a depth-first strategy"""
+        yield self.ground
+        for b in self.ground.iterdescendants():
+            yield b
+
+    def getbodiesdict(self):
+        """Returns a dictionary whose values are the bodies and keys are the bodies
+        names
+        """
+        bd_dict={self.ground.name: self.ground}
+        for b in self.ground.iterdescendants():
+            if b.name is not None :
+                if b.name not in bd_dict:  
+                    bd_dict[b.name]=b
+                else:
+                    raise DuplicateNameError()
+        return bd_dict
 
     def register(self, obj):
         """
@@ -146,12 +164,12 @@ class World(NamedObject):
         frame0_body_is_in_world = False
         frame0_is_in_world = False
         if isinstance(frames[0], Body):
-            for b in self.bodies:
+            for b in self.iterbodies():
                 if frames[0] is b:
                    frame0_body_is_in_world = True
                    frame0_is_in_world = True
         elif isinstance(frames[0], SubFrame):
-            for b in self.bodies:
+            for b in self.iterbodies():
                 if frames[0].body is b:
                    frame0_body_is_in_world = True
             for sf in self._subframes:
@@ -164,7 +182,7 @@ class World(NamedObject):
 
         new_body = frames[1].body
         # check the new/local/child frame is not already in world
-        for b in self.bodies:
+        for b in self.iterbodies():
             if new_body is b:
                raise ValueError("The new/local/child  frame is attached to a body that is already in world")
         if (new_body.parentjoint is not None):
@@ -175,6 +193,7 @@ class World(NamedObject):
         if isinstance(frames[1], SubFrame):
             self.register(frames[1])
 
+        self.bodies.append(new_body)
         # extend the world generalized velocities
         old_ndof = self._ndof
         self._ndof = self._ndof + joint.ndof()
@@ -184,7 +203,6 @@ class World(NamedObject):
         joint._dof = slice(old_ndof, self._ndof)
         self.joints.append(joint)
         joint._frames[0].body.childrenjoints.append(joint)
-        self.bodies.append(new_body)
         new_body.parentjoint = joint
 
         self._gvel = zeros(self._ndof)
@@ -239,7 +257,7 @@ class World(NamedObject):
         
         This will recursively update each body pose attribute.
         """
-        self.bodies[0].geometric(eye(4))
+        self.ground.geometric(eye(4))
 
 
     def update_kinematic(self):
@@ -249,7 +267,7 @@ class World(NamedObject):
         This will recursively update all each body pose and jacobian
         attributes.
         """
-        self.bodies[0].kinematic(eye(4),zeros((6,self._ndof)))
+        self.ground.kinematic(eye(4),zeros((6,self._ndof)))
 
 
     def update_dynamic(self):
@@ -271,62 +289,63 @@ class World(NamedObject):
         >>> w.joints[2].gpos[0]=2.0/3.0
         >>> w.joints[2].gvel[0]=-0.5
         >>> w.update_dynamic()
-        >>> w.bodies[1].pose
+        >>> bodies = w.getbodiesdict()
+        >>> bodies['Arm'].pose
         array([[ 0.87758256, -0.47942554,  0.        ,  0.        ],
                [ 0.47942554,  0.87758256,  0.        ,  0.        ],
                [ 0.        ,  0.        ,  1.        ,  0.        ],
                [ 0.        ,  0.        ,  0.        ,  1.        ]])
-        >>> w.bodies[2].pose
+        >>> bodies['ForeArm'].pose
         array([[ 0.0707372 , -0.99749499,  0.        , -0.23971277],
                [ 0.99749499,  0.0707372 ,  0.        ,  0.43879128],
                [ 0.        ,  0.        ,  1.        ,  0.        ],
                [ 0.        ,  0.        ,  0.        ,  1.        ]])
-        >>> w.bodies[3].pose
+        >>> bodies['Hand'].pose
         array([[-0.56122931, -0.82766035,  0.        , -0.63871076],
                [ 0.82766035, -0.56122931,  0.        ,  0.46708616],
                [ 0.        ,  0.        ,  1.        ,  0.        ],
                [ 0.        ,  0.        ,  0.        ,  1.        ]])
-        >>> w.bodies[0].jacobian
+        >>> bodies['ground'].jacobian
         array([[ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.]])
-        >>> w.bodies[1].jacobian
+        >>> bodies['Arm'].jacobian
         array([[ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 1.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.]])
-        >>> w.bodies[2].jacobian
+        >>> bodies['ForeArm'].jacobian
         array([[ 0.        ,  0.        ,  0.        ],
                [ 0.        ,  0.        ,  0.        ],
                [ 1.        ,  1.        ,  0.        ],
                [-0.27015115,  0.        ,  0.        ],
                [ 0.42073549,  0.        ,  0.        ],
                [ 0.        ,  0.        ,  0.        ]])
-        >>> w.bodies[3].jacobian
+        >>> bodies['Hand'].jacobian
         array([[ 0.        ,  0.        ,  0.        ],
                [ 0.        ,  0.        ,  0.        ],
                [ 1.        ,  1.        ,  1.        ],
                [-0.26649313, -0.3143549 ,  0.        ],
                [ 0.7450519 ,  0.24734792,  0.        ],
                [ 0.        ,  0.        ,  0.        ]])
-        >>> w.bodies[0].twist
+        >>> bodies['ground'].twist
         array([ 0.,  0.,  0.,  0.,  0.,  0.])
-        >>> w.bodies[1].twist
+        >>> bodies['Arm'].twist
         array([ 0. ,  0. ,  2.5,  0. ,  0. ,  0. ])
-        >>> w.bodies[2].twist
+        >>> bodies['ForeArm'].twist
         array([ 0.        ,  0.        ,  1.5       , -0.67537788,  1.05183873,  0.        ])
-        >>> w.bodies[3].twist
+        >>> bodies['Hand'].twist
         array([ 0.        ,  0.        ,  1.        , -0.35187792,  1.61528183,  0.        ])
         >>> w.viscosity
         array([[ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.]])
-        >>> w.bodies[1].mass
+        >>> bodies['Arm'].mass
         array([[  8.35416667e-02,   0.00000000e+00,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   2.50000000e-01],
                [  0.00000000e+00,   4.16666667e-04,   0.00000000e+00,
@@ -339,7 +358,7 @@ class World(NamedObject):
                   0.00000000e+00,   1.00000000e+00,   0.00000000e+00],
                [  2.50000000e-01,   0.00000000e+00,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   1.00000000e+00]])
-        >>> w.bodies[2].mass
+        >>> bodies['ForeArm'].mass
         array([[  4.27733333e-02,   0.00000000e+00,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   1.60000000e-01],
                [  0.00000000e+00,   2.13333333e-04,   0.00000000e+00,
@@ -352,7 +371,7 @@ class World(NamedObject):
                   0.00000000e+00,   8.00000000e-01,   0.00000000e+00],
                [  1.60000000e-01,   0.00000000e+00,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   8.00000000e-01]])
-        >>> w.bodies[3].mass
+        >>> bodies['Hand'].mass
         array([[  2.67333333e-03,   0.00000000e+00,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   2.00000000e-02],
                [  0.00000000e+00,   1.33333333e-05,   0.00000000e+00,
@@ -369,42 +388,42 @@ class World(NamedObject):
         array([[ 0.55132061,  0.1538999 ,  0.0080032 ],
                [ 0.1538999 ,  0.09002086,  0.00896043],
                [ 0.0080032 ,  0.00896043,  0.00267333]])
-        >>> w.bodies[0].djacobian
+        >>> bodies['ground'].djacobian
         array([[ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.]])
-        >>> w.bodies[1].djacobian
+        >>> bodies['Arm'].djacobian
         array([[ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.],
                [ 0.,  0.,  0.]])
-        >>> w.bodies[2].djacobian
+        >>> bodies['ForeArm'].djacobian
         array([[ 0.        ,  0.        ,  0.        ],
                [ 0.        ,  0.        ,  0.        ],
                [ 0.        ,  0.        ,  0.        ],
                [-0.42073549,  0.        ,  0.        ],
                [-0.27015115,  0.        ,  0.        ],
                [ 0.        ,  0.        ,  0.        ]])
-        >>> w.bodies[3].djacobian
+        >>> bodies['Hand'].djacobian
         array([[ 0.        ,  0.        ,  0.        ],
                [ 0.        ,  0.        ,  0.        ],
                [ 0.        ,  0.        ,  0.        ],
                [-0.87022993, -0.12367396,  0.        ],
                [-0.08538479, -0.15717745,  0.        ],
                [ 0.        ,  0.        ,  0.        ]])
-        >>> w.bodies[0].nleffects
+        >>> bodies['ground'].nleffects
         array([[ 0.,  0.,  0.,  0.,  0.,  0.],
                [ 0.,  0.,  0.,  0.,  0.,  0.],
                [ 0.,  0.,  0.,  0.,  0.,  0.],
                [ 0.,  0.,  0.,  0.,  0.,  0.],
                [ 0.,  0.,  0.,  0.,  0.,  0.],
                [ 0.,  0.,  0.,  0.,  0.,  0.]])
-        >>> w.bodies[1].nleffects
+        >>> bodies['Arm'].nleffects
         array([[  0.00000000e+00,  -1.04166667e-03,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   0.00000000e+00],
                [  5.26041667e-02,   0.00000000e+00,   0.00000000e+00,
@@ -458,7 +477,7 @@ class World(NamedObject):
         self._mass[:] = 0.
         self._viscosity[:] = 0.
         self._nleffects[:] = 0.
-        for b in self.ground.descendants():
+        for b in self.ground.iterdescendants():
             self._mass += dot(
                 dot(b.jacobian.T, b.mass),
                 b.jacobian)
@@ -797,22 +816,21 @@ class Body(NamedObject, Frame):
         self._twist = None # updated by update_dynamic
         self._nleffects = None # updated by update_dynamic
 
-    def descendants(self):
+    def iterdescendants(self):
         """Iterate over all descendant bodies, with a depth-first strategy"""
         from itertools import imap
-        for b in imap(lambda x: x._frames[1].body, self.childrenjoints):
+        for b in imap(lambda j: j._frames[1].body, self.childrenjoints):
             yield b
-            for bb in b.descendants():
+            for bb in b.iterdescendants():
                 yield bb
 
-    def ancestors(self):
-        from itertools import imap
+    def iterancestors(self):
         if self.parentjoint is not None:
             parent = self.parentjoint._frames[0].body
             yield parent
-            for a in parent.ancestors():
+            for a in parent.iterancestors():
                 yield a
-
+    
     @property
     def pose(self):
         return self._pose
@@ -840,16 +858,6 @@ class Body(NamedObject, Frame):
     @property
     def body(self):
         return self
-
-    def reset(self):
-        """
-        TODO: reset everythong or remove the method
-        """
-        self._pose = None
-        self._jacobian = None
-        self._djacobian = None
-        self._twist = None
-        self._nleffects = None
 
     def geometric(self,pose):
         """
