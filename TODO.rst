@@ -37,7 +37,6 @@ Small changes
   - velocities are already grouped in Wordl._gvel
   - positions might be grouped 
 
-- create a function that returns dicts of frames/joints/bodies
 - create functions to merge bodies/worlds etc.
 - implement a true recursive-newton-euler linearized algorithm?
 

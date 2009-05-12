@@ -40,7 +40,7 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
 
 from OpenSceneGraph import osg, osgDB, osgGA, osgViewer, osgText
 from numpy import pi, arctan2, array, dot, cross, sqrt, eye
-import visu
+import shapes
 import arboris
 from misc import Color, NamedObject
 import homogeneousmatrix as Hg
@@ -248,7 +248,7 @@ class NodeFactory(object):
         
         nodes = {}
         switches = {}
-        if isinstance(obj, NamedObject) & (obj.name is not None):
+        if isinstance(obj, NamedObject) and (obj.name is not None):
             switches['name'] = osg.Switch()
             nodes['name'] = draw_text(obj.name, self.scale)
 
@@ -270,6 +270,11 @@ class NodeFactory(object):
                 switches['link'] = osg.Switch()
                 nodes['link'] = nl
 
+        if isinstance(obj, shapes.Sphere):
+            switches['shape'] = osg.Switch()
+            nodes['shape'] = osg.Geode()
+            nodes['shape'].addDrawable(osg.ShapeDrawable(
+                osg.Sphere(osg.Vec3(0.,0.,0.), obj.radius)))
         for key in nodes.iterkeys():
             switches[key].addChild(nodes[key])
         if parent is not None:
@@ -318,8 +323,11 @@ class World(object):
                 self.switches[key][sf] = value
 
         for sh in self.world._shapes:
-            self.drawable_nodes['shape'][sh] = \
-                factory.convert(sh, self.transforms[sh.frame])
+            (nodes, switches) =factory.convert(sh, self.transforms[sh.frame])
+            for key, value in nodes.iteritems():
+                self.nodes[key][sh] = value
+            for key, value in switches.iteritems():
+                self.switches[key][sh] = value
         self.update()
 
     def update(self):
@@ -360,7 +368,7 @@ class World(object):
                                     osg.Vec3d(COI[0], COI[1], COI[2]),
                                     osg.Vec3d(up[0],up[1],up[2]))     
         #check if we want to see simulation in a window
-        if (windowed is not False) & (windowed is not None):
+        if (windowed is not False) and (windowed is not None):
             viewer.setUpViewInWindow(windowed[0], windowed[1], 
                                      windowed[2], windowed[3])
         viewer.home()
@@ -369,17 +377,22 @@ class World(object):
 if __name__ == '__main__':
     from visu_osg import NodeFactory, World
     
-    test_triplehinge = False
-    if test_triplehinge:
+    #robot = 'triplehinge'
+    robot = 'human36'
+    #robot = 'ball'
+
+    if robot == 'triplehinge':
         from triplehinge import triplehinge
         w = triplehinge()
-    else:
+    elif robot == 'human36':
         from human36 import human36
         (w, bd, tags) = human36()
-    w.update_geometric()
-    
-    nf = NodeFactory(scale=.1)
+    else:
+        from ball import ball
+        w = ball()
 
+    w.update_geometric()
+    nf = NodeFactory(scale=.1)
     vw = World(w, nf)
     #vw.switch('name', False)
     viewer = vw.init_viewer()
@@ -387,11 +400,11 @@ if __name__ == '__main__':
     t = 0.
     while(not(viewer.done())):
         t+=1/800.
-        if test_triplehinge:
+        if robot == 'triplehinge':
             w.joints[0].gpos[0]=t
             w.joints[1].gpos[0]=t
             w.joints[2].gpos[0]=t
-        else:
+        elif robot == 'human36':
             w.joints[1].gpos=[t, t, t]
             w.joints[2].gpos=[t]
             w.joints[3].gpos=[t, t]

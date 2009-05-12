@@ -50,7 +50,8 @@ from constraints import Constraint
 from misc import NamedObject
 
 class Shape(object):
-    pass
+    def __init__(self, frame):
+        self.frame = frame
 
 class World(NamedObject):
 
@@ -130,7 +131,7 @@ class World(NamedObject):
     def ndof(self):
         return self._ndof
 
-
+    
     def add_joint(self, joint, frames):
         """Add a joint and its new-attached body to the world.
 

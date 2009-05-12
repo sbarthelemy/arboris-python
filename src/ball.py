@@ -35,8 +35,8 @@ def ball(world=None, radius=1., mass=1., name='Ball'):
         mass=mass_parallelepiped(mass, (radius,radius,radius)))
     freejoint = FreeJoint()
     w.add_joint(joint=freejoint, frames=(w.ground, ball))
-    s = Sphere(radius)
-
+    s = Sphere(ball, radius)
+    w.register(s)
     return w
 
 if __name__ == "__main__":
