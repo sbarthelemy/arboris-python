@@ -115,7 +115,7 @@ class ProportionalDerivativeController(JointController):
 
 if __name__ == "__main__":
     
-    from worldfactory import triplehinge
+    from triplehinge import triplehinge
     from numpy import diag
     w = triplehinge()
     Kp = diag([10.,5.,1.],0)
@@ -126,13 +126,14 @@ if __name__ == "__main__":
     w.update_dynamic()
     
     import visu_osg
-    vw = visu_osg.World_Factory(w, 0.1)
-    vw.viewer.realize()
+    vw = visu_osg.World(w)
+    viewer = vw.init_viewer()
+    viewer.realize()
     dt = 0.001
-    while(not(vw.viewer.done())):
+    while(not(viewer.done())):
     
         w.update_dynamic()
         w.update_controllers(dt)
         w.integrate(dt)
-        vw.update(True, True)
-        vw.viewer.frame()
+        vw.update()
+        viewer.frame()
