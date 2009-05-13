@@ -12,6 +12,7 @@ Contents:
    rigidmotion
    rigidmechanism
    constraints
+   collisions
    modules
    notations
    devel
