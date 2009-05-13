@@ -11,52 +11,12 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 """
 
 from abc import ABCMeta, abstractmethod
-from numpy import array, zeros, eye, dot
+from numpy import array, zeros, eye, dot, hstack
 from numpy.linalg import solve
 import homogeneousmatrix as Hg
 from misc import NamedObject
+from arboris import SubFrame, Constraint, BodyConstraint
 
-
-class Constraint(NamedObject):
-
-    def __init__(self, name=None):
-        NamedObject.__init__(self, name)
-    
-    @abstractmethod
-    def gforce(self):
-        pass
-
-
-
-class BodyConstraint(Constraint):
-    __metaclass__ = ABCMeta
-
-    def gforce(self):
-        return dot(self.jacobian().T, self._force)
-
-    @abstractmethod
-    def jacobian(self):
-        pass
-
-    @abstractmethod
-    def ndol(self):
-        """
-        number of degree of "liaison" (in french: *nombre de degrés de liaison*)
-        This is equal to 6-ndof
-        """
-        pass
-
-    @abstractmethod
-    def update(self):
-        pass
-
-    @abstractmethod
-    def is_active(self):
-        pass
-
-    @abstractmethod
-    def solve(self, dforce, dvel, admittance, dt):
-        pass
 
 class BallAndSocketConstraint(BodyConstraint):
     r"""
@@ -204,7 +164,7 @@ class BallAndSocketConstraint(BodyConstraint):
 
 proximity = 0.01
 
-class PointContact(Constraint):
+class PointContact(BodyConstraint):
     r"""
     
     Solving a contact constraint involves two steps:
@@ -229,8 +189,8 @@ class PointContact(Constraint):
             to the ``shapes`` pair
         """
         self._shapes = shapes
-        self._frames = (shapes[0].frame.body.newframe(),
-                        shapes[1].frame.body.newframe())
+        self._frames = (SubFrame(shapes[0].frame.body),
+                        SubFrame(shapes[1].frame.body))
         self._collision_solver = collision_solver
 
 
@@ -241,14 +201,13 @@ class PointContact(Constraint):
         The two frames have the same orientation, with the contact normal along
         the :math:`z`-axis
         """
-        (sdist, H_s0c0, H_s1c1) = self._collision_solver(shapes)
-        (sdist, H_gc0, H_gc1) = self._collision_solver(shapes)
+        (sdist, H_gc0, H_gc1) = self._collision_solver(self._shapes)
         #self._frames[0].bpose = dot(self._shapes[0].frame.bpose, H_s0c0)
         #self._frames[1].bpose = dot(self._shapes[1].frame.bpose, H_s1c1)
-        H_b0g = Hg.inv(self._shapes[0].frame.body.bpose)
-        H_b1g = Hg.inv(self._shapes[1].frame.body.bpose)
-        self._frames[0].bpose = dot(H_b0g, H_gc0)
-        self._frames[1].bpose = dot(H_b1g, H_gc1)
+        H_b0g = Hg.inv(self._shapes[0].frame.body.pose)
+        H_b1g = Hg.inv(self._shapes[1].frame.body.pose)
+        self._frames[0]._bpose = dot(H_b0g, H_gc0) #TODO: use a set method?
+        self._frames[1]._bpose = dot(H_b1g, H_gc1)
         self._is_active = (sdist < proximity)
         self._sdist = sdist
 
@@ -305,7 +264,7 @@ class SoftFingerContact(PointContact):
         d &\ge 0 \\
         d \cdot f_z &=0
 
-    which are often sumarized as: :math:`0 \le d \perp f_z \ge 0`.
+    which are often sumarized as :math:`0 \le d \perp f_z \ge 0`.
 
     .. todo:: 
         check the contact rupture condition is good. (Duindam, in his phd, 
@@ -374,15 +333,21 @@ class SoftFingerContact(PointContact):
         December, 2001
 
     """
-    def __init__(self, shapes, friction_coeff, collision_solver, name=None):
-        self._friction_coeff = friction_coeff
+    def __init__(self, shapes, friction_coeff, collision_solver,
+                 name=None):
+        self._mu = friction_coeff
         PointContact.__init__(self, shapes, collision_solver)
         NamedObject.__init__(self, name)
+        self._force = zeros(4)
+        self._eps = array((1., 1., 1.))
+
+    def ndol(self):
+        return 4
 
     def jacobian(self):
-        H_01 = dot(Hg.inv(self._frames[0].wpose()), self._frames[1].wpose())
-        return (dot(Hg.adjoint(H_01)[2:6,:], self._frames[1].jacobian())
-                -self._frames[0].jacobian()[2:6,:])
+        H_01 = dot(Hg.inv(self._frames[0].pose), self._frames[1].pose)
+        return (dot(Hg.adjoint(H_01)[2:6,:], self._frames[1].jacobian)
+                -self._frames[0].jacobian[2:6,:])
 
 
     def solve(self, vel, admittance, dt):
@@ -391,10 +356,11 @@ class SoftFingerContact(PointContact):
     Let's define the constraint velocity
 
     .. math::
-        v =  S \; \twist[0]_{1/0} =
+        v =  
         \begin{bmatrix}
             \omega_z \\ v_x \\ v_y \\ v_z
         \end{bmatrix}
+        = S \; \twist[0]_{1/0}
     
     with
 
@@ -506,7 +472,7 @@ class SoftFingerContact(PointContact):
         - ``dt``: :math:`dt`
         - ``dforce`` : :math:`\Delta f`
         """
-        if self._pos0[3] + dt*vel(3)>0:
+        if self._sdist + dt*vel[3]>0:
             # if there is no contact, the contact force should be 0
             dforce = -self._force
             self._force[:] = 0.
@@ -520,12 +486,11 @@ class SoftFingerContact(PointContact):
             # friction model. 
             
             # First, try with static friction: zero tangent velocity
-            b = vstack(vel[0:3], self._pos0[3]/dt)
-            dforce = solve(admittance, 
-                           hstack((vel[0:3], vel[3]+self._pos0[3]/dt)))
+            dforce = solve(-admittance, 
+                           hstack((vel[0:3], vel[3]+self._sdist/dt)))
             force = self._force + dforce
 
-            if sum((force[0:3]/self.eps)**2) <= (force[3]/self._mu)**2:
+            if sum((force[0:3]/self._eps)**2) <= (force[3]/self._mu)**2:
                 # the elliptic dry friction law is respected.
                 self._force = force
                 return dforce

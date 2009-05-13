@@ -2,7 +2,7 @@
 """
 Functions for working with homogeneous matrices.
 
-toto
+
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 import numpy as np
@@ -11,8 +11,7 @@ import numpy as np
 tol=1e-12
 
 def transl(vec):
-    """
-    Homogeneous matrix of a translation.
+    """Homogeneous matrix of a translation.
 
     INPUT: ``vec`` - coordinates of the translation vector in 3d space
 
@@ -56,6 +55,7 @@ def rotzy(angles):
     In short:  R = Rz * Ry
 
     example:
+
     >>> rotzy((3.14/6, 3.14/4))
     array([[ 0.61271008, -0.4997701 ,  0.61222235,  0.        ],
            [ 0.35353151,  0.86615809,  0.35325009,  0.        ],
@@ -79,6 +79,7 @@ def rotzx(angles):
     In short:  R = Rz * Rx
 
     example:
+
     >>> rotzx((3.14/6, 3.14/3))
     array([[ 0.86615809, -0.25011479,  0.43268088,  0.        ],
            [ 0.4997701 ,  0.43347721, -0.74988489,  0.        ],
@@ -103,6 +104,7 @@ def rotyx(angles):
     In short:  R = Ry * Rx
 
     example:
+
     >>> rotyx((3.14/4, 3.14/3))
     array([[ 0.70738827,  0.61194086,  0.35373751,  0.        ],
            [ 0.        ,  0.50045969, -0.86575984,  0.        ],
@@ -125,6 +127,7 @@ def rotx(angle):
     Homogeneous matrix of a rotation around the x-axis
    
     example:
+
     >>> rotx(3.14/6)
     array([[ 1.        ,  0.        ,  0.        ,  0.        ],
            [ 0.        ,  0.86615809, -0.4997701 ,  0.        ],
@@ -146,6 +149,7 @@ def roty(angle):
     Homogeneous matrix of a rotation around the y-axis
 
     example:
+
     >>> roty(3.14/6)
     array([[ 0.86615809,  0.        ,  0.4997701 ,  0.        ],
            [ 0.        ,  1.        ,  0.        ,  0.        ],
@@ -166,6 +170,7 @@ def rotz(angle):
     """
     Rotation around the z-axis
     example:
+
     >>> rotz(3.14/6)
     array([[ 0.86615809, -0.4997701 ,  0.        ,  0.        ],
            [ 0.4997701 ,  0.86615809,  0.        ,  0.        ],

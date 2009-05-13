@@ -3,42 +3,10 @@
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
 from numpy import array, zeros, eye, dot, sin, cos, dot
-from rigidmotion import RigidMotion
 from abc import ABCMeta, abstractmethod
 import homogeneousmatrix
 from misc import NamedObject
-
-class Joint(RigidMotion, NamedObject):
-    """any joint
-    H
-    T_
-    """    
-    __metaclass__ = ABCMeta
-
-    def __init__(self, name=None):
-        NamedObject.__init__(self, name)
-
-    def twist(self):
-        return dot(self.jacobian(), self.gvel)
-
-
-    @abstractmethod
-    def ndof(self):
-        """Number of degrees of freedom of the joint
-        """
-        pass
-
-    @abstractmethod
-    def jacobian(self):
-        pass
-
-    @abstractmethod
-    def djacobian(self):
-        pass
-
-    @abstractmethod
-    def integrate(self, dt):
-        pass
+from arboris import Joint
 
 class LinearConfigurationSpaceJoint(Joint):
     """
@@ -279,15 +247,15 @@ class RyRxJoint(LinearConfigurationSpaceJoint):
              [ 0.   , 0.    ],
              [ 0.   , 0.    ]])
              
-             
-class HingeJoint(LinearConfigurationSpaceJoint):
+
+class RzJoint(LinearConfigurationSpaceJoint):
 
     """Hinge (1-dof) with axis in the z-direction
     """
     def __init__(self, gpos=0., gvel=0., name=None):
         """
         example:
-        >>> j = HingeJoint(gpos = 3.14/2., gvel = 1.)
+        >>> j = RzJoint(gpos = 3.14/2., gvel = 1.)
         >>> j.gpos
         array([ 1.57])
         >>> j.gvel
@@ -302,7 +270,7 @@ class HingeJoint(LinearConfigurationSpaceJoint):
 
     def pose(self):
         """
-        >>> j = HingeJoint(gpos = 3.14/2., gvel = 1.)
+        >>> j = RzJoint(gpos = 3.14/2., gvel = 1.)
         >>> j.pose()
         array([[  7.96326711e-04,  -9.99999683e-01,   0.00000000e+00,
                   0.00000000e+00],
@@ -317,7 +285,7 @@ class HingeJoint(LinearConfigurationSpaceJoint):
 
     def ipose(self):
         """
-        >>> j = HingeJoint(gpos = 3.14/2., gvel = 1.)
+        >>> j = RzJoint(gpos = 3.14/2., gvel = 1.)
         >>> j.ipose()
         array([[  7.96326711e-04,   9.99999683e-01,   0.00000000e+00,
                   0.00000000e+00],
@@ -333,7 +301,7 @@ class HingeJoint(LinearConfigurationSpaceJoint):
 
     def jacobian(self):
         """
-        >>> j = HingeJoint(gpos = 3.14/2., gvel = 1.)
+        >>> j = RzJoint(gpos = 3.14/2., gvel = 1.)
         >>> j.jacobian()
         array([[ 0.],
                [ 0.],
@@ -346,7 +314,7 @@ class HingeJoint(LinearConfigurationSpaceJoint):
 
     def djacobian(self):
         """
-        >>> j = HingeJoint(gpos = 3.14/2., gvel = 1.)
+        >>> j = RzJoint(gpos = 3.14/2., gvel = 1.)
         >>> j.djacobian()
         array([[ 0.],
                [ 0.],

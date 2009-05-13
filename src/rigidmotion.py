@@ -3,7 +3,6 @@
 TODO: add doc here
 TODO: add doctests
 TODO: add support for FreeMotion
-TODO: rename HingeJoint to RzJoint ?
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 import numpy as np

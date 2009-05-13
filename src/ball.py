@@ -18,7 +18,7 @@ def mass_parallelepiped(m,lengths):
         m/12.*(a**2+b**2),
         m, m, m))
 
-def ball(world=None, radius=1., mass=1., name='Ball'):
+def ball(world=None, radius=1., mass=1., name=None):
     """Build a ball robot."""
 
     # Create a world
@@ -29,7 +29,6 @@ def ball(world=None, radius=1., mass=1., name='Ball'):
     else:
         raise ValueError('the world argument must be an instance of the World class')
 
-    
     ball = Body(
         name=name,
         mass=mass_parallelepiped(mass, (radius,radius,radius)))

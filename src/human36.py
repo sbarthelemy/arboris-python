@@ -87,6 +87,7 @@ def _humans_anatomical_lengths(human_height):
       (= 0.0526 *  human_height)
 
     Examples:
+
     >>> def convert_to_array(lengths):
     ...     \"\"\"Convert the anatomical lengths dictionary into an array
     ...
@@ -289,6 +290,7 @@ def _humans_anatomical_lengths(human_height):
 def height(lengths):
     """
     Examples:
+
     >>> height(anatomical_lengths(1.741))
     1.7410000000000001
     >>> height(anatomical_lengths(2.))
@@ -320,6 +322,7 @@ def _humans_tags(human_height):
     
     
     Examples:
+
     >>> def convert_to_array(tags):
     ...     \"\"\"Convert the tags dictionary into an array
     ...
@@ -580,6 +583,7 @@ def _humans_bodies(height, mass):
 
 
     Example:
+
     >>> b = _humans_bodies(1.741, 73)
     """
     L = anatomical_lengths(height)
@@ -834,10 +838,6 @@ Tags(q)
            0.0019382    0.9712007    1.894E-20 
     > convert_to_array(_humans_tags(1.741))
     
-    
-    
-    ...     for tag in tags:
-    ...         t[tag['HumansId']-1,:] = tag["Position"][:]
     """
     lengths = anatomical_lengths(height)
     L = lengths
@@ -875,7 +875,7 @@ Tags(q)
     w.add_joint(RzRyRxJoint(), (rf,bodies['ThighR']) )
     
     rf = SubFrame(bodies['ThighR'], Hg.transl((0, -L['yfemurR'], 0)))
-    w.add_joint(HingeJoint(), (rf, bodies['ShankR']) )
+    w.add_joint(RzJoint(), (rf, bodies['ShankR']) )
     
     rf = SubFrame(bodies['ShankR'], Hg.transl((0, -L['ytibiaR'], 0)))
     w.add_joint(RzRxJoint(), (rf, bodies['FootR']) )
@@ -884,7 +884,7 @@ Tags(q)
     w.add_joint(RzRyRxJoint(), (rf, bodies['ThighL']) )
     
     rf = SubFrame(bodies['ThighL'], Hg.transl((0, -L['yfemurL'], 0)))
-    w.add_joint(HingeJoint(), (rf,bodies['ShankL']) )
+    w.add_joint(RzJoint(), (rf,bodies['ShankL']) )
     
     rf = SubFrame(bodies['ShankL'], Hg.transl((0, -L['ytibiaL'], 0)))
     w.add_joint(RzRxJoint(), (rf, bodies['FootL']) )

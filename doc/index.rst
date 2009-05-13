@@ -1,6 +1,6 @@
 
 Welcome to arboris-python's documentation!
-=====================================
+==========================================
 
 Contents:
 
@@ -8,6 +8,7 @@ Contents:
    :maxdepth: 2
 
    intro
+   quickstart
    rigidmotion
    rigidmechanism
    constraints

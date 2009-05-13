@@ -19,12 +19,7 @@ TODO:
 
 - import human36 from matlab-arboris
 - add unit tests for human36
-- add support for controllers and integration
 - add __repr__ or unicode methods
-- split world description and its state+matrices ? 
-- add support for visu
-- add support for explicit joints
-- add support for contacts and joint limits
 
 IDEAS:
 
@@ -45,10 +40,82 @@ import adjointmatrix
 from abc import ABCMeta, abstractmethod, abstractproperty
 from math import pi
 from controllers import Controller
-from joints import Joint
-from constraints import Constraint
 from misc import NamedObject
+from rigidmotion import RigidMotion
 
+class Joint(RigidMotion, NamedObject):
+    """any joint
+    H
+    T_
+    """    
+    __metaclass__ = ABCMeta
+
+    def __init__(self, name=None):
+        NamedObject.__init__(self, name)
+
+    def twist(self):
+        return dot(self.jacobian(), self.gvel)
+
+
+    @abstractmethod
+    def ndof(self):
+        """Number of degrees of freedom of the joint
+        """
+        pass
+
+    @abstractmethod
+    def jacobian(self):
+        pass
+
+    @abstractmethod
+    def djacobian(self):
+        pass
+
+    @abstractmethod
+    def integrate(self, dt):
+        pass
+
+class Constraint(NamedObject):
+
+    def __init__(self, frames, name=None):
+        NamedObject.__init__(self, name)
+
+    @abstractmethod
+    def gforce(self):
+        pass
+
+class BodyConstraint(Constraint):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, frames):
+        self._frames = frames
+
+    def gforce(self):
+        return dot(self.jacobian().T, self._force)
+
+    @abstractmethod
+    def jacobian(self):
+        pass
+
+    @abstractmethod
+    def ndol(self):
+        """
+        number of degree of "liaison" (in french: *nombre de degrés de liaison*)
+        This is equal to 6-ndof
+        """
+        pass
+
+    @abstractmethod
+    def update(self):
+        pass
+
+    @abstractmethod
+    def is_active(self):
+        pass
+
+    @abstractmethod
+    def solve(self, dforce, dvel, admittance, dt):
+        pass
 class Shape(object):
     def __init__(self, frame):
         self.frame = frame
@@ -72,7 +139,6 @@ class World(NamedObject):
         self.joints = []
         self._controllers = []
         self._constraints = []
-        self._collisions = []
         self._subframes = []
         self._shapes = []
         self._ndof = 0
@@ -114,6 +180,13 @@ class World(NamedObject):
             if not obj in self._shapes:
                 self._shapes.append(obj)
             self.register(obj.frame)
+
+        if isinstance(obj, Constraint):
+            if not obj in self._constraints:
+                self._constraints.append(obj)
+            if isinstance(obj, BodyConstraint):
+                self.register(obj._frames[0])
+                self.register(obj._frames[1])
 
     @property
     def mass(self):
@@ -246,11 +319,6 @@ class World(NamedObject):
         
         self._controllers.append(controller)
 
-
-    def add_constraint(self, constraint, frames):
-        constraint._frames = frames #TODO: do some consistency checks
-        self._constraints.append(constraint)
-        
 
     def update_geometric(self):
         """
@@ -490,9 +558,48 @@ class World(NamedObject):
                 dot(b.mass, b.djacobian) + dot(b.nleffects, b.jacobian))
 
     def update_controllers(self, dt):
-        """
+        r"""
+
+        .. math::
+            M(t) \dot\GVel(t+dt) + N(t) \GVel(t+dt) &= 
+            B(t) \GVel(t+dt) + \GForce(t)
+
+        while assuming that :math:`\GForce(t)` is constant during the 
+        :math:`[t, t+dt]` period of time.
+
+        with
+        
+        .. math::
+            \dot\GVel(t+dt) = \frac{\GVel(t+dt) - \GVel(t)}{dt}
+        
+        we get
+        
+        .. math::
+            \left( \frac{M(t)}{dt}+N(t)-B(t) \right) \GVel(t+dt) &= 
+            \frac{M(t)}{dt} \GVel(t) + \GForce(t)
+
+        Additionnaly, each controller should provide a first order model
+
+        .. math::
+            \GForce_c(t) &= \GForce_{0c}(t) + Y_c(t) \GVel(t+td)
+
+        which leads us to
+
+        .. math::
+            \left( \frac{M(t)}{dt}+N(t)-B(t) -\sum_c Y_c(t) \right) 
+            \GVel(t+dt) &= 
+            \frac{M(t)}{dt} \GVel(t) + \sum_c \GForce_{0c}(t)
+
+        One can the define impedance (:math:`Z`) and admittance (:math:`Y`)
+        matrices:
+    
+        .. math::
+            Z(t) &= \frac{M(t)}{dt}+N(t)-B(t) -\sum_c Y_c(t) \\
+            Y(t) &= Z^{-1}(t)
+
 
         TODO: check the two last tests results!
+
         >>> from triplehinge import triplehinge
         >>> w = triplehinge()
         >>> from controllers import ProportionalDerivativeController
@@ -573,7 +680,7 @@ class World(NamedObject):
         
         one can define the (global) constraints velocity :math:`v`, 
         force :math:`f`, jacobian matrix :math:`J` 
-        and admittance matrix :math:`Y'`:
+        and admittance matrix :math:`Y`:
 
         .. math::
             J(t) &=
@@ -604,7 +711,7 @@ class World(NamedObject):
 
         This method computes the constraint forces in three steps:
 
-        - ask each constraint for its jacobian,
+        - ask each constraint object for its jacobian,
 
         - compute :math:`J`, :math:`v`  and :math:`Y`,
 
@@ -661,13 +768,13 @@ class World(NamedObject):
         admittance = zeros((ndol, ndol))
         for c in constraints:
             jac[c._dol,:] = c.jacobian()
-
         vel = dot(jac, dot(self._admittance, 
                            dot(self._mass, self._gvel/dt) + self._gforce))
         admittance = dot(jac, dot(self._admittance, jac.T))
 
         k=0
-        while k < 20: #TODO: change the break condition
+        while k < 20: 
+            #TODO: change the break condition, to be computed from the error
             k+=1 
             for c in constraints:
                 dforce = c.solve(vel[c._dol], admittance[c._dol,c._dol], dt)
@@ -678,6 +785,7 @@ class World(NamedObject):
 
     def integrate(self, dt):
         r"""
+
         TODO: add support for kinematic controllers
         TODO: add support fo external wrenches
         TODO: check the last test result!
@@ -962,8 +1070,6 @@ class Body(NamedObject, Frame):
 def simulate(world, time):
 
     """
-    TODO: add support for collisions
-
     Example:
     >>> from triplehinge import triplehinge
     >>> w = triplehinge()

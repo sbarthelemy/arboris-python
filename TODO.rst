@@ -57,7 +57,7 @@ API is quite bad, for several reasons:
 - the controller does not know the world
 
 
-A solution might be to remove the encapsulation: every controller would produce gforces and viscosity for every joint. We could also provide an "encapsulator" controller class which would do the encapsulation.
+A solution might be to remove the encapsulation: every controller would produce gforces and viscosity for every joint. (controllers would stil need to know w.ndof.) We could additionnaly provide an "encapsulator" controller class which would do the encapsulation.
 
 We could also give to the controller views of the global gforce and viscosity that it would update.
 

@@ -13,7 +13,7 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 from arboris import World, Body, SubFrame
 import numpy as np
 import homogeneousmatrix as Hg
-from joints import HingeJoint
+from joints import RzJoint
 
 def transport_mass_matrix(mass,H):
     """Transport (express) the mass matrix into another frame."""
@@ -74,7 +74,7 @@ def triplehinge(world=None):
 
 
     # create a joint between the ground and the arm
-    shoulder = HingeJoint(name='Shoulder')
+    shoulder = RzJoint(name='Shoulder')
     # add the new joint to the world (this will also add arm to w.bodies)
     w.add_joint(joint=shoulder, frames=(w.ground, arm) )
     
@@ -83,7 +83,7 @@ def triplehinge(world=None):
         Hg.transl((0,arm_length,0)),
         'ElbowLeftFrame')
     # create a joint between the arm and the forearm
-    elbow = HingeJoint(name='Elbow')
+    elbow = RzJoint(name='Elbow')
     w.add_joint(joint=elbow, frames=(f, forearm) )
 
     # add a frame to the forearm, where the hand will be anchored
@@ -91,7 +91,7 @@ def triplehinge(world=None):
         Hg.transl((0,forearm_length,0)),
         'WristLeftFrame')
     # create a joint between the forearm and the hand
-    wrist = HingeJoint(name = 'Wrist')
+    wrist = RzJoint(name = 'Wrist')
     w.add_joint( wrist, (f, hand) )
 
     return w

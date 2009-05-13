@@ -84,15 +84,10 @@ the following excerp creates the homogeneous matrix of a translation and then in
          [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
 
-A more convenient way of dealing with rigid motion is by using the :class:`rigidmotion.RigidMotion` class which wraps all the elementary functions in an object-oriented way.
-
-define a rigid motion by its pose and twist. However, this class does not exist yet. One may use :class:`rigidmotion.FreeJoint` (see next chapter) instead.
-
-TODO: implement :class:`rigidmotion.FreeMotion` 
-
+A more convenient way of dealing with rigid motion is planned, by using a child class of :class:`rigidmotion.RigidMotion`,  which wraps all the elementary functions in an object-oriented way. However, this child class does not exist yet, one may use :class:`rigidmotion.FreeJoint` (see next chapter) instead.
 
 
 Dynamics
 ========
 
-TODO: document 1st and 2nd order dynamics for a rigid body.
+TODO: document 1st and 2nd order dynamics for a single rigid body.

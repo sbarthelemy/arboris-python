@@ -273,8 +273,10 @@ class NodeFactory(object):
         if isinstance(obj, shapes.Sphere):
             switches['shape'] = osg.Switch()
             nodes['shape'] = osg.Geode()
-            nodes['shape'].addDrawable(osg.ShapeDrawable(
-                osg.Sphere(osg.Vec3(0.,0.,0.), obj.radius)))
+            d = osg.ShapeDrawable(
+                osg.Sphere(osg.Vec3(0.,0.,0.), obj.radius))
+            d.setColor(osg.Vec4(1.,1.,1.,0.5))
+            nodes['shape'].addDrawable(d)
         for key in nodes.iterkeys():
             switches[key].addChild(nodes[key])
         if parent is not None:
