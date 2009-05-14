@@ -131,36 +131,6 @@ def draw_link(start, end, scale, color=None):
         return None
         
     
-class Wrench(object):
-    #TODO: make the Abstract Class in visu.py
-    """
-    """
-    def __init__(self, wrench, scale=1., gen_force_arrow=None, gen_moment_arrow=None):
-        self._wrench = wrench
-        self._scale = scale
-        self.force_node  = osg.PositionAttitudeTransform()
-        self.moment_node = osg.PositionAttitudeTransform()
-        self.force_node.addChild(gen_force_arrow)
-        self.moment_node.addChild(gen_moment_arrow)
-        self.wrench_node = osg.Switch()
-        self.wrench_node.addChild(self.force_node)
-        self.wrench_node.addChild(self.moment_node)
-        self.wrench_node.setAllChildrenOff()
-        
-        def update(self, show):
-            if self._wrench.is_active is True:
-                self.wrench_node.setAllChildrenOn()
-                #TODO: make the transformation!!!
-                #self.force_node.setPosition(pose2mat(self._wrench.pose))
-                #self.force_node.setAttitude(rot2quat(self._wrench.pose))
-                #self.force_node.setScale(osg.Vec3d(self._wrench.force, self._wrench.force, self._wrench.force))
-                #self.moment_node.setPosition(pose2mat(self._wrench.pose))
-                #self.moment_node.setAttitude(rot2quat(self._wrench.pose))
-                #self.moment_node.setScale(osg.Vec3d(self._wrench.moment, self._wrench.moment, self._wrench.moment))
-            else:
-                self.wrench_node.setAllChildrenOff()
-# end of class Wrench
-
 
 def draw_text(label, scale=1.):
     """create a text geode
