@@ -13,25 +13,35 @@ class Point(Shape):
     """
     A point
     """
-    def __init__(self, shape):
-        Shape.__init__(self, shape)
+    def __init__(self, frame):
+        Shape.__init__(self, frame)
 
 
 class Box(Shape):
     """
     A box
     """
-    def __init__(self, shape, dims=(1.,1.,1.)):
-        Shape.__init__(self, shape)
-        self.dims = dims
+    def __init__(self, frame, lengths=(1.,1.,1.)):
+        Shape.__init__(self, frame)
+        self.lengths = lengths
+
+
+class Cylinder(Shape):
+    """
+    A cylinder
+    """
+    def __init__(self, frame, length=1., radius=1.):
+        Shape.__init__(self, frame)
+        self.radius = radius
+        self.length = length
 
 
 class Sphere(Shape):
     """
     A sphere
     """
-    def __init__(self, shape, radius=1.):
-        Shape.__init__(self, shape)
+    def __init__(self, frame, radius=1.):
+        Shape.__init__(self, frame)
         self.radius = radius
 
 

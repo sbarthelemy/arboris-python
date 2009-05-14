@@ -39,10 +39,10 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
               "Joseph SALINI <joseph.salini@gmail.com>")
 
 from OpenSceneGraph import osg, osgDB, osgGA, osgViewer, osgText
-from numpy import pi, arctan2, array, dot, cross, sqrt, eye
+from numpy import pi, arctan2, array, dot, cross, sqrt, eye, cos, sin
 import shapes
 import arboris
-from misc import Color, NamedObject
+from misc import NamedObject
 import homogeneousmatrix as Hg
 
 #we create the frame node and we will re-use it for every frame created
@@ -101,7 +101,7 @@ def rgba2vec4(rgba):
 def create_generic_arrow(scale=1., color=None):
     cone = osg.ShapeDrawable(osg.Cylinder(osg.Vec3(0.,0.,scale), 0.05*scale, scale))
     if color is not None:
-        cone.setColor(rgba2vec4(color.rgba))
+        cone.setColor(color)
     geo_cone = osg.Geode()
     geo_cone.addDrawable(cone)
     return geo_cone
@@ -119,7 +119,7 @@ def draw_link(start, end, scale, color=None):
         # create the cylinder
         cyl = osg.ShapeDrawable(osg.Cylinder(osg.Vec3(0.,0.,length/2), 0.1*scale, length))
         if color is not None:
-            cyl.setColor(rgba2vec4(color.rgba))
+            cyl.setColor(color)
         geo = osg.Geode()
         geo.addDrawable( cyl )
         link = osg.PositionAttitudeTransform()
@@ -133,26 +133,6 @@ def draw_link(start, end, scale, color=None):
     else:
         return None
         
-def draw_shape(shape=None, scale=1.):
-    if  shape.name is 'sphere':
-        shp = osg.ShapeDrawable(osg.Sphere(osg.Vec3(0.,0.,0.),shape.dim[0]))
-    elif shape.name is 'box':
-        shp = osg.ShapeDrawable(osg.Box(osg.Vec3(0.,0.,0.),shape.dim[0],shape.dim[1],shape.dim[2]))
-    elif shape.name is 'cylinder':
-        shp = osg.ShapeDrawable(osg.Cylinder(osg.Vec3(0.,0.,0.),shape.dim[0],shape.dim[1]))
-    elif shape.name is 'point':
-        shp = osg.ShapeDrawable(osg.Sphere(osg.Vec3(0.,0.,0.),0.01*scale))
-    
-    shp.setColor(osg.Vec4(1,1,0,0.3))
-    geo = osg.Geode()
-    geo.addDrawable(shp)
-    shape_node = osg.MatrixTransform()
-    shape_node.setMatrix(pos2mat(shape.frame))
-    return geo
-    
-    
-    
-    
     
 class Wrench(object):
     #TODO: make the Abstract Class in visu.py
@@ -185,18 +165,6 @@ class Wrench(object):
 # end of class Wrench
 
 
-def draw_frame(pose=None, label=None, scale=1.):
-    """Draw the arrows and label of a coordinate frame.
-    """
-    frame = osg.MatrixTransform()   #create frame node
-    if pose is None:
-        pose = eye(4)
-    frame.setMatrix(pose2mat(pose))
-    if label is not None:
-        frame.addChild(draw_text(label))
-    frame.addChild(generic_frame)
-    return frame
-
 def draw_text(label, scale=1.):
     """create a text geode
     """
@@ -218,9 +186,26 @@ class NodeFactory(object):
     def __init__(self, scale=1., body_palette=None):
     
         self.scale = scale
+        self.alpha = 0.8
         if body_palette is None:
-            self.body_palette = [Color('red'), Color('green'), Color('blue')]
+            self.body_palette = [
+                (1,0,0),
+                (0,1,0),
+                (0,0,1),
+                (1,1,0),
+                (0,1,1)]
         self.body_colors = {}
+
+    def choose_color(self, body):
+        if body in self.body_colors:
+            color = self.body_colors[obj.body]
+        else:
+            try:
+                c = self.body_palette.pop()
+                color = osg.Vec4(c[0], c[1], c[2], self.alpha)
+            except IndexError:
+                color = osg.Vec4(1, 1 ,1 , self.alpha)
+        return color
 
 
     def convert(self, obj, parent=None):
@@ -248,6 +233,7 @@ class NodeFactory(object):
         
         nodes = {}
         switches = {}
+
         if isinstance(obj, NamedObject) and (obj.name is not None):
             switches['name'] = osg.Switch()
             nodes['name'] = draw_text(obj.name, self.scale)
@@ -257,26 +243,38 @@ class NodeFactory(object):
             nodes['frame'] = generic_frame
 
         if isinstance(obj, arboris.SubFrame):
-            if obj.body in self.body_colors:
-                color = self.body_colors[obj.body]
-            else:
-                try:
-                    color = self.body_palette.pop()
-                except IndexError:
-                    color = Color('white')
-                self.body_colors[obj.body] = color
+            color = self.choose_color(obj.body)
             nl = draw_link(Hg.inv(obj.bpose), eye(4), self.scale, color)
             if nl is not None:
                 switches['link'] = osg.Switch()
                 nodes['link'] = nl
 
-        if isinstance(obj, shapes.Sphere):
-            switches['shape'] = osg.Switch()
+        if isinstance(obj, arboris.Shape):
+            color = self.choose_color(obj.frame.body)
+
+            if isinstance(obj, shapes.Sphere):
+                shape = osg.ShapeDrawable(osg.Sphere(osg.Vec3(0.,0.,0.), 
+                                                     obj.radius))
+
+            elif isinstance(obj, shapes.Box):
+                shape = osg.ShapeDrawable(osg.Box(osg.Vec3(0.,0.,0.), 
+                                                  obj.lengths[0], 
+                                                  obj.lengths[1], 
+                                                  obj.lengths[2]))
+
+            elif isinstance(obj, shapes.Cylinder):
+                shape = osg.ShapeDrawable(osg.Cylinder(osg.Vec3(0.,0.,0.), 
+                                                       obj.radius, 
+                                                       obj.length))
+
+            else:
+                raise ValueError("Undrawable shape")
+
+            shape.setColor(color)
             nodes['shape'] = osg.Geode()
-            d = osg.ShapeDrawable(
-                osg.Sphere(osg.Vec3(0.,0.,0.), obj.radius))
-            d.setColor(osg.Vec4(1.,1.,1.,0.5))
-            nodes['shape'].addDrawable(d)
+            nodes['shape'].addDrawable(shape)
+            switches['shape'] = osg.Switch()
+
         for key in nodes.iterkeys():
             switches[key].addChild(nodes[key])
         if parent is not None:
@@ -380,8 +378,10 @@ if __name__ == '__main__':
     from visu_osg import NodeFactory, World
     
     #robot = 'triplehinge'
-    robot = 'human36'
+    #robot = 'human36'
     #robot = 'ball'
+    robot = 'box'
+    robot = 'cylinder'
 
     if robot == 'triplehinge':
         from triplehinge import triplehinge
@@ -389,9 +389,15 @@ if __name__ == '__main__':
     elif robot == 'human36':
         from human36 import human36
         (w, bd, tags) = human36()
-    else:
+    elif robot == 'ball':
         from ball import ball
         w = ball()
+    elif robot == 'box':
+        from ball import box
+        w = box(lengths=(1,2,3))
+    elif robot == 'cylinder':
+        from ball import cylinder
+        w = cylinder(radius=1., length=2)
 
     w.update_geometric()
     nf = NodeFactory(scale=.1)
@@ -407,9 +413,17 @@ if __name__ == '__main__':
             w.joints[1].gpos[0]=t
             w.joints[2].gpos[0]=t
         elif robot == 'human36':
-            w.joints[1].gpos=[t, t, t]
+            w.joints[1].gpos=[t,t,t]
             w.joints[2].gpos=[t]
-            w.joints[3].gpos=[t, t]
+            w.joints[3].gpos=[t,t]
+        elif robot == 'box':
+            c = cos(pi/4)
+            s = sin(pi/4)
+            w.joints[0].gpos = numpy.array([[1,0,0,0],[0,c,s,0],[0,-s,c,0],[0,0,0,1]])
+        elif robot == 'cylinder':
+            c = cos(pi/4)
+            s = sin(pi/4)
+            w.joints[0].gpos = array([[1,0,0,0],[0,c,s,0],[0,-s,c,0],[0,0,0,1]])
         w.update_geometric()
         vw.update()
         viewer.frame()
