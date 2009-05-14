@@ -14,3 +14,6 @@ Gauss-Seidel algorithm
    :members:
 
 
+.. autofunction:: constraints._solve_sliding
+
+

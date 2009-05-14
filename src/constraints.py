@@ -302,15 +302,19 @@ class SoftFingerContact(PointContact):
     .. math::
         \begin{bmatrix}
         \omega_z \\ v_x \\ v_y
-        \end{bmatrix}
-        = k
+        \end{bmatrix} = s
         \begin{bmatrix}
         \frac{m_z}{e_p^2} \\ \frac{f_x}{e_x^2} \\ \frac{f_y}{e_y^2}
-        \end{bmatrix} 
-        \text{   and   } 
-        k = \frac{
+        \end{bmatrix}
+        \text{ and }
+        s = \frac{
             \sqrt{e_p^2 \cdot \omega_z + e_x^2 \cdot v_x + e_y^2 \cdot v_y}}{
             \mu \cdot f_z}
+    and
+
+    .. math::
+        \frac{m_z^2}{e_p^2} + \frac{f_x^2}{e_x^2} + \frac{f_y^2}{e_y^2}
+        &= \mu^2 \cdot f_z^2
 
     
 
@@ -352,6 +356,13 @@ class SoftFingerContact(PointContact):
 
     def solve(self, vel, admittance, dt):
         r"""
+
+    We map:
+        - ``vel``: :math:`v^*`
+        - ``admittance``: :math:`Y`
+        - ``dt``: :math:`dt`
+        - ``dforce`` : :math:`\Delta f`
+
 
     Let's define the constraint velocity
 
@@ -428,12 +439,13 @@ class SoftFingerContact(PointContact):
         \end{bmatrix}
         \right)
 
-    for dynamic friction, 
+    for dynamic friction, the condition on sliding velocity and contact
+    persistance lead to
 
     .. math::
         v^k(t+dt)
         &=
-        k 
+        s 
         \begin{bmatrix}
         \frac{1}{e_p^2} & 0 & 0 & 0 \\
         0 & \frac{1}{e_x^2} & 0 & 0 \\
@@ -445,33 +457,116 @@ class SoftFingerContact(PointContact):
         \begin{bmatrix}
         0 \\ 0 \\ 0 \\ -\frac{d(t)}{dt}
         \end{bmatrix} \\
+        \Leftrightarrow 
         v^*(t+dt) + Y \Delta f
         &=
-        k 
+        s 
         \begin{bmatrix}
         \frac{1}{e_p^2} & 0 & 0 & 0 \\
         0 & \frac{1}{e_x^2} & 0 & 0 \\
         0 & 0 & \frac{1}{e_y^2} & 0 \\
         0 & 0 & 0 & 0
         \end{bmatrix} 
-        (f^{k-1}+\Delta f)
+        \left( f^{k-1}+\Delta f \right)
         +
         \begin{bmatrix}
         0 \\ 0 \\ 0 \\ -\frac{d(t)}{dt}
         \end{bmatrix}
 
-    .. math::
-        0 &= \Delta v  \left( I -k Y^{-1} E^2 \right) f \\
-        \Delta v &= Y^{-1} \left( 
-        \begin{bmatrix}
-        w_z \\ v_x \\ v_y \\ d_0
-        \end{bmatrix}\right)
+Finally, we get 
 
-        - ``vel``: :math:`v^*`
-        - ``admittance``: :math:`Y`
-        - ``dt``: :math:`dt`
-        - ``dforce`` : :math:`\Delta f`
-        """
+    .. math::
+        0 &=
+        \alpha + \left(
+        Y - s 
+        \begin{bmatrix}
+        \frac{1}{e_p^2} & 0 & 0 & 0 \\
+        0 & \frac{1}{e_x^2} & 0 & 0 \\
+        0 & 0 & \frac{1}{e_y^2} & 0 \\
+        0 & 0 & 0 & 0
+        \end{bmatrix} 
+        \right)
+        \left( f^{k-1}+\Delta f \right)
+
+and 
+        
+    .. math::
+        \left( f^{k-1}+\Delta f \right)
+        &=
+        - \left(
+        Y - s 
+        \begin{bmatrix}
+        \frac{1}{e_p^2} & 0 & 0 & 0 \\
+        0 & \frac{1}{e_x^2} & 0 & 0 \\
+        0 & 0 & \frac{1}{e_y^2} & 0 \\
+        0 & 0 & 0 & 0
+        \end{bmatrix} 
+        \right)^{-1} \alpha 
+
+while denoting
+
+    .. math::
+        \alpha &=
+        v^*(t+dt) - 
+        \begin{bmatrix}
+        0 \\ 0 \\ 0 \\ -\frac{d(t)}{dt}
+        \end{bmatrix} - Y f^{k-1}
+
+Note that :math:`s` is still unknown. However,
+
+    .. math::
+        \frac{m_z^2}{e_p^2} + \frac{f_x^2}{e_x^2} + \frac{f_y^2}{e_y^2}
+        &= \mu^2 \cdot f_z^2
+
+can be rewritten
+
+    .. math::
+
+        \left( f^{k-1}+\Delta f \right)^T
+        \begin{bmatrix}
+        \frac{1}{e_p^2} & 0 & 0 & 0 \\
+        0 & \frac{1}{e_x^2} & 0 & 0 \\
+        0 & 0 & \frac{1}{e_y^2} & 0 \\
+        0 & 0 & 0 & -\mu^2
+        \end{bmatrix} 
+        \left( f^{k-1}+\Delta f \right)
+        &=0
+
+so that if we can find :math:`s` solution of
+
+    .. math::
+        \alpha^T
+        \left(
+        Y - s 
+        \begin{bmatrix}
+        \frac{1}{e_p^2} & 0 & 0 & 0 \\
+        0 & \frac{1}{e_x^2} & 0 & 0 \\
+        0 & 0 & \frac{1}{e_y^2} & 0 \\
+        0 & 0 & 0 & 0
+        \end{bmatrix} 
+        \right)^{-T}
+        \begin{bmatrix}
+        \frac{1}{e_p^2} & 0 & 0 & 0 \\
+        0 & \frac{1}{e_x^2} & 0 & 0 \\
+        0 & 0 & \frac{1}{e_y^2} & 0 \\
+        0 & 0 & 0 & -\mu^2
+        \end{bmatrix} 
+        \left(
+        Y - s 
+        \begin{bmatrix}
+        \frac{1}{e_p^2} & 0 & 0 & 0 \\
+        0 & \frac{1}{e_x^2} & 0 & 0 \\
+        0 & 0 & \frac{1}{e_y^2} & 0 \\
+        0 & 0 & 0 & 0
+        \end{bmatrix} 
+        \right)^{-1} \alpha 
+        &=0 \text{,}
+
+then we're done.
+
+TODO: how do we find s ?
+
+"""
         if self._sdist + dt*vel[3]>0:
             # if there is no contact, the contact force should be 0
             dforce = -self._force
@@ -505,7 +600,8 @@ class SoftFingerContact(PointContact):
                 #c.Gamma=-(Y+k*E2)\alpha;
                 self._force = force
                 return dforce
-
+        
+        
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

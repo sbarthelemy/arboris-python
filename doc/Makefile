@@ -6,6 +6,9 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
 
+SVG = img/sphere_sphere_collision.svg
+PNG = img/sphere_sphere_collision.png
+
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
@@ -25,7 +28,7 @@ help:
 clean:
 	-rm -rf .build/*
 
-html:
+html: $(PNG)
 	mkdir -p .build/html .build/doctrees
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) .build/html
 	@echo
@@ -48,7 +51,7 @@ htmlhelp:
 	@echo "Build finished; now you can run HTML Help Workshop with the" \
 	      ".hhp project file in .build/htmlhelp."
 
-latex:
+latex: img/*.pdf
 	mkdir -p .build/latex .build/doctrees
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) .build/latex
 	@echo
@@ -74,4 +77,12 @@ doctest:
 	$(SPHINXBUILD) -b doctest . .build/doctests
 	@echo
 	@echo "Doctests passed"
+
+img/%.png:img/%.svg
+	inkscape --export-png=$@ $<
+
+img/%.pdf:img/%.svg
+	inkscape --export-pdf=$@ $<
+
+
 
