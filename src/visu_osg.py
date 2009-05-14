@@ -95,9 +95,6 @@ def rot2quat(rot):
     q = osg.quat(1.,osg.Vec3d(0.,0.,0.))
     return q
 
-def rgba2vec4(rgba):
-    return osg.Vec4(rgba[0], rgba[1], rgba[2], rgba[3])
-
 def create_generic_arrow(scale=1., color=None):
     cone = osg.ShapeDrawable(osg.Cylinder(osg.Vec3(0.,0.,scale), 0.05*scale, scale))
     if color is not None:
