@@ -8,7 +8,7 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 import numpy as np
 import homogeneousmatrix as Hg
 import twistvector as T
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractproperty
 
 class RigidMotion(object):
 
@@ -29,42 +29,50 @@ class RigidMotion(object):
     """
     __metaclass__ = ABCMeta
 
-    @abstractmethod
+    @abstractproperty
     def pose(self):
         """Return the pose as an homogeneous matrix. 
         """
         pass
 
+    @property
     def ipose(self):
         """Inverse of pose()
         """
-        return Hg.inv(self.pose())
+        return Hg.inv(self.pose)
 
-    @abstractmethod
+    @abstractproperty
     def twist(self):
         """Return the velocity as a twist vector. 
         """
         pass
 
+    @property
     def itwist(self):
-        return -np.dot(np.asarray(self.iadjoint()),self.twist())
+        return -np.dot(np.asarray(self.iadjoint),self.twist)
 
+    @property
     def adjoint(self):
-        return Hg.adjoint(self.pose())
+        return Hg.adjoint(self.pose)
 
+    @property
     def iadjoint(self):
-        return Hg.adjoint(self.ipose())
+        return Hg.adjoint(self.ipose)
 
+    @property
     def adjacency(self):
-        return T.adjacency(self.twist())
+        return T.adjacency(self.twist)
 
+    @property
     def iadjacency(self):
-        return T.adjacency(self.itwist())
+        return T.adjacency(self.itwist)
 
+    @property
     def dadjoint(self):
-        return np.dot(np.asarray(self.adjoint()),self.adjacency())
+        return np.dot(np.asarray(self.adjoint),self.adjacency)
     
+    @property
     def idadjoint(self):
-        return np.dot(np.asarray(self.iadjoint()),self.iadjacency())
+        return np.dot(np.asarray(self.iadjoint),self.iadjacency)
 
 

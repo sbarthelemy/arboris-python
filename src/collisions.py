@@ -29,10 +29,10 @@ def _sphere_sphere_collision(p_g0, p_g1, radius0, radius1):
     """
     Tests:
 
-    >>> H_g0 = eye(4)
-    >>> H_g1 = eye(4)
-    >>> H_g1[0:3,3] = [2.,2.,1.]
-    >>> (sdist, H_gc0, H_gc1) = _sphere_sphere_collision(H_g0, H_g1, 1.1, 1.2)
+    >>> from numpy import array, zeros
+    >>> p_g0 = zeros((3))
+    >>> p_g1 = array( (2.,2.,1.) )
+    >>> (sdist, H_gc0, H_gc1) = _sphere_sphere_collision(p_g0, p_g1, 1.1, 1.2)
     >>> print(sdist)
     0.7
     >>> print(H_gc0)
@@ -45,7 +45,7 @@ def _sphere_sphere_collision(p_g0, p_g1, radius0, radius1):
      [-0.70710678  0.23570226  0.66666667  1.2       ]
      [ 0.         -0.94280904  0.33333333  0.6       ]
      [ 0.          0.          0.          1.        ]]
-    >>> (sdist, H_gc0, H_gc1) = _sphere_sphere_collision(H_g0, H_g1, 1.5, 1.6)
+    >>> (sdist, H_gc0, H_gc1) = _sphere_sphere_collision(p_g0, p_g1, 1.5, 1.6)
     >>> print(sdist)
     -0.1
     >>> print(H_gc0)

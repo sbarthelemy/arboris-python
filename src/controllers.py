@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, abstractproperty
 from numpy import array, zeros, ones, eye, dot
 from misc import NamedObject
 import homogeneousmatrix
@@ -19,12 +19,12 @@ class JointController(Controller):
         pass
 
 
-    @abstractmethod
+    @abstractproperty
     def viscosity(self):
         pass
 
 
-    @abstractmethod
+    @abstractproperty
     def gforce(self):
         pass
 
@@ -47,11 +47,11 @@ class WeightController(JointController):
             g = dot(homogeneousmatrix.iadjoint(b.pose), self._gravity)
             self._gforce += dot(b.jacobian.T, dot(b.mass, g))
             
-
+    @property
     def viscosity(self):
         return zeros( (self.ndof(), self.ndof()) )
 
-
+    @property
     def gforce(self):
         return self._gforce
 
@@ -67,7 +67,7 @@ class ProportionalDerivativeController(JointController):
             for j in joints:
                 if not isinstance(j, LinearConfigurationSpaceJoint):
                     raise ValueError('Joints must be LinearConfigurationSpaceJoint instances')
-                ndof += j.ndof()
+                ndof += j.ndof
             JointController.__init__(self, name)
             self.joints = joints
             if Kp is None:
@@ -93,14 +93,14 @@ class ProportionalDerivativeController(JointController):
     def update(self, dt):
         pass
 
-    
+    @property 
     def viscosity(self):
         """
         TODO: return non-zero viscosity
         """
         return zeros( (self.ndof(), self.ndof()) )
 
-
+    @property
     def gforce(self):
         
         gpos = []

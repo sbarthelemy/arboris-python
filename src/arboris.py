@@ -15,18 +15,6 @@ of the tree (which is body called "ground")).
 One or more frames (instances of the :class:`Frame` class) can be associated to
 bodies and serve as anchor points to the joints
 
-TODO: 
-
-- import human36 from matlab-arboris
-- add unit tests for human36
-- add __repr__ or unicode methods
-
-IDEAS:
-
-- add dpose() to RigidMotion
-- add support for coupled joints
-- add support for non-holonomic joints
-
 """
 
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
@@ -44,34 +32,37 @@ from misc import NamedObject
 from rigidmotion import RigidMotion
 
 class Joint(RigidMotion, NamedObject):
-    """any joint
-    H
-    T_
+    """A generic class for ideal joints.
     """    
     __metaclass__ = ABCMeta
 
     def __init__(self, name=None):
         NamedObject.__init__(self, name)
 
+
+    @property
     def twist(self):
-        return dot(self.jacobian(), self.gvel)
+        return dot(self.jacobian, self.gvel)
 
-
-    @abstractmethod
+    
+    @abstractproperty
     def ndof(self):
         """Number of degrees of freedom of the joint
         """
         pass
 
-    @abstractmethod
+
+    @abstractproperty
     def jacobian(self):
         pass
 
-    @abstractmethod
+
+    @abstractproperty
     def djacobian(self):
         pass
 
-    @abstractmethod
+
+    @abstractproperty
     def integrate(self, dt):
         pass
 
@@ -90,6 +81,7 @@ class BodyConstraint(Constraint):
     def __init__(self, frames):
         self._frames = frames
 
+    @property
     def gforce(self):
         return dot(self.jacobian().T, self._force)
 
@@ -116,12 +108,15 @@ class BodyConstraint(Constraint):
     @abstractmethod
     def solve(self, dforce, dvel, admittance, dt):
         pass
+
+
 class Shape(object):
+    """A generic class for geometrical shapes used in collision detectction
+    """
     def __init__(self, frame):
         self.frame = frame
 
 class World(NamedObject):
-
     """
 
     TODO: provide ability to merge worlds or subtrees
@@ -152,24 +147,91 @@ class World(NamedObject):
     def iterbodies(self):
         """Iterate over all bodies, with a depth-first strategy"""
         yield self.ground
-        for b in self.ground.iterdescendants():
+        for b in self.ground.iter_descendant_bodies():
             yield b
 
+    def iterjoints(self):
+        """Iterate over all joints, with a depth-first strategy"""
+        for j in self.ground.iter_descendant_joints():
+            yield j
+
     def getbodiesdict(self):
-        """Returns a dictionary whose values are the bodies and keys are the bodies
-        names
+        """Returns a dictionary whose values are references to the 
+        bodies and keys are the bodies names. Bodies with ``None`` 
+        as name will be ignored. Duplicate names will raise a 
+        ``DuplicateName`` exception.
+
+        Example:
+            >>> from joints import FreeJoint
+            >>> w = World()
+            >>> #stone = Body('stone')
+            >>> #j = FreeJoint()
+            >>> #w.add_joint(j, (w.ground, stone))
+            >>> d = w.getbodiesdict()
+            >>> d.keys()
+            ['ground']
         """
-        bd_dict={self.ground.name: self.ground}
-        for b in self.ground.iterdescendants():
+        bodies_dict = {self.ground.name: self.ground}
+        for b in self.ground.iter_descendant_bodies():
             if b.name is not None :
-                if b.name not in bd_dict:  
-                    bd_dict[b.name]=b
+                if b.name not in bodies_dict:  
+                    bodies_dict[b.name] = b
                 else:
                     raise DuplicateNameError()
-        return bd_dict
+        return bodies_dict
+
+    def getframesdict(self):
+        """Returns a dictionary whose values are references to the
+        frames and keys are the frames names. Frames with ``None``
+        as name will be ignored. Duplicate names will raise a 
+        ``DuplicateName`` exception.
+
+        Example:
+            >>> w = World()
+            >>> w.register(SubFrame(w.ground, name="ground again"))
+            >>> d = w.getframesdict()
+            >>> d.keys()
+            ['ground again', 'ground']
+
+        """
+        frames_dict = self.getbodiesdict()
+        for f in self._subframes:
+            if f.name is not None :
+                if f.name not in frames_dict:  
+                    frames_dict[f.name] = f
+                else:
+                    raise DuplicateNameError()
+        return frames_dict
+
+    def getjointsdict(self):
+        """Returns a dictionary whose values are references to the 
+        joints and keys are the joints names. Frames with ``None`` 
+        as name will be ignored. Duplicate names will raise a 
+        ``DuplicateName`` exception.
+
+        Example:
+            >>> w = World()
+            >>> d = w.getjointsdict()
+            >>> d.keys()
+            []
+
+        """
+        joints_dict = {}
+        for j in self.ground.iter_descendant_joints():
+            if j.name is not None :
+                if j.name not in joints_dict:  
+                    joints_dict[j.name] = j
+                else:
+                    raise DuplicateNameError()
+        return joints_dict
+
 
     def register(self, obj):
         """
+        Register an object into the world, so that it can be enumerated.
+        
+        ``obj`` can be a subframe, a shape or a constraint.
+        
         TODO: for subframes, check is the parent body is registered?
         """
         if isinstance(obj, SubFrame):
@@ -200,11 +262,14 @@ class World(NamedObject):
     def nleffects(self):
         return self._nleffects
 
-
+    @property
     def ndof(self):
         return self._ndof
 
-    
+    @property
+    def gvel(self):
+        return self._gvel.copy()
+
     def add_joint(self, joint, frames):
         """Add a joint and its new-attached body to the world.
 
@@ -223,7 +288,7 @@ class World(NamedObject):
         array([ 2.])
 
         """
-        if not(isinstance(joint, Joint)):
+        if not isinstance(joint, Joint):
             raise ValueError("{0} is not an instance of Joint".format(
                 joint))
         if not(isinstance(frames[0], Frame)):
@@ -270,7 +335,7 @@ class World(NamedObject):
         self.bodies.append(new_body)
         # extend the world generalized velocities
         old_ndof = self._ndof
-        self._ndof = self._ndof + joint.ndof()
+        self._ndof = self._ndof + joint.ndof
         
         # add the joint and the moving frame to the world
         joint._frames = frames
@@ -311,7 +376,7 @@ class World(NamedObject):
                 raise ValueError("the controller is already in the world")
 
         if joints is None:
-            controller._dof = range(self.ndof())
+            controller._dof = range(self.ndof)
         else:
             controller._dof = []
             for j in joints:
@@ -546,7 +611,7 @@ class World(NamedObject):
         self._mass[:] = 0.
         self._viscosity[:] = 0.
         self._nleffects[:] = 0.
-        for b in self.ground.iterdescendants():
+        for b in self.ground.iter_descendant_bodies():
             self._mass += dot(
                 dot(b.jacobian.T, b.mass),
                 b.jacobian)
@@ -560,14 +625,13 @@ class World(NamedObject):
     def update_controllers(self, dt):
         r"""
 
+        Let's consider the following discretized 2nd-order model:
+
         .. math::
-            M(t) \dot\GVel(t+dt) + N(t) \GVel(t+dt) &= 
-            B(t) \GVel(t+dt) + \GForce(t)
+            M(t) \dot\GVel(t+dt) + \left( N(t)+B(t )\right) \GVel(t+dt) &= 
+            \GForce(t)
 
-        while assuming that :math:`\GForce(t)` is constant during the 
-        :math:`[t, t+dt]` period of time.
-
-        with
+        considering
         
         .. math::
             \dot\GVel(t+dt) = \frac{\GVel(t+dt) - \GVel(t)}{dt}
@@ -575,18 +639,24 @@ class World(NamedObject):
         we get
         
         .. math::
-            \left( \frac{M(t)}{dt}+N(t)-B(t) \right) \GVel(t+dt) &= 
+            \left( \frac{M(t)}{dt}+N(t)+B(t) \right) \GVel(t+dt) &= 
             \frac{M(t)}{dt} \GVel(t) + \GForce(t)
+        
+        Here :math:`\GForce(t)` sums up the generalized forces due to 
+        all the active controllers and constraints.
 
-        Additionnaly, each controller should provide a first order model
+        The generalized force due to a controller has the following form:
+        
+        .. math::
+            \GForce_c(t) &= \GForce_{0c}(t) + Z_c(t) \GVel(t+td)
+
+        where :math:`\GForce_{0c}(t)` is constant during the 
+        :math:`[t, t+dt]` period of time.
+
+        It leads us to
 
         .. math::
-            \GForce_c(t) &= \GForce_{0c}(t) + Y_c(t) \GVel(t+td)
-
-        which leads us to
-
-        .. math::
-            \left( \frac{M(t)}{dt}+N(t)-B(t) -\sum_c Y_c(t) \right) 
+            \left( \frac{M(t)}{dt}+N(t)+B(t) -\sum_c Z_c(t) \right) 
             \GVel(t+dt) &= 
             \frac{M(t)}{dt} \GVel(t) + \sum_c \GForce_{0c}(t)
 
@@ -594,7 +664,7 @@ class World(NamedObject):
         matrices:
     
         .. math::
-            Z(t) &= \frac{M(t)}{dt}+N(t)-B(t) -\sum_c Y_c(t) \\
+            Z(t) &= \frac{M(t)}{dt}+N(t)+B(t)-\sum_c Z_c(t) \\
             Y(t) &= Z^{-1}(t)
 
 
@@ -627,8 +697,8 @@ class World(NamedObject):
             c.update(dt)
 
             self._controller_viscosity[
-                ix_(c._dof, c._dof)] += c.viscosity()
-            self._gforce[c._dof] += c.gforce()
+                ix_(c._dof, c._dof)] += c.viscosity
+            self._gforce[c._dof] += c.gforce
         
         self._impedance = self._mass/dt + self._viscosity - \
                 self._controller_viscosity + self._nleffects
@@ -720,30 +790,34 @@ class World(NamedObject):
           updated by :math:`\Delta\pre[c]f`
         
 
-        Test::
-            >>> b0 = Body(mass = eye(6))
-            >>> from joints import FreeJoint
-            >>> j0 = FreeJoint()
-            >>> w = World()
-            >>> w.add_joint(j0, (w.ground, b0) )
-            >>> j1 = FreeJoint()
-            >>> b1 = Body(mass = eye(6))
-            >>> w.add_joint(j1, (b0, b1) )
-            >>> from controllers import WeightController
-            >>> ctrl =  WeightController(w.ground)
-            >>> w.add_jointcontroller(ctrl)
-            >>> from constraints import BallAndSocketConstraint 
-            >>> c0 = BallAndSocketConstraint()
-            >>> w.add_constraint(c0, (w.ground, b0) )
-            >>> w.update_dynamic()
-            >>> dt = 0.001
-            >>> w.update_controllers(dt)
-            >>> w.update_constraints(dt)
-            >>> c0._force
+        Test:
+
+        TODO: the following test fails for an unknown reason, maybe a bug in doctest.
+
+            >> b0 = Body(mass = eye(6))
+            >> from joints import FreeJoint
+            >> j0 = FreeJoint()
+            >> w = World()
+            >> w.add_joint(j0, (w.ground, b0) )
+            >> j1 = FreeJoint()
+            >> b1 = Body(mass = eye(6))
+            >> w.add_joint(j1, (b0, b1) )
+            >> from controllers import WeightController
+            >> ctrl =  WeightController(w.ground)
+            >> w.add_jointcontroller(ctrl)
+            >> from constraints import BallAndSocketConstraint 
+            >> c0 = BallAndSocketConstraint()
+            >> c0._frames = (w.ground, b0)
+            >> w.register(c0)
+            >> w.update_dynamic()
+            >> dt = 0.001
+            >> w.update_controllers(dt)
+            >> w.update_constraints(dt)
+            >> c0._force
             array([ 0.  ,  9.81,  0.  ])
-            >>> w.integrate(dt)
-            >>> w.update_dynamic()
-            >>> b0.pose
+            >> w.integrate(dt)
+            >> w.update_dynamic()
+            >> b0.pose
             array([[  1.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                       0.00000000e+00],
                    [  0.00000000e+00,   1.00000000e+00,   0.00000000e+00,
@@ -785,10 +859,25 @@ class World(NamedObject):
 
     def integrate(self, dt):
         r"""
+        
+        From the :method:`update_controllers` and 
+        :method:`update_constraints` methods we get the new 
+        generalized velocity.
+
+        .. math::
+            \GVel(t+dt) &= Y(t) \left(
+            \frac{M(t)}{dt} \GVel(t) 
+            + \sum_{c=\text{controllers}} \GForce_{0c}(t)
+            + \sum_{c=\text{constraints}} \GForce_{c}(t)
+            \right)
+
+        In order to get the new generalized position, each joint is integrated
+        separately.
 
         TODO: add support for kinematic controllers
-        TODO: add support fo external wrenches
+
         TODO: check the last test result!
+
         >>> from triplehinge import triplehinge
         >>> w = triplehinge()
         >>> w.joints[1].gpos[:] = -1.
@@ -806,7 +895,6 @@ class World(NamedObject):
                             dot(self._mass, self._gvel/dt) + self._gforce)
         for j in self.joints:
             j.integrate(dt)
-
 
 
 class Frame(object):
@@ -914,21 +1002,34 @@ class Body(NamedObject, Frame):
         self._twist = None # updated by update_dynamic
         self._nleffects = None # updated by update_dynamic
 
-    def iterdescendants(self):
+    def iter_descendant_bodies(self):
         """Iterate over all descendant bodies, with a depth-first strategy"""
         from itertools import imap
         for b in imap(lambda j: j._frames[1].body, self.childrenjoints):
             yield b
-            for bb in b.iterdescendants():
+            for bb in b.iter_descendant_bodies():
                 yield bb
 
-    def iterancestors(self):
+    def iter_ancestor_bodies(self):
         if self.parentjoint is not None:
-            parent = self.parentjoint._frames[0].body
-            yield parent
-            for a in parent.iterancestors():
+            parentbody = self.parentjoint._frames[0].body
+            yield parentbody
+            for a in parentbody.iter_ancestor_bodies():
                 yield a
     
+    def iter_descendant_joints(self):
+        """Iterate over all descendant joints, with a depth-first strategy"""
+        for j in self.childrenjoints:
+            yield j
+            for jj in j._frames[1].body.iter_descendant_joints():
+                yield jj
+
+    def iter_ancestor_joints(self):
+        if self.parentjoint is not None:
+            yield self.parentjoint
+            for a in self.parentjoint._frames[0].body.iter_ancestor_joints():
+                yield a
+
     @property
     def pose(self):
         return self._pose
@@ -975,7 +1076,7 @@ class Body(NamedObject, Frame):
         for j in self.childrenjoints:
             H_cn = j._frames[1].bpose
             H_pr = j._frames[0].bpose
-            H_rn = j.pose()
+            H_rn = j.pose
             H_pc = dot(H_pr, dot(H_rn, Hg.inv(H_cn)))
             child_pose = dot(H_gp, H_pc)
             j._frames[1].body.geometric(child_pose)
@@ -1032,7 +1133,7 @@ class Body(NamedObject, Frame):
         if self.mass[3,3]==0:
             rx = zeros((3,3))
         else:
-            rx = self.mass[0:3,3:6]/self.mass[3,3] # todo: better solution?
+            rx = self.mass[0:3,3:6]/self.mass[3,3] #TODO: better solution?
         self._nleffects = zeros((6,6))
         self._nleffects[0:3,0:3] = wx
         self._nleffects[3:6,3:6] = wx
@@ -1046,17 +1147,17 @@ class Body(NamedObject, Frame):
         for j in self.childrenjoints:
             H_cn = j._frames[1].bpose
             H_pr = j._frames[0].bpose
-            H_rn = j.pose()
+            H_rn = j.pose
             H_pc = dot(H_pr, dot(H_rn, Hg.inv(H_cn)))
             child_pose = dot(H_gp, H_pc)
             Ad_cp = Hg.iadjoint(H_pc)
             Ad_cn = Hg.adjoint(H_cn)
             Ad_rp = Hg.adjoint(Hg.inv(H_pr))
-            dAd_nr = j.idadjoint()
+            dAd_nr = j.idadjoint
             dAd_cp = dot(Ad_cn, dot(dAd_nr, Ad_rp))
-            T_nr = j.twist()
-            J_nr = j.jacobian()
-            dJ_nr = j.djacobian()
+            T_nr = j.twist
+            J_nr = j.jacobian
+            dJ_nr = j.djacobian
             child_twist = dot(Ad_cp, T_pg) + dot(Ad_cn, T_nr)
             child_jac = dot(Ad_cp, J_pg)
             child_jac[:,j._dof] += dot(Ad_cn, J_nr)

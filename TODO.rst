@@ -85,7 +85,8 @@ Done (and kept for reference)
   
   - ``prev_frame``,
   - ``parent_frame``,
-  - ``base_frame``
+  - ``base_frame``,
+  - ``proximal_frame``,
   - ``frames[0]`` (the one we chose)
 
 - find a better name for ``Body._new_frame``. Current suggestions:
@@ -93,6 +94,12 @@ Done (and kept for reference)
   - ``next_frame``,
   - ``moving_frame``,
   - ``local_frame``,
+  - ``distal_frame``,  
   - ``frames[1]`` (the one we chose)
 
+Dreams
+======
 
+- add dpose() to RigidMotion
+- add support for coupled joints
+- add support for non-holonomic joints

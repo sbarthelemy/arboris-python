@@ -47,7 +47,9 @@ function ``SetModelSize`` from the file
 """
 from arboris import World, Body, SubFrame
 import numpy as np
+from numpy import array, diag, dot, hstack
 import homogeneousmatrix as Hg
+from homogeneousmatrix import adjoint
 from joints import *
 
 def anatomical_lengths(human_height):
@@ -594,19 +596,19 @@ def _humans_bodies(height, mass):
          'HumansId': 1,
          "Mass": 0.275 * mass,
          "CenterOfMass": [0, 0.5108*L['yvT10'], 0],
-         "GyrationRadius": [0.2722, 0.2628, 0.226]})
+         "GyrationRadius": array([0.2722, 0.2628, 0.226])*L['yvT10']})
     bodies.append(
         {"HumansName": "ThighR",
          'HumansId': 2,
          "Mass": 0.1416 * mass,
          "CenterOfMass": [0, -0.4095*L['yfemurR'], 0],
-         "GyrationRadius": [0.329, 0.149, 0.329]})
+         "GyrationRadius": array([0.329, 0.149, 0.329])*L['yfemurR']})
     bodies.append(
         {"HumansName": "ShankR",
          'HumansId': 3,
          "Mass": 0.0433 * mass,
          "CenterOfMass": [0, -0.4459*L['ytibiaR'], 0],
-         "GyrationRadius": [0.255, 0.103, 0.249]})
+         "GyrationRadius": array([0.255, 0.103, 0.249])*L['ytibiaR']})
     bodies.append(
         {"HumansName": "FootR",
          'HumansId': 4,
@@ -615,19 +617,19 @@ def _humans_bodies(height, mass):
             0.4415*L['xfootR'] + T['Right foot heel']['Position'][0],
             -L['yfootR']/2.,
             0.],
-         "GyrationRadius": [0.124, 0.257, 0.245]})
+         "GyrationRadius": array([0.124, 0.257, 0.245])*L['xfootR']})
     bodies.append(
         {"HumansName": "ThighL",
          'HumansId': 5,
          "Mass": 0.1416 * mass,
          "CenterOfMass": [0, -0.4095*L['yfemurL'], 0],
-         "GyrationRadius": [0.329, 0.149, 0.329]})
+         "GyrationRadius": array([0.329, 0.149, 0.329])*L['yfemurL']})
     bodies.append(
         {"HumansName": "ShankL",
          'HumansId': 6,
          "Mass": 0.0433 * mass,
          "CenterOfMass": [0, -0.4459*L['ytibiaL'], 0],
-         "GyrationRadius": [0.255, 0.103, 0.249]})
+         "GyrationRadius": array([0.255, 0.103, 0.249])*L['ytibiaL']})
     bodies.append(
         {"HumansName": "FootL",
          'HumansId': 7,
@@ -636,7 +638,7 @@ def _humans_bodies(height, mass):
              [0.4415*L['xfootL'] + T['Left foot heel']['Position'][0],
              -L["yfootL"]/2,
              0.],
-         "GyrationRadius": [0.124, 0.257, 0.245]})
+         "GyrationRadius": array([0.124, 0.257, 0.245])*L['xfootL']})
     bodies.append(
         {"HumansName": "UPT", # Upper Part of Trunk
          'HumansId': 8,
@@ -644,67 +646,71 @@ def _humans_bodies(height, mass):
          "CenterOfMass": [(L['xsternoclavR'] + L['xsternoclavL'])/4.,
                           0.7001*(L['ysternoclavR']+L['ysternoclavL'])/2.,
                           0.],
-         "GyrationRadius": [0.716, 0.659, 0.454]})
+         "GyrationRadius": array([0.716, 0.659, 0.454])*L['ysternoclavR']})
     bodies.append(
         {"HumansName": "ScapulaR", # right shoulder
          'HumansId': 9,
          "Mass": 0.,
          "CenterOfMass": [0., 0., 0.],
-         "GyrationRadius": [0., 0., 0.]})   
+         "GyrationRadius": array([0., 0., 0.])})   
     bodies.append(
         {"HumansName": "ArmR",
          'HumansId': 10,
          "Mass": 0.0271 * mass,
          "CenterOfMass": [0., -0.5772*L['yhumerusR'], 0.],
-         "GyrationRadius": [0.285, 0.158, 0.269]})   
+         "GyrationRadius": array([0.285, 0.158, 0.269])*L['yhumerusR']})
     bodies.append(
         {"HumansName": "ForearmR",
          'HumansId': 11,
          "Mass": 0.0162 * mass,
          "CenterOfMass": [0., -0.4574*L['yforearmR'], 0.],
-         "GyrationRadius": [0.276, 0.121, 0.265]})   
+         "GyrationRadius": array([0.276, 0.121, 0.265])*L['yforearmR']})   
     bodies.append(
         {"HumansName": "HandR",
          'HumansId': 12,
          "Mass": 0.0061 * mass,
          "CenterOfMass": [0, -0.3691*L['yhandR'], 0],
-         "GyrationRadius": [0.235, 0.184, 0.288]})   
+         "GyrationRadius": array([0.235, 0.184, 0.288])*L['yhandR']})
     bodies.append(
         {"HumansName": "ScapulaL", # left shoulder
          'HumansId': 13,
          "Mass": 0.,
          "CenterOfMass": [0., 0., 0.],
-         "GyrationRadius": [0., 0., 0.]})   
+         "GyrationRadius": array([0., 0., 0.])})
     bodies.append(
         {"HumansName": "ArmL",
          'HumansId': 14,
          "Mass": 0.0271 * mass,
          "CenterOfMass": [0, -0.5772*L['yhumerusL'], 0.],
-         "GyrationRadius": [0.285, 0.158, 0.269]})   
+         "GyrationRadius": array([0.285, 0.158, 0.269])*L['yhumerusL']})
     bodies.append(
         {"HumansName": "ForearmL",
          'HumansId': 15,
          "Mass": 0.0162 * mass,
          "CenterOfMass": [0, -0.4574*L['yforearmL'], 0],
-         "GyrationRadius": [0.276, 0.121, 0.265]})   
+         "GyrationRadius": array([0.276, 0.121, 0.265])*L['yforearmL']})
     bodies.append(
         {"HumansName": "HandL",
          'HumansId': 16,
          "Mass": 0.0061 * mass,
          "CenterOfMass": [0, -0.3691*L['yhandL'], 0],
-         "GyrationRadius": [0.288, 0.184, 0.235]})   
+         "GyrationRadius": array([0.288, 0.184, 0.235])*L['yhandL']})   
     bodies.append(
         {"HumansName": "Head",
          'HumansId': 17,
          "Mass": 0.0694 * mass,
          "CenterOfMass": [0, 0.4998*L['yhead'], 0],
-         "GyrationRadius": [0.303, 0.261, 0.315]})
+         "GyrationRadius": array([0.303, 0.261, 0.315])*L['yhead']})
     return bodies
 
 def human36(height=1.741, mass=73, name='', world=None): 
     """
 
+    TODO: HuMAnS' doc about inertia is erroneous (the real math is in the IOMatrix proc in DynamicData.maple)
     
+
+    Test:
+
     >>> (w, bodies, tags) = human36()
     >>> w.update_geometric()
     >>> def tag_positions(tag_frames):
@@ -713,7 +719,7 @@ def human36(height=1.741, mass=73, name='', world=None):
     ...     The array elements are in the same order that in the array
     ...     returned by the ``Tags`` function from the 
     ...     HuMAnS toolbox. In HuMAnS, though, there is an 29th line
-    ...     which cotains the center of mass position.
+    ...     which contains the center of mass position.
     ...     \"\"\"
     ...     from numpy import dot
     ...     pos_dict= {}
@@ -838,19 +844,53 @@ Tags(q)
            0.0019382    0.9712007    1.894E-20 
     > convert_to_array(_humans_tags(1.741))
     
+    Test dynamical model (these were checked against HuMAnS):
+
+    >>> w = human36()[0]
+    >>> w.update_dynamic()
+    >>> w.mass[5,5]
+    73.000000000000014
+    >>> w.mass[41, 41] # neck
+    0.10430013572386694
+    >>> w.mass[40,40] # neck
+    0.020356790291165189
+    >>> w.mass[39, 39] # neck
+    0.10208399155688053
+    >>> w.mass[16, 16] # foot
+    0.001397215796713388
+    >>> w.mass[17, 17] # foot
+    0.0093741757009949949
+    >>> w.mass[10, 10] # foot
+    0.001397215796713388
+    >>> w.mass[11, 11] # foot
+    0.0093741757009949949
+
+
+
     """
     lengths = anatomical_lengths(height)
     L = lengths
+    
     bodies = {}
     humansbodyid_to_humansbodyname_map = {}
     for b in _humans_bodies(height, mass):
+
+        #mass matrix at com
+        mass_g = b['Mass'] * diag(
+            hstack((b['GyrationRadius']**2, (1,1,1))))
+        H_gf = eye(4)
+        H_gf[0:3,3] = b['CenterOfMass']
+        
+        #mass matrix at body's frame origin:
+        mass_o = dot(adjoint(H_gf).T, dot(mass_g, adjoint(H_gf)))
+        
         bodies[b['HumansName']] = Body(
-        name = b['HumansName'])
+            name=b['HumansName'],
+            mass=mass_o)
+        
         humansbodyid_to_humansbodyname_map[b['HumansId']] = b['HumansName']
-        #'Mass'=b['Mass'],
-        #'CenterOfMass': b['CenterOfMass'],
-        #'GyrationRadius': b['GyrationRadius']}
     
+
     tags = {}
     for t in _humans_tags(height):
         bodyname = humansbodyid_to_humansbodyname_map[t['HumansBodyId']]
@@ -894,7 +934,7 @@ Tags(q)
     
     rf = SubFrame(bodies['UPT'], 
         Hg.transl((L['xsternoclavR'], L['ysternoclavR'], L['zsternoclavR'])))
-    w.add_joint(FreeJoint(), (rf, bodies['ScapulaR']) )
+    w.add_joint(RyRxJoint(), (rf, bodies['ScapulaR']) )
     
     rf = SubFrame(bodies['ScapulaR'], 
         Hg.transl((-L['xshoulderR'], L['yshoulderR'], L['zshoulderR'])))

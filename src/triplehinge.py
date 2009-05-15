@@ -31,15 +31,19 @@ def mass_parallelepiped(m,lengths):
         m/12.*(a**2+b**2),
         m, m, m))
 
-def triplehinge(world=None):
-    """Build a  planar 3-R robot."""
+def triplehinge(world=None, name=None, lengths=(0.5 ,0.4 , 0.2), 
+                masses=(1.0, 0.8, 0.2)):
+    """Build a  planar 3-R robot.
 
-    arm_length=0.5
-    arm_mass=1
-    forearm_length=0.4
-    forearm_mass=0.8
-    hand_length=0.2
-    hand_mass=0.2
+    TODO: make use of the ``name`` input argument to prefix bodies and joints names
+    """
+
+    arm_length = lengths[0]
+    arm_mass = masses[0]
+    forearm_length = lengths[1]
+    forearm_mass = masses[1]
+    hand_length = lengths[2]
+    hand_mass = masses[2]
 
     # Create a world
     if world is None:
@@ -81,7 +85,7 @@ def triplehinge(world=None):
     # add a frame to the arm, where the forearm will be anchored
     f = SubFrame(arm,
         Hg.transl((0,arm_length,0)),
-        'ElbowLeftFrame')
+        'ElbowBaseFrame')
     # create a joint between the arm and the forearm
     elbow = RzJoint(name='Elbow')
     w.add_joint(joint=elbow, frames=(f, forearm) )
@@ -89,11 +93,15 @@ def triplehinge(world=None):
     # add a frame to the forearm, where the hand will be anchored
     f = SubFrame(forearm,
         Hg.transl((0,forearm_length,0)),
-        'WristLeftFrame')
+        'WristBaseFrame')
     # create a joint between the forearm and the hand
     wrist = RzJoint(name = 'Wrist')
     w.add_joint( wrist, (f, hand) )
 
+
+    # create a frame at the end of the hand
+    f = SubFrame(hand, Hg.transl((0,hand_length,0)), 'EndEffector')
+    w.register(f)
     return w
 
 if __name__ == "__main__":
