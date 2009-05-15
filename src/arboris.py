@@ -313,7 +313,7 @@ class World(NamedObject):
                    frame0_body_is_in_world = True
             for sf in self._subframes:
                 if frames[0] is sf:
-                   frame0_body_is_in_world = True
+                   frame0_is_in_world = True
         if not(frame0_body_is_in_world):
             raise ValueError("The reference/base/parent frame is attached to a body that is not in world")
         if not(frame0_is_in_world):
