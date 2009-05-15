@@ -23,14 +23,7 @@ All the program is written in python2.6. See Python26Doc_ (or Python26LocalDoc_)
 ...for the documentation
 ------------------------
 
-The doc is written in the reST markup language and processed by sphinx (version >=5). See the sphinx (and reST) documentation at SphinxDoc_ (or SphinxLocalDoc_). We use sphinx plugins which allow to embed latex in the doc, to parse the docstrings spread in the code and to run the examples with doctest.
-
-.. _SphinxDoc:
-  http://sphinx.pocoo.org/
-
-.. _SphinxLocalDoc:
-  file:///usr/share/doc/python-sphinx/html/index.html
-
+The doc is written in the reST markup language and processed by sphinx (version >=5). See the sphinx (and reST) documentation `online <http://sphinx.pocoo.org/>`_ (or `locally <file:///usr/share/doc/python-sphinx/html/index.html>`_ if you followed the ubuntu setup instructions). We use sphinx plugins which allow to embed latex in the doc, to parse the docstrings spread in the code and to run the examples with doctest. To convert some pictures from svg, inskcape should also be installed and accessible through the command line.
 
 ...for the visualization
 ------------------------
