@@ -2,3 +2,4 @@
 *.swp
 /src/*.pyc
 /doc/.build/
+/doc/img/sphere_sphere_collision.png
