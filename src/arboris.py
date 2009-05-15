@@ -648,23 +648,23 @@ class World(NamedObject):
         The generalized force due to a controller has the following form:
         
         .. math::
-            \GForce_c(t) &= \GForce_{0c}(t) + Z_c(t) \GVel(t+td)
+            \GForce_a(t) &= \GForce_{0a}(t) + Z_a(t) \GVel(t+td)
 
-        where :math:`\GForce_{0c}(t)` is constant during the 
+        where :math:`\GForce_{0a}(t)` is constant during the 
         :math:`[t, t+dt]` period of time.
 
         It leads us to
 
         .. math::
-            \left( \frac{M(t)}{dt}+N(t)+B(t) -\sum_c Z_c(t) \right) 
+            \left( \frac{M(t)}{dt}+N(t)+B(t) -\sum_a Z_a(t) \right) 
             \GVel(t+dt) &= 
-            \frac{M(t)}{dt} \GVel(t) + \sum_c \GForce_{0c}(t)
+            \frac{M(t)}{dt} \GVel(t) + \sum_a \GForce_{0a}(t)
 
         One can the define impedance (:math:`Z`) and admittance (:math:`Y`)
         matrices:
     
         .. math::
-            Z(t) &= \frac{M(t)}{dt}+N(t)+B(t)-\sum_c Z_c(t) \\
+            Z(t) &= \frac{M(t)}{dt}+N(t)+B(t)-\sum_a Z_a(t) \\
             Y(t) &= Z^{-1}(t)
 
 
@@ -673,8 +673,8 @@ class World(NamedObject):
         >>> from triplehinge import triplehinge
         >>> w = triplehinge()
         >>> from controllers import ProportionalDerivativeController
-        >>> c0 = ProportionalDerivativeController( w.joints[1:2], 2.)
-        >>> w.add_jointcontroller(c0, w.joints[1:2])
+        >>> a0 = ProportionalDerivativeController( w.joints[1:2], 2.)
+        >>> w.add_jointcontroller(a0, w.joints[1:2])
         >>> w.update_dynamic()
         >>> w.update_controllers(0.001)
         >>> w._controller_viscosity
@@ -693,16 +693,17 @@ class World(NamedObject):
         """
         self._controller_viscosity[:] = 0.
         self._gforce[:] = 0.
-        for c in self._controllers:
-            c.update(dt)
+        for a in self._controllers:
+            a.update(dt)
 
             self._controller_viscosity[
-                ix_(c._dof, c._dof)] += c.viscosity
-            self._gforce[c._dof] += c.gforce
+                ix_(a._dof, a._dof)] += a.viscosity
+            self._gforce[a._dof] += a.gforce
         
-        self._impedance = self._mass/dt + self._viscosity - \
-                self._controller_viscosity + self._nleffects
+        self._impedance = self._mass/dt + self._viscosity + \
+            self._nleffects - self._controller_viscosity 
         self._admittance = numpy.linalg.inv(self._impedance)
+
 
     def update_constraints(self, dt):
         r"""
@@ -711,12 +712,12 @@ class World(NamedObject):
         forces:
 
         .. math::
-            \GVel(t+dt) &= Y'(t) 
-            \left( M(t) \GVel(t) + dt \; \GForce(t) \right)
+            \GVel(t+dt) &= Y(t) 
+            \left( \frac{M(t)}{dt} \GVel(t) + \GForce(t) \right)
 
         where:
 
-        - the admittance matrix  :math:`Y'` takes into account a 
+        - the admittance matrix  :math:`Y` takes into account a 
           first order model of the actuators,
 
         - the actuators generalized forces :math:`\GForce(t)` 
@@ -729,9 +730,8 @@ class World(NamedObject):
 
         .. math::
             \GVel(t+dt) 
-            &= Y'(t) 
-            \left( 
-                M(t)  \GVel(t) + dt \; \GForce(t)
+            &= Y(t) 
+            \left( \frac{M(t)}{dt} \GVel(t) + \GForce(t)
                 + \sum_{c} \; \pre[c]J_{c}^T(t) \; \pre[c]f(t)
             \right)
   
@@ -741,42 +741,42 @@ class World(NamedObject):
         .. math::
             \pre[c]v(t+dt) 
             &= \pre[c]J_c(t) \; \GVel(t+dt)\\
-            &= \pre[c]J_c(t) \; Y'(t) 
+            &= \pre[c]J_c(t) \; Y(t) 
             \left( 
-                M(t)  \GVel(t) + dt \; \GForce(t)
+                \frac{M(t)}{dt} \GVel(t) + \; \GForce(t)
             \right)
-            + \sum_d \; \pre[c]J_c(t) \; Y'(t) \; \pre[d]J_d^T(t) 
+            + \sum_d \; \pre[c]J_c(t) \; Y(t) \; \pre[d]J_d^T(t) 
             \; \pre[d]f(t)
         
-        one can define the (global) constraints velocity :math:`v`, 
-        force :math:`f`, jacobian matrix :math:`J` 
-        and admittance matrix :math:`Y`:
+        one can define the (global) constraints velocity :math:`v'`, 
+        force :math:`f'`, jacobian matrix :math:`J'` 
+        and admittance matrix :math:`Y'`:
 
         .. math::
-            J(t) &=
+            J'(t) &=
             \begin{bmatrix}
                 \pre[0]J_0(t)\\
                 \vdots\\
                 \pre[c]J_c(t)\\
                 \vdots
             \end{bmatrix}\\
-            v &= 
+            v'(t) &= 
             \begin{bmatrix}
                 \pre[0]v(t)\\ \vdots \\ \pre[c]v(t) \\ \vdots
             \end{bmatrix}\\
-            f(t) &= 
+            f'(t) &= 
             \begin{bmatrix}
                 \pre[0]f(t)\\ \vdots \\ \pre[c]f(t) \\ \vdots
             \end{bmatrix}\\
-            Y(t) &= 
-            J(t) \; Y'(t) \; J(t)^T
+            Y'(t) &= 
+            J'(t) \; Y(t) \; J'(t)^T
 
         and get a synthetic expression:
 
         .. math::
-            v(t+dt) &= J(t) \; Y'(t) 
-            \left( M(t)  \GVel(t) + dt \; \GForce(t) \right)
-            + Y(t) \; f
+            v'(t+dt) &= J'(t) \; Y(t) 
+            \left( \frac{M(t)}{dt}  \GVel(t) + \GForce(t) \right)
+            + Y'(t) \; f'
 
 
         This method computes the constraint forces in three steps:
@@ -848,7 +848,7 @@ class World(NamedObject):
 
         k=0
         while k < 20: 
-            #TODO: change the break condition, to be computed from the error
+        #TODO: change the break condition, it should be computed from the error
             k+=1 
             for c in constraints:
                 dforce = c.solve(vel[c._dol], admittance[c._dol,c._dol], dt)
@@ -1172,6 +1172,7 @@ def simulate(world, time):
 
     """
     Example:
+
     >>> from triplehinge import triplehinge
     >>> w = triplehinge()
     >>> simulate(w, numpy.arange(0,0.01,0.001))

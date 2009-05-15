@@ -11,6 +11,7 @@ Contents:
    quickstart
    rigidmotion
    rigidmechanism
+   simulation
    constraints
    collisions
    modules
