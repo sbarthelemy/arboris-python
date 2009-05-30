@@ -35,9 +35,10 @@ def ball(world=None, radius=1., mass=1., name=None):
         name=name,
         mass=mass_parallelepiped(mass, (radius,radius,radius)))
     freejoint = FreeJoint()
-    w.add_joint(joint=freejoint, frames=(w.ground, ball))
+    freejoint.attach(w.ground, ball)
+    w.register(ball)
     s = Sphere(ball, radius)
-    w.register(s)
+    w.register(freejoint)
     return w
     
 def box(world=None, lengths=(1.,1.,1.), mass=1., name='Box'):
@@ -57,9 +58,10 @@ def box(world=None, lengths=(1.,1.,1.), mass=1., name='Box'):
         name=name,
         mass=mass_parallelepiped(mass, (lengths[0], lengths[1], lengths[2])))
     freejoint = FreeJoint()
-    w.add_joint(joint=freejoint, frames=(w.ground, box))
+    freejoint.attach(w.ground, box)
+    w.register(box)
     s = Box(box, lengths)
-    w.register(s)
+    w.register(freejoint)
     return w
 
 def cylinder(world=None, radius=1., length=1., mass=1., name='Cylinder'):
@@ -78,8 +80,8 @@ def cylinder(world=None, radius=1., length=1., mass=1., name='Cylinder'):
     cylinder = Body(
         name=name,
         mass=mass_parallelepiped(mass, (length, length, length)))
-    freejoint = FreeJoint()
-    w.add_joint(joint=freejoint, frames=(w.ground, cylinder))
+    freejoint = FreeJoint(frames=(w.ground, cylinder))
+    w.register(cylinder)
     s = Cylinder(cylinder, length, radius)
     w.register(s)
     return w

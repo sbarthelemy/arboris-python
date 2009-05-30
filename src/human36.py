@@ -909,63 +909,86 @@ Tags(q)
 
     rf = SubFrame(w.ground,
         Hg.transl((0, L['yfootL']+L['ytibiaL']+L['yfemurL'], 0)))
-    w.add_joint(FreeJoint(), (rf, bodies['LPT']) )
+    j = FreeJoint()
+    j.attach(rf, bodies['LPT'])
+    w.register(j)
     
     rf = SubFrame(bodies['LPT'], Hg.transl((0, 0, L['zhip']/2.)))
-    w.add_joint(RzRyRxJoint(), (rf,bodies['ThighR']) )
+    j = RzRyRxJoint()
+    j.attach(rf, bodies['ThighR'])
+    w.register(j)
     
     rf = SubFrame(bodies['ThighR'], Hg.transl((0, -L['yfemurR'], 0)))
-    w.add_joint(RzJoint(), (rf, bodies['ShankR']) )
+    j = RzJoint()
+    j.attach(rf, bodies['ShankR'])
+    w.register(j)
+
     
     rf = SubFrame(bodies['ShankR'], Hg.transl((0, -L['ytibiaR'], 0)))
-    w.add_joint(RzRxJoint(), (rf, bodies['FootR']) )
-    
+    j = RzRxJoint()
+    j.attach(rf, bodies['FootR'])
+    w.register(j)
+
     rf = SubFrame(bodies['LPT'], Hg.transl((0, 0, -L['zhip']/2.)))
-    w.add_joint(RzRyRxJoint(), (rf, bodies['ThighL']) )
-    
+    j = RzRyRxJoint()
+    j.attach(rf, bodies['ThighL'])
+    w.register(j)
+
     rf = SubFrame(bodies['ThighL'], Hg.transl((0, -L['yfemurL'], 0)))
-    w.add_joint(RzJoint(), (rf,bodies['ShankL']) )
-    
+    j = RzJoint()
+    j.attach(rf,bodies['ShankL'])
+    w.register(j)
+
     rf = SubFrame(bodies['ShankL'], Hg.transl((0, -L['ytibiaL'], 0)))
-    w.add_joint(RzRxJoint(), (rf, bodies['FootL']) )
-    
+    j = RzRxJoint()
+    j.attach(rf, bodies['FootL'])
+    w.register(j)
+
     rf = SubFrame(bodies['LPT'], Hg.transl((-L['xvT10'], L['yvT10'], 0)))
-    w.add_joint(RzRyRxJoint(), (rf, bodies['UPT']) )
+    j = RzRyRxJoint()
+    j.attach(rf, bodies['UPT'])
+    w.register(j)
     
     rf = SubFrame(bodies['UPT'], 
         Hg.transl((L['xsternoclavR'], L['ysternoclavR'], L['zsternoclavR'])))
-    w.add_joint(RyRxJoint(), (rf, bodies['ScapulaR']) )
+    j = RyRxJoint()
+    j.attach(rf, bodies['ScapulaR'])
+    w.register(j)
     
     rf = SubFrame(bodies['ScapulaR'], 
         Hg.transl((-L['xshoulderR'], L['yshoulderR'], L['zshoulderR'])))
-    w.add_joint(RzRyRxJoint(), (rf, bodies['ArmR']) )
-    
+    j = RzRyRxJoint()
+    j.attach(rf, bodies['ArmR'])
+    w.register(j)
+
     rf = SubFrame(bodies['ArmR'], Hg.transl((0, -L['yhumerusR'], 0)))
-    w.add_joint(RzRyJoint(), (rf, bodies['ForearmR']) )
+    j = RzRyJoint()
+    j.attach(rf, bodies['ForearmR'])
+    w.register(j)
     
     rf = SubFrame(bodies['ForearmR'], Hg.transl((0, -L['yforearmR'], 0)))
-    w.add_joint(RzRxJoint(), (rf, bodies['HandR']) )
+    w.register(RzRxJoint(frames=(rf, bodies['HandR'])))
     
-    rf = SubFrame(bodies['UPT'], 
-        Hg.transl((L['xsternoclavL'], L['ysternoclavL'], -L['zsternoclavL'])))
-    w.add_joint(RyRxJoint(), (rf, bodies['ScapulaL']) )
+    rf = SubFrame(bodies['UPT'], Hg.transl(
+        (L['xsternoclavL'], L['ysternoclavL'], -L['zsternoclavL'])))
+    w.register(RyRxJoint(frames=(rf, bodies['ScapulaL'])))
     
     rf = SubFrame(bodies['ScapulaL'], 
         Hg.transl((-L['xshoulderL'], L['yshoulderL'], -L['zshoulderL'])))
-    w.add_joint(RzRyRxJoint(), (rf, bodies['ArmL']) )
+    w.register(RzRyRxJoint(frames=(rf, bodies['ArmL'])))
     
     rf = SubFrame(bodies['ArmL'], Hg.transl((0, -L['yhumerusL'], 0)))
-    w.add_joint(RzRyJoint(), (rf, bodies['ForearmL']) )
+    w.register(RzRyJoint(frames=(rf, bodies['ForearmL'])))
     
     rf = SubFrame(bodies['ForearmL'], Hg.transl((0, -L['yforearmL'], 0)))
-    w.add_joint(RzRxJoint(), (rf, bodies['HandL']) )
+    w.register(RzRxJoint(frames=(rf, bodies['HandL'])))
     
     rf = SubFrame(bodies['UPT'], Hg.transl((L['xvT10'], L['yvC7'], 0)))
-    w.add_joint(RzRyRxJoint(), (rf, bodies['Head']) )
+    w.register(RzRyRxJoint(frames=(rf, bodies['Head'])))
    
     for t in tags.itervalues():
         w.register(t)
-
+    w.initjointspace()
     return (w, bodies, tags)
 
 if __name__ == "__main__":

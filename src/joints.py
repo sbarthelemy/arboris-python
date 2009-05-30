@@ -22,7 +22,7 @@ class FreeJoint(Joint):
 
     """Free joint (6-dof)
     """
-    def __init__(self, gpos=None, gvel=None, name=None):
+    def __init__(self, gpos=None, gvel=None, frames=None, name=None):
         """
         example:
         >>> j = FreeJoint()
@@ -40,8 +40,7 @@ class FreeJoint(Joint):
             gvel = zeros((6))
         self.gpos = array(gpos).reshape((4,4))
         self.gvel = array(gvel).reshape((6))
-        Joint.__init__(self, name)
-
+        Joint.__init__(self, frames, name)
     @property
     def ndof(self):
         return 6
@@ -81,11 +80,10 @@ class RzRyRxJoint(LinearConfigurationSpaceJoint):
 
     the resulting homogeneous matrix is given by H = Rz*Ry*Rx
     """
-    def __init__(self, gpos=[0.,0.,0.], gvel=[0.,0.,0.], name=None):
+    def __init__(self, gpos=[0.,0.,0.], gvel=[0.,0.,0.], frames=None, name=None):
         self.gpos = array(gpos).reshape((3))
         self.gvel = array(gvel).reshape((3))
-        Joint.__init__(self, name)
-
+        Joint.__init__(self,  frames, name)
     @property
     def ndof(self):
         return 3
@@ -133,11 +131,10 @@ class RzRyJoint(LinearConfigurationSpaceJoint):
 
     the resulting homogeneous matrix is given by H = Rz*Ry
     """
-    def __init__(self, gpos=[0.,0.], gvel=[0.,0.], name=None):
+    def __init__(self, gpos=[0.,0.], gvel=[0.,0.], frames=None, name=None):
         self.gpos = array(gpos).reshape((2))
         self.gvel = array(gvel).reshape((2))
-        Joint.__init__(self, name)
-
+        Joint.__init__(self,  frames, name)
     @property
     def ndof(self):
         return 2
@@ -180,11 +177,10 @@ class RzRxJoint(LinearConfigurationSpaceJoint):
 
     the resulting homogeneous matrix is given by H = Rz*Rx
     """
-    def __init__(self, gpos=[0.,0.], gvel=[0.,0.], name=None):
+    def __init__(self, gpos=[0.,0.], gvel=[0.,0.], frames=None, name=None):
         self.gpos = array(gpos).reshape((2))
         self.gvel = array(gvel).reshape((2))
-        Joint.__init__(self, name)
-
+        Joint.__init__(self,  frames, name)
     @property
     def ndof(self):
         return 2
@@ -227,11 +223,10 @@ class RyRxJoint(LinearConfigurationSpaceJoint):
 
     the resulting homogeneous matrix is given by H = Rz*Ry
     """
-    def __init__(self, gpos=[0.,0.], gvel=[0.,0.], name=None):
+    def __init__(self, gpos=[0.,0.], gvel=[0.,0.], frames=None, name=None):
         self.gpos = array(gpos).reshape((2))
         self.gvel = array(gvel).reshape((2))
-        Joint.__init__(self, name)
-
+        Joint.__init__(self,  frames, name)
     @property
     def ndof(self):
         return 2
@@ -273,7 +268,7 @@ class RzJoint(LinearConfigurationSpaceJoint):
 
     """Hinge (1-dof) with axis in the z-direction
     """
-    def __init__(self, gpos=0., gvel=0., name=None):
+    def __init__(self, gpos=0., gvel=0., frames=None, name=None):
         """
         example:
         >>> j = RzJoint(gpos = 3.14/2., gvel = 1.)
@@ -284,8 +279,7 @@ class RzJoint(LinearConfigurationSpaceJoint):
         """
         self.gpos = array(gpos).reshape((1))
         self.gvel = array(gvel).reshape((1))
-        Joint.__init__(self, name)
-    
+        Joint.__init__(self,  frames, name)
     @property
     def ndof(self):
         return 1

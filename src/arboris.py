@@ -36,9 +36,25 @@ class Joint(RigidMotion, NamedObject):
     """    
     __metaclass__ = ABCMeta
 
-    def __init__(self, name=None):
+    def __init__(self, frames=None, name=None):
         NamedObject.__init__(self, name)
+        if frames is not None:
+            self.attach(frames[0], frames[1])
+        else:
+            self._frames = (None, None)
 
+    @property
+    def frames(self):
+        return self._frames
+
+    def attach(self, frame0, frame1):
+        self._frames = (frame0, frame1)
+        if frame1.body.parentjoint is None:
+            frame1.body.parentjoint = self
+        else:
+            raise ValueError(
+                'frame1\'s body already as a parentjoint, which means you\'re probably trying to create a kinematic loop. Try using a constraint instead of a class')
+        frame0.body.childrenjoints.append(self)
 
     @property
     def twist(self):
@@ -130,8 +146,6 @@ class World(NamedObject):
     def __init__(self, name=None):
         NamedObject.__init__(self, name)
         self.ground = Body('ground')
-        self.bodies = [self.ground]
-        self.joints = []
         self._controllers = []
         self._constraints = []
         self._subframes = []
@@ -144,11 +158,33 @@ class World(NamedObject):
         self._controller_viscosity = array([]) # updated by self.update_dynamic()
         self._nleffects = array([]) # updated by self.update_dynamic()
 
+
     def iterbodies(self):
         """Iterate over all bodies, with a depth-first strategy"""
         yield self.ground
         for b in self.ground.iter_descendant_bodies():
             yield b
+
+
+    def itersubframes(self):
+        """Iterate over all subframes"""
+        for obj in self._subframes:
+            yield obj
+
+
+    def iterframes(self):
+        """Iterate over all subframes"""
+        for obj in self.iterbodies():
+            yield obj
+        for obj in self.itersubframes():
+            yield obj
+
+
+    def itershapes(self):
+        """Iterate over all shapes"""
+        for obj in self._shapes:
+            yield obj
+
 
     def iterjoints(self):
         """Iterate over all joints, with a depth-first strategy"""
@@ -166,7 +202,8 @@ class World(NamedObject):
             >>> w = World()
             >>> #stone = Body('stone')
             >>> #j = FreeJoint()
-            >>> #w.add_joint(j, (w.ground, stone))
+            >>> #j.attach(w.ground, stone)
+            >>> #w.register(j)
             >>> d = w.getbodiesdict()
             >>> d.keys()
             ['ground']
@@ -225,30 +262,104 @@ class World(NamedObject):
                     raise DuplicateNameError()
         return joints_dict
 
+    def getjointslist(self):
+        """Returns a list whose values are references to the 
+        joints.
+
+        Example:
+            >>> w = World()
+            >>> d = w.getjointsdict()
+            >>> d.keys()
+            []
+
+        """
+        joints_list = []
+        for j in self.ground.iter_descendant_joints():
+            joints_list.append(j)
+        return joints_list
+
 
     def register(self, obj):
         """
-        Register an object into the world, so that it can be enumerated.
+        Register an object into the world.
         
         ``obj`` can be a subframe, a shape or a constraint.
         
-        TODO: for subframes, check is the parent body is registered?
+        :arguments:
+            obj
+                the object that will be added. It may be a subframe, a shape,
+                a joint, a body or a controller.
+
+        Examples:
+
+        >>> from  triplehinge import triplehinge
+        >>> w = triplehinge()
+        >>> joints = w.getjointslist()
+        >>> joints[0].gvel[0] = 1.
+        >>> w._gvel
+        array([ 1.,  0.,  0.])
+        >>> w._gvel[1] = 2.
+        >>> joints[1].gvel
+        array([ 2.])
+
         """
-        if isinstance(obj, SubFrame):
+        if isinstance(obj, Body):
+            pass
+        
+        elif isinstance(obj, Joint):
+            self.register(obj.frames[0])
+            self.register(obj.frames[1])
+
+        elif isinstance(obj, SubFrame):
             if not obj in self._subframes:
                 self._subframes.append(obj)
 
-        if isinstance(obj, Shape):
+        elif isinstance(obj, Shape):
             if not obj in self._shapes:
                 self._shapes.append(obj)
             self.register(obj.frame)
 
-        if isinstance(obj, Constraint):
+        elif isinstance(obj, Constraint):
             if not obj in self._constraints:
                 self._constraints.append(obj)
             if isinstance(obj, BodyConstraint):
                 self.register(obj._frames[0])
                 self.register(obj._frames[1])
+
+        else:
+            raise ValueError()
+
+    
+    def initjointspace(self):
+        """ Init the joins-space model of the world.
+        """
+        self._ndof = 0
+        for j in self.iterjoints():
+            old_ndof = self._ndof
+            self._ndof += j.ndof
+            j._dof = slice(old_ndof, self._ndof)
+            j._dof = slice(old_ndof, self._ndof)
+
+        # Adjust the size of the worldwide model matrices 
+        # (we wipe their content)
+        self._mass = zeros((self._ndof,self._ndof))
+        self._nleffects =  zeros((self._ndof,self._ndof))
+        self._viscosity = zeros((self._ndof,self._ndof))
+        self._controller_viscosity = zeros((self._ndof,self._ndof))
+        self._gforce = zeros(self._ndof)
+            
+        # Init the worldwide generalized velocity vector:
+        # we make self._gvel be a view of a new generalized velocities
+        # vector, of the good size.
+        self._gvel = zeros(self._ndof)
+        # Then, copy the content of each joint generalized velocity 
+        # vector to the world one, and then make the joint genralized
+        # velocity vector be a (limited) view of the worldwide one.
+        # Thus the actual velocity data will be shared in memory between 
+        # the world and its joints.
+        for j in self.iterjoints():
+            self._gvel[j._dof] = j.gvel[:]
+            j.gvel = self._gvel[j._dof]
 
     @property
     def mass(self):
@@ -270,105 +381,22 @@ class World(NamedObject):
     def gvel(self):
         return self._gvel.copy()
 
-    def add_joint(self, joint, frames):
-        """Add a joint and its new-attached body to the world.
-
-        :arguments:
-            joint
-                the joint that will be added
-
-        Examples:
-        >>> from  triplehinge import triplehinge
-        >>> w = triplehinge()
-        >>> w.joints[0].gvel[0] = 1.
-        >>> w._gvel
-        array([ 1.,  0.,  0.])
-        >>> w._gvel[1] = 2.
-        >>> w.joints[1].gvel
-        array([ 2.])
-
-        """
-        if not isinstance(joint, Joint):
-            raise ValueError("{0} is not an instance of Joint".format(
-                joint))
-        if not(isinstance(frames[0], Frame)):
-            raise ValueError("{0} is not an instance of Frame".format(
-                frames[0]))
-        if not(isinstance(frames[1], Frame)):
-            raise ValueError("{0} is not an instance of Frame".format(
-                frames[1]))
-
-        # check the reference/base/parent frame for the joint is already 
-        # in world
-        frame0_body_is_in_world = False
-        frame0_is_in_world = False
-        if isinstance(frames[0], Body):
-            for b in self.iterbodies():
-                if frames[0] is b:
-                   frame0_body_is_in_world = True
-                   frame0_is_in_world = True
-        elif isinstance(frames[0], SubFrame):
-            for b in self.iterbodies():
-                if frames[0].body is b:
-                   frame0_body_is_in_world = True
-            for sf in self._subframes:
-                if frames[0] is sf:
-                   frame0_is_in_world = True
-        if not(frame0_body_is_in_world):
-            raise ValueError("The reference/base/parent frame is attached to a body that is not in world")
-        if not(frame0_is_in_world):
-            self.register(frames[0])
-
-        new_body = frames[1].body
-        # check the new/local/child frame is not already in world
-        for b in self.iterbodies():
-            if new_body is b:
-               raise ValueError("The new/local/child  frame is attached to a body that is already in world")
-        if (new_body.parentjoint is not None):
-            raise ValueError("The new/local/child frame is attached to a body that already has a parent joint")
-        if len(new_body.childrenjoints) > 0:
-            raise ValueError("The new/local/child frame is attached to a body that already has a children joints")
-        
-        if isinstance(frames[1], SubFrame):
-            self.register(frames[1])
-
-        self.bodies.append(new_body)
-        # extend the world generalized velocities
-        old_ndof = self._ndof
-        self._ndof = self._ndof + joint.ndof
-        
-        # add the joint and the moving frame to the world
-        joint._frames = frames
-        joint._dof = slice(old_ndof, self._ndof)
-        self.joints.append(joint)
-        joint._frames[0].body.childrenjoints.append(joint)
-        new_body.parentjoint = joint
-
-        self._gvel = zeros(self._ndof)
-        self._mass = zeros((self._ndof,self._ndof))
-        self._nleffects =  zeros((self._ndof,self._ndof))
-        self._viscosity = zeros((self._ndof,self._ndof))
-        self._controller_viscosity = zeros((self._ndof,self._ndof))
-        self._gforce = zeros(self._ndof)
-
-        for j in self.joints:
-            self._gvel[j._dof] = j.gvel[:]
-            j.gvel = self._gvel[j._dof]
 
 
     def add_jointcontroller(self, controller, joints=None):
         """
         Add a joint controller to the world
 
+        TODO: repair this doctest
         Example:
 
-        >>> from triplehinge import triplehinge
-        >>> w = triplehinge()
-        >>> from controllers import ProportionalDerivativeController
-        >>> c0 = ProportionalDerivativeController(w.joints[1:3], name = 'my controller')
-        >>> w.add_jointcontroller(c0, w.joints[1:3])
-        >>> c1 = ProportionalDerivativeController(w.joints[0:1])
-        >>> w.add_jointcontroller(c1, w.joints[0:1])
+        >> from triplehinge import triplehinge
+        >> w = triplehinge()
+        >> from controllers import ProportionalDerivativeController
+        >> c0 = ProportionalDerivativeController(w.joints[1:3], name = 'my controller')
+        >> w.add_jointcontroller(c0, w.joints[1:3])
+        >> c1 = ProportionalDerivativeController(w.joints[0:1])
+        >> w.add_jointcontroller(c1, w.joints[0:1])
         
         """
         for c in self._controllers:
@@ -416,12 +444,13 @@ class World(NamedObject):
 
         >>> from triplehinge import triplehinge
         >>> w = triplehinge()
-        >>> w.joints[0].gpos[0]=0.5
-        >>> w.joints[0].gvel[0]=2.5
-        >>> w.joints[1].gpos[0]=1.0
-        >>> w.joints[1].gvel[0]=-1.0
-        >>> w.joints[2].gpos[0]=2.0/3.0
-        >>> w.joints[2].gvel[0]=-0.5
+        >>> joints  = w.getjointslist()
+        >>> joints[0].gpos[0]=0.5
+        >>> joints[0].gvel[0]=2.5
+        >>> joints[1].gpos[0]=1.0
+        >>> joints[1].gvel[0]=-1.0
+        >>> joints[2].gpos[0]=2.0/3.0
+        >>> joints[2].gvel[0]=-0.5
         >>> w.update_dynamic()
         >>> bodies = w.getbodiesdict()
         >>> bodies['Arm'].pose
@@ -570,7 +599,7 @@ class World(NamedObject):
                   2.50000000e+00,   0.00000000e+00,   0.00000000e+00],
                [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   0.00000000e+00]])
-        >>> w.bodies[2].nleffects
+        >>> bodies['ForeArm'].nleffects
         array([[  0.00000000e+00,  -3.20000000e-04,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   0.00000000e+00],
                [  1.61600000e-02,   0.00000000e+00,   0.00000000e+00,
@@ -583,7 +612,7 @@ class World(NamedObject):
                   1.20000000e+00,   0.00000000e+00,   0.00000000e+00],
                [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   0.00000000e+00]])
-        >>> w.bodies[3].nleffects
+        >>> bodies['Hand'].nleffects
         array([[  0.00000000e+00,  -1.33333333e-05,   0.00000000e+00,
                   0.00000000e+00,   0.00000000e+00,   0.00000000e+00],
                [  6.73333333e-04,   0.00000000e+00,   0.00000000e+00,
@@ -673,8 +702,9 @@ class World(NamedObject):
         >>> from triplehinge import triplehinge
         >>> w = triplehinge()
         >>> from controllers import ProportionalDerivativeController
-        >>> a0 = ProportionalDerivativeController( w.joints[1:2], 2.)
-        >>> w.add_jointcontroller(a0, w.joints[1:2])
+        >>> joints = w.getjointslist()
+        >>> a0 = ProportionalDerivativeController( joints[1:2], 2.)
+        >>> w.add_jointcontroller(a0, joints[1:2])
         >>> w.update_dynamic()
         >>> w.update_controllers(0.001)
         >>> w._controller_viscosity
@@ -695,7 +725,6 @@ class World(NamedObject):
         self._gforce[:] = 0.
         for a in self._controllers:
             a.update(dt)
-
             self._controller_viscosity[
                 ix_(a._dof, a._dof)] += a.viscosity
             self._gforce[a._dof] += a.gforce
@@ -707,8 +736,8 @@ class World(NamedObject):
 
     def update_constraints(self, dt):
         r"""
-        In accordance with the integration scheme, we assume a first
-        order model betwen generalized velocities and generalized 
+        In accordance with the integration scheme, we assume the following
+        first order model between generalized velocities and generalized 
         forces:
 
         .. math::
@@ -798,10 +827,12 @@ class World(NamedObject):
             >> from joints import FreeJoint
             >> j0 = FreeJoint()
             >> w = World()
-            >> w.add_joint(j0, (w.ground, b0) )
-            >> j1 = FreeJoint()
+            >> j0.attach(w.ground, b0)
+            >> j0.register(b0)
             >> b1 = Body(mass = eye(6))
-            >> w.add_joint(j1, (b0, b1) )
+            >> j1 = FreeJoint()
+            >> j1.attach(b0, b1)
+            >> w.register(b1)
             >> from controllers import WeightController
             >> ctrl =  WeightController(w.ground)
             >> w.add_jointcontroller(ctrl)
@@ -875,25 +906,26 @@ class World(NamedObject):
         separately.
 
         TODO: add support for kinematic controllers
-
+        TODO: repair this doctest
         TODO: check the last test result!
 
-        >>> from triplehinge import triplehinge
-        >>> w = triplehinge()
-        >>> w.joints[1].gpos[:] = -1.
-        >>> from controllers import ProportionalDerivativeController
-        >>> c0 = ProportionalDerivativeController(w.joints[1:2], 1.)
-        >>> w.add_jointcontroller(c0, w.joints[1:2])
-        >>> w.update_dynamic()
-        >>> dt = 0.001
-        >>> w.update_controllers(dt)
-        >>> w.integrate(dt)
-        >>> w._gvel
+        >> from triplehinge import triplehinge
+        >> w = triplehinge()
+        >> joints = w.getjointsdict()
+        >> joints['Shoulder'].gpos[:] = -1.
+        >> from controllers import ProportionalDerivativeController
+        >> c0 = ProportionalDerivativeController(w.joints[1:2], 1.)
+        >> w.add_jointcontroller(c0, w.joints[1:2])
+        >> w.update_dynamic()
+        >> dt = 0.001
+        >> w.update_controllers(dt)
+        >> w.integrate(dt)
+        >> w._gvel
         array([-0.00709132,  0.03355273, -0.09131555])
         """
         self._gvel[:] = dot(self._admittance, 
                             dot(self._mass, self._gvel/dt) + self._gforce)
-        for j in self.joints:
+        for j in self.iterjoints():
             j.integrate(dt)
 
 
@@ -1109,7 +1141,7 @@ class Body(NamedObject, Frame):
 
         dT_cg = dAd_cp * J_pg * dQ 
                 + Ad_cp * dJ_pg * dQ  
-                + Ad_cp * dJ_pg * ddQ 
+                + Ad_cp * J_pg * ddQ 
                 + Ad_cn * dJ_nr * dq
                 + Ad_cn * J_nr * ddq
               = J_cg * ddQ + dJ_cg * dQ 

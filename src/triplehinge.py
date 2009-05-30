@@ -78,30 +78,33 @@ def triplehinge(world=None, name=None, lengths=(0.5 ,0.4 , 0.2),
 
 
     # create a joint between the ground and the arm
-    shoulder = RzJoint(name='Shoulder')
-    # add the new joint to the world (this will also add arm to w.bodies)
-    w.add_joint(joint=shoulder, frames=(w.ground, arm) )
+    shoulder = RzJoint(name='Shoulder', frames=(w.ground, arm))
+
+    # add the new joint to the world (this will also add arm to w)
+    w.register(shoulder)
     
     # add a frame to the arm, where the forearm will be anchored
     f = SubFrame(arm,
         Hg.transl((0,arm_length,0)),
         'ElbowBaseFrame')
+
     # create a joint between the arm and the forearm
-    elbow = RzJoint(name='Elbow')
-    w.add_joint(joint=elbow, frames=(f, forearm) )
+    elbow = RzJoint(name='Elbow', frames=(f, forearm))
+    w.register(elbow)
 
     # add a frame to the forearm, where the hand will be anchored
     f = SubFrame(forearm,
         Hg.transl((0,forearm_length,0)),
         'WristBaseFrame')
-    # create a joint between the forearm and the hand
-    wrist = RzJoint(name = 'Wrist')
-    w.add_joint( wrist, (f, hand) )
 
+    # create a joint between the forearm and the hand
+    wrist = RzJoint(name='Wrist', frames=(f, hand))
+    w.register(wrist)
 
     # create a frame at the end of the hand
     f = SubFrame(hand, Hg.transl((0,hand_length,0)), 'EndEffector')
     w.register(f)
+    w.initjointspace()
     return w
 
 if __name__ == "__main__":

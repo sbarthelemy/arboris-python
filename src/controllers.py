@@ -121,8 +121,9 @@ if __name__ == "__main__":
     Kp = diag([10.,5.,1.],0)
     Kd = diag([2.5,1.,0.1],0)
     gpos_des = [1.,2.,3.]
-    c0 = ProportionalDerivativeController(w.joints[0:3], Kp, Kd, gpos_des)
-    w.add_jointcontroller(c0, w.joints[0:3])
+    joints = w.getjointslist()
+    c0 = ProportionalDerivativeController(joints[0:3], Kp, Kd, gpos_des)
+    w.add_jointcontroller(c0, joints[0:3])
     w.update_dynamic()
     
     import visu_osg

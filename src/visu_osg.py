@@ -45,11 +45,11 @@ import arboris
 from misc import NamedObject
 import homogeneousmatrix as Hg
 
-#we create the frame node and we will re-use it for every frame created
-def create_generic_frame(scale=.1):
+def draw_frame(scale=.1):
     # WARN: we create the leaves and go towards the trunk of the osg tree
     # create the x cylinder
-    cyl_x = osg.ShapeDrawable(osg.Cylinder(osg.Vec3(0.,0.,scale/2.), 0.05*scale, scale))
+    cyl_x = osg.ShapeDrawable(osg.Cylinder(
+        osg.Vec3(0.,0.,scale/2.), 0.05*scale, scale))
     cyl_y = osg.ShapeDrawable(cyl_x)
     cyl_z = osg.ShapeDrawable(cyl_x)
     cyl_x.setColor(osg.Vec4(1.,0.,0.,1.))
@@ -76,61 +76,50 @@ def create_generic_frame(scale=.1):
     frame.addChild(geo_z)
     return frame
 
-generic_frame = create_generic_frame()
+#we create the generic frame node and we will re-use it for every frame created
+generic_frame = draw_frame()
 
 def pose2mat(pose):
-    """ Convert an homogeneous transform matrix from python to osg
+    """Convert an homogeneous transform matrix from python to osg. The
+    conversion handle the transposition required by osg.
     """
     m = osg.Matrixd()
     m.set(pose[0,0], pose[1,0], pose[2,0], pose[3,0],
           pose[0,1], pose[1,1], pose[2,1], pose[3,1],
           pose[0,2], pose[1,2], pose[2,2], pose[3,2],
           pose[0,3], pose[1,3], pose[2,3], pose[3,3],
-          ) # here we do the f***ing transposition: beware of error
+          )
     return m
 
-def rot2quat(rot):
-    #TODO: all the computation to transform rot in quat
-    raise NotImplemented()
-    q = osg.quat(1.,osg.Vec3d(0.,0.,0.))
-    return q
-
-def create_generic_arrow(scale=1., color=None):
-    cone = osg.ShapeDrawable(osg.Cylinder(osg.Vec3(0.,0.,scale), 0.05*scale, scale))
-    if color is not None:
-        cone.setColor(color)
-    geo_cone = osg.Geode()
-    geo_cone.addDrawable(cone)
-    return geo_cone
-    
-def draw_link(start, end, scale, color=None):
-    z = array([0.,0.,1.])
-    v = array([end[0,3]-start[0,3], end[1,3]-start[1,3], end[2,3]-start[2,3]])
+def draw_line(start, end, scale=1, color=None):
+    v = end-start
     length = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
     if length != 0.:
         v = v/length
-        q = cross(z,v)
-        sin_theta = sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2])
-        cos_theta = dot(z,v)
-        theta = arctan2(sin_theta, cos_theta)
         # create the cylinder
-        cyl = osg.ShapeDrawable(osg.Cylinder(osg.Vec3(0.,0.,length/2), 0.1*scale, length))
+        radius = 0.04*scale
+        cyl = osg.ShapeDrawable(
+            osg.Cylinder(osg.Vec3(0., 0., length/2), radius, length))
         if color is not None:
             cyl.setColor(color)
         geo = osg.Geode()
-        geo.addDrawable( cyl )
-        link = osg.PositionAttitudeTransform()
-        link.setPosition(osg.Vec3d(start[0,3],start[1,3],start[2,3]))
+        geo.addDrawable(cyl)
+        line = osg.PositionAttitudeTransform()
+        line.setPosition(osg.Vec3d(start[0], start[1], start[2]))
+        z = array([0.,0.,1.])
+        q = cross(z, v)
+        sin_theta = sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2])
+        cos_theta = dot(z, v)
+        theta = arctan2(sin_theta, cos_theta)
         if sin_theta == 0.:
-            link.setAttitude(osg.Quat(theta, osg.Vec3d(1.,0.,0.)))
+            line.setAttitude(osg.Quat(theta, osg.Vec3d(1.,0.,0.)))
         else:
-            link.setAttitude(osg.Quat(theta, osg.Vec3d(q[0], q[1], q[2])))
-        link.addChild(geo)
-        return link
+            line.setAttitude(osg.Quat(theta, osg.Vec3d(q[0], q[1], q[2])))
+        line.addChild(geo)
+        return line
     else:
         return None
         
-    
 
 def draw_text(label, scale=1.):
     """create a text geode
@@ -211,7 +200,9 @@ class NodeFactory(object):
 
         if isinstance(obj, arboris.SubFrame):
             color = self.choose_color(obj.body)
-            nl = draw_link(Hg.inv(obj.bpose), eye(4), self.scale, color)
+            nl = draw_line((0,0,0), 
+                           -dot(obj.bpose[0:3,0:3].T, obj.bpose[0:3,3]), 
+                                self.scale, color)
             if nl is not None:
                 switches['link'] = osg.Switch()
                 nodes['link'] = nl
@@ -249,10 +240,35 @@ class NodeFactory(object):
                 parent.addChild(switch)
         return (nodes, switches)
 
-class World(object):
+class DrawableWorld(arboris.World):
+
+    def __init__(self, world=None, factory=None, *positional_args, 
+                 **keyword_args):
+        if world is None:
+            arboris.World.__init__(self,*positional_args, **keyword_args)
+            self.update_geometric()
+        self.drawer = WorldDrawer(self, factory)
+
+        if factory is None:
+            self.factory = NodeFactory()
+        else:
+            self.factory = factory
+
+    def register(self, obj):
+        arboris.World.register(self, obj)
+        self.drawer.register(obj, self.factory)
+
+    def init_graphic(self, *positional_args, **keyword_args):
+        self.viewer = self.drawer.init_viewer(*positional_args, **keyword_args)
+        self.viewer.realize()
+
+    def update_graphic(self):
+        self.drawer.update()
+        self.viewer.frame()
+
+class WorldDrawer(object):
     """
-    TODO: merge ``body_nodes`` and ``subframe_nodes`` into ``frame_nodes`` (or
-    better, ``transform_nodes``)?
+    
     """
     def __init__(self, world, factory=None):
 
@@ -260,95 +276,113 @@ class World(object):
             factory = NodeFactory()
 
         self.world = world
-        self.root_node = osg.Group()
+        self.root = osg.Group()
         # enable the transparency/alpha
         blend = osg.StateSet()
         blend.setMode(osg.GL_BLEND, osg.StateAttribute.ON)
-        self.root_node.setStateSet(blend)
+        self.root.setStateSet(blend)
         self.transforms = {}
-        self.nodes = {'frame':{}, 'name':{}, 'link':{}, 'shape':{}}
-        self.switches = {'frame':{}, 'name':{}, 'link':{}, 'shape':{}}
+        self.nodes =  {}
+        self.switches = {}
 
-        for b in self.world.iterbodies():
-            bn = osg.MatrixTransform()
-            self.transforms[b] = bn
-            self.root_node.addChild(bn)
-            (nodes, switches) = factory.convert(b, bn)
-            for key, value in nodes.iteritems():
-                self.nodes[key][b] = value
-            for key, value in switches.iteritems():
-                self.switches[key][b] = value
+        for obj in self.world.iterbodies():
+            self.register(obj, factory)
 
-        for sf in self.world._subframes:
-            sfn = osg.MatrixTransform()
-            self.transforms[sf] = sfn
-            self.transforms[sf.body].addChild(sfn)
-            (nodes, switches) = factory.convert(sf, sfn)
-            for key, value in nodes.iteritems():
-                self.nodes[key][sf] = value
-            for key, value in switches.iteritems():
-                self.switches[key][sf] = value
+        for obj in self.world.itersubframes():
+            self.register(obj, factory)
 
-        for sh in self.world._shapes:
-            (nodes, switches) =factory.convert(sh, self.transforms[sh.frame])
-            for key, value in nodes.iteritems():
-                self.nodes[key][sh] = value
-            for key, value in switches.iteritems():
-                self.switches[key][sh] = value
-        self.update()
+        for obj in self.world.itershapes():
+            self.register(obj, factory)
+
+    def register(self, obj, factory):
+        if isinstance(obj, arboris.Frame):
+            if obj in self.transforms:
+                pass
+            else:
+                t = osg.MatrixTransform()
+                self.transforms[obj] = t
+
+                if isinstance(obj, arboris.Body):
+                    self.root.addChild(t)
+                elif isinstance(obj, arboris.SubFrame):
+                    self.transforms[obj.body].addChild(t)
+                else:
+                    raise NotImplemented()
+                (nodes, switches) = factory.convert(obj, t)
+                self.nodes[obj] = nodes
+                self.switches[obj] = switches
+
+        elif isinstance(obj, arboris.Shape):
+            if obj in self.nodes or obj in self.switches:
+                pass
+            else:
+                (nodes, switches) = factory.convert(obj, 
+                                                    self.transforms[obj.frame])
+                self.nodes[obj] = nodes
+                self.switches[obj] = switches
+
+        elif isinstance(obj, arboris.Joint):
+            pass
+
+        else:
+            raise ValueError(obj)
 
     def update(self):
-        for b in self.world.iterbodies():
-            self.transforms[b].setMatrix(pose2mat(b.pose))
+        for obj in self.world.itersubframes():
+            self.transforms[obj].setMatrix(pose2mat(obj.bpose))
+        for obj in self.world.iterbodies():
+            self.transforms[obj].setMatrix(pose2mat(obj.pose))
 
-        for sf in self.world._subframes:
-            self.transforms[sf].setMatrix(pose2mat(sf.bpose))
-   
     def switch(self, nodetype, on=True):
         if on:
-            for sw in self.switches[nodetype].itervalues():
-                sw.setAllChildrenOn()
+            for sw in self.switches.itervalues():
+                if nodetype in sw:
+                    sw[nodetype].setAllChildrenOn()
         else:
-            for sw in self.switches[nodetype].itervalues():
-                sw.setAllChildrenOff()
+            for sw in self.switches.itervalues():
+                if nodetype in sw:
+                    sw[nodetype].setAllChildrenOff()
 
-    def init_viewer(self, windowed = (0,0,800,600), COI=None, cam=None, up=(0,1,0)):
+
+    def init_viewer(self, fullscreen=False, window=(0,0,800,600), coi=None, 
+                    camera=None, up=(0,1,0)):
 
         # create the osg viewer
         viewer = osgViewer.Viewer()
-        viewer.setSceneData(self.root_node)
+        viewer.setSceneData(self.root)
         manipulator = osgGA.TrackballManipulator()
         viewer.setCameraManipulator(manipulator)
         #check if COI and cam relative distance are set
-        if COI is None:
-            COI = array([0., 0., 0.])
-        nbodies = 0
-        for b in self.world.iterbodies():
-            COI = COI + b.pose[0:3,3]
-            nbodies +=1
-        COI = COI/nbodies
-        if cam is None:
-            cam = [3, 3, 3]
+        if coi is None:
+            coi = array([0., 0., 0.])
+            nframes = 0
+            for f in self.world.iterframes():
+                coi = coi + f.pose[0:3,3]
+                nframes +=1
+                coi = coi/nframes
+        if camera is None:
+            camera = [3, 3, 3]
     
-        #we set the position of the beginning camera/view
-        manipulator.setHomePosition(osg.Vec3d(COI[0]+cam[0], COI[1]+cam[1], COI[2]+cam[2]),
-                                    osg.Vec3d(COI[0], COI[1], COI[2]),
-                                    osg.Vec3d(up[0],up[1],up[2]))     
+        #we set the position of the camera/view
+        manipulator.setHomePosition(
+            osg.Vec3d(coi[0]+camera[0], coi[1]+camera[1], coi[2]+camera[2]),
+            osg.Vec3d(coi[0], coi[1], coi[2]),
+            osg.Vec3d(up[0],up[1],up[2]))     
         #check if we want to see simulation in a window
-        if (windowed is not False) and (windowed is not None):
-            viewer.setUpViewInWindow(windowed[0], windowed[1], 
-                                     windowed[2], windowed[3])
+        if fullscreen is False:
+            viewer.setUpViewInWindow(window[0], window[1], 
+                                     window[2], window[3])
         viewer.home()
         return viewer
 
 if __name__ == '__main__':
-    from visu_osg import NodeFactory, World
+    from visu_osg import NodeFactory, WorldDrawer
     
     #robot = 'triplehinge'
-    #robot = 'human36'
+    robot = 'human36'
     #robot = 'ball'
-    robot = 'box'
-    robot = 'cylinder'
+    #robot = 'box'
+    #robot = 'cylinder'
 
     if robot == 'triplehinge':
         from triplehinge import triplehinge
@@ -368,29 +402,30 @@ if __name__ == '__main__':
 
     w.update_geometric()
     nf = NodeFactory(scale=.1)
-    vw = World(w, nf)
+    vw = WorldDrawer(w, nf)
     #vw.switch('name', False)
     viewer = vw.init_viewer()
     viewer.realize()
+    joints = w.getjointslist()
     t = 0.
     while(not(viewer.done())):
         t+=1/800.
         if robot == 'triplehinge':
-            w.joints[0].gpos[0]=t
-            w.joints[1].gpos[0]=t
-            w.joints[2].gpos[0]=t
+            joints[0].gpos[0]=t
+            joints[1].gpos[0]=t
+            joints[2].gpos[0]=t
         elif robot == 'human36':
-            w.joints[1].gpos=[t,t,t]
-            w.joints[2].gpos=[t]
-            w.joints[3].gpos=[t,t]
+            joints[1].gpos=[t,t,t]
+            joints[2].gpos=[t]
+            joints[3].gpos=[t,t]
         elif robot == 'box':
             c = cos(pi/4)
             s = sin(pi/4)
-            w.joints[0].gpos = numpy.array([[1,0,0,0],[0,c,s,0],[0,-s,c,0],[0,0,0,1]])
+            joints[0].gpos = numpy.array([[1,0,0,0],[0,c,s,0],[0,-s,c,0],[0,0,0,1]])
         elif robot == 'cylinder':
             c = cos(pi/4)
             s = sin(pi/4)
-            w.joints[0].gpos = array([[1,0,0,0],[0,c,s,0],[0,-s,c,0],[0,0,0,1]])
+            joints[0].gpos = array([[1,0,0,0],[0,c,s,0],[0,-s,c,0],[0,0,0,1]])
         w.update_geometric()
         vw.update()
         viewer.frame()
