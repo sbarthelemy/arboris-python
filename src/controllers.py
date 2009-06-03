@@ -115,9 +115,9 @@ class ProportionalDerivativeController(JointController):
 
 if __name__ == "__main__":
     
-    from triplehinge import triplehinge
+    from robots import simplearm
     from numpy import diag
-    w = triplehinge()
+    w = simplearm()
     Kp = diag([10.,5.,1.],0)
     Kd = diag([2.5,1.,0.1],0)
     gpos_des = [1.,2.,3.]
@@ -125,16 +125,10 @@ if __name__ == "__main__":
     c0 = ProportionalDerivativeController(joints[0:3], Kp, Kd, gpos_des)
     w.add_jointcontroller(c0, joints[0:3])
     w.update_dynamic()
-    
-    import visu_osg
-    vw = visu_osg.World(w)
-    viewer = vw.init_viewer()
-    viewer.realize()
+    t = 0
     dt = 0.001
-    while(not(viewer.done())):
-    
+    while t < 0.1:
+        t += dt 
         w.update_dynamic()
         w.update_controllers(dt)
         w.integrate(dt)
-        vw.update()
-        viewer.frame()

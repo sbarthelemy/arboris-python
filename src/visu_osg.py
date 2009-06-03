@@ -247,6 +247,8 @@ class DrawableWorld(arboris.World):
         if world is None:
             arboris.World.__init__(self,*positional_args, **keyword_args)
             self.update_geometric()
+        else:
+            raise NotImplemented
         self.drawer = WorldDrawer(self, factory)
 
         if factory is None:
@@ -265,6 +267,9 @@ class DrawableWorld(arboris.World):
     def update_graphic(self):
         self.drawer.update()
         self.viewer.frame()
+
+    def graphic_is_done(self):
+        return self.viewer.done()
 
 class WorldDrawer(object):
     """
@@ -378,15 +383,15 @@ class WorldDrawer(object):
 if __name__ == '__main__':
     from visu_osg import NodeFactory, WorldDrawer
     
-    #robot = 'triplehinge'
+    #robot = 'simplearm'
     robot = 'human36'
     #robot = 'ball'
     #robot = 'box'
     #robot = 'cylinder'
 
-    if robot == 'triplehinge':
-        from triplehinge import triplehinge
-        w = triplehinge()
+    if robot == 'simplearm':
+        from robots import simplearm
+        w = simplearm()
     elif robot == 'human36':
         from human36 import human36
         (w, bd, tags) = human36()
@@ -410,7 +415,7 @@ if __name__ == '__main__':
     t = 0.
     while(not(viewer.done())):
         t+=1/800.
-        if robot == 'triplehinge':
+        if robot == 'simplearm':
             joints[0].gpos[0]=t
             joints[1].gpos[0]=t
             joints[2].gpos[0]=t

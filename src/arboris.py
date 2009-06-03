@@ -137,8 +137,8 @@ class World(NamedObject):
 
     TODO: provide ability to merge worlds or subtrees
     
-    >>> from  triplehinge import triplehinge
-    >>> w = triplehinge()
+    >>> from robots import simplearm
+    >>> w = simplearm()
     >>> w.update_geometric()
     >>> w.update_dynamic()
     """
@@ -292,8 +292,8 @@ class World(NamedObject):
 
         Examples:
 
-        >>> from  triplehinge import triplehinge
-        >>> w = triplehinge()
+        >>> from robots import simplearm
+        >>> w = simplearm()
         >>> joints = w.getjointslist()
         >>> joints[0].gvel[0] = 1.
         >>> w._gvel
@@ -390,8 +390,8 @@ class World(NamedObject):
         TODO: repair this doctest
         Example:
 
-        >> from triplehinge import triplehinge
-        >> w = triplehinge()
+        >> from robots import simplearm
+        >> w = simplearm()
         >> from controllers import ProportionalDerivativeController
         >> c0 = ProportionalDerivativeController(w.joints[1:3], name = 'my controller')
         >> w.add_jointcontroller(c0, w.joints[1:3])
@@ -442,8 +442,8 @@ class World(NamedObject):
           attributes 
         - the world mass, viscosity and nleffects attributes
 
-        >>> from triplehinge import triplehinge
-        >>> w = triplehinge()
+        >>> from robots import simplearm
+        >>> w = simplearm()
         >>> joints  = w.getjointslist()
         >>> joints[0].gpos[0]=0.5
         >>> joints[0].gvel[0]=2.5
@@ -699,8 +699,8 @@ class World(NamedObject):
 
         TODO: check the two last tests results!
 
-        >>> from triplehinge import triplehinge
-        >>> w = triplehinge()
+        >>> from robots import simplearm
+        >>> w = simplearm()
         >>> from controllers import ProportionalDerivativeController
         >>> joints = w.getjointslist()
         >>> a0 = ProportionalDerivativeController( joints[1:2], 2.)
@@ -909,8 +909,8 @@ class World(NamedObject):
         TODO: repair this doctest
         TODO: check the last test result!
 
-        >> from triplehinge import triplehinge
-        >> w = triplehinge()
+        >> from robots import simplearm
+        >> w = simplearm()
         >> joints = w.getjointsdict()
         >> joints['Shoulder'].gpos[:] = -1.
         >> from controllers import ProportionalDerivativeController
@@ -1205,8 +1205,8 @@ def simulate(world, time):
     """
     Example:
 
-    >>> from triplehinge import triplehinge
-    >>> w = triplehinge()
+    >>> from robots import simplearm
+    >>> w = simplearm()
     >>> simulate(w, numpy.arange(0,0.01,0.001))
     """
 

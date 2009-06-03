@@ -33,12 +33,26 @@ Small changes
 
 - find a way/class to collect states
 
-  - states are positions and (someteimes) velocities.
+  - states are positions and (sometimes) velocities.
   - velocities are already grouped in Wordl._gvel
   - positions might be grouped 
 
 - create functions to merge bodies/worlds etc.
 - implement a true recursive-newton-euler linearized algorithm?
+
+Contacts
+--------
+
+- understand why contacts are bumping
+- add sliding friction law
+
+Dynamic
+-------
+
+- document dynamics
+- thorougly test dynamical model on a tree-like robot
+- check results against HuMAnS
+- support kinematic (stateless) joints
 
 Controller interface
 --------------------
@@ -60,23 +74,6 @@ API is quite bad, for several reasons:
 A solution might be to remove the encapsulation: every controller would produce gforces and viscosity for every joint. (controllers would stil need to know w.ndof.) We could additionnaly provide an "encapsulator" controller class which would do the encapsulation.
 
 We could also give to the controller views of the global gforce and viscosity that it would update.
-
-Frame interface
----------------
-
-I'm not happy with the current Body.frame[0] thing. Frame[0].bpose is pointles and may lead to errors if one user changes it.
-
-A solution might be to: 
-- make the :class:`Frame` class astract
-- make :class:`Body` class inherit from it 
-- the current ``Body.frame[1:]`` would then be of another class (say SubFrame) which also inherits from the :class:`Frame` class
-
-Naming conventions
-------------------
-
-  - find better name for controller_viscosity 
-  - ``Body.ancestors()`` => ``.iter_ancestor_bodies()``
-
 
 Done (and kept for reference)
 =============================
