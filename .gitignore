@@ -1,5 +1,7 @@
 *~
 *.swp
-/src/*.pyc
+*.pyc
+src/*.c
+build/
 /doc/.build/
 /doc/img/sphere_sphere_collision.png

@@ -1,11 +1,4 @@
 # coding: utf-8
-"""This script makes a zipped snapshot from the git repository.
-
-TODO: add exception handling
-TODO: make doctests first
-TODO: move to scons
-
-"""
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
 import os
@@ -48,12 +41,10 @@ def find_python_modules():
     modules = []
     for f in glob.glob('*.py'):
         modules.append(f[:-3])
-    modules.remove('setup')
-    modules.remove('test')
     modules.remove('hm_cyth_profiling')
     modules.remove('stat_hmpython_profiling')
     modules.remove('stat_hmcython_profiling')
-
+    modules.remove('test')
     return modules
 
 def find_cython_modules():
@@ -75,7 +66,7 @@ def rundoctests(verbose=False):
         fix_module_doctests(module)
         doctest.testmod(module, verbose=verbose)
 
-    doctest.testfile('test_update_dynamic.rst')
+    doctest.testfile('../test/update_dynamic.rst')
 
 if __name__ == "__main__":
     rundoctests(sys.argv[1:])

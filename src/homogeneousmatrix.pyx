@@ -11,7 +11,6 @@ from numpy import array, zeros, empty, dot
 cimport numpy
 
 DTYPE = numpy.float
-#ctypedef numpy.float_t DTYPE_t
 
 cdef extern from "math.h":
     double cos(double angle)

@@ -393,16 +393,16 @@ if __name__ == '__main__':
         from robots import simplearm
         w = simplearm()
     elif robot == 'human36':
-        from human36 import human36
-        (w, bd, tags) = human36()
+        from robots import human36
+        w = human36()
     elif robot == 'ball':
-        from ball import ball
+        from robots import ball
         w = ball()
     elif robot == 'box':
-        from ball import box
+        from robots import box
         w = box(lengths=(1,2,3))
     elif robot == 'cylinder':
-        from ball import cylinder
+        from robots import cylinder
         w = cylinder(radius=1., length=2)
 
     w.update_geometric()
