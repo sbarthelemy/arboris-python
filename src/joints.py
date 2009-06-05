@@ -90,7 +90,7 @@ class RzRyRxJoint(LinearConfigurationSpaceJoint):
 
     @property
     def pose(self):
-        return homogeneousmatrix.rotzyx(self.gpos)
+        return homogeneousmatrix.rotzyx(self.gpos[0],self.gpos[1],self.gpos[2])
 
     @property
     def jacobian(self):
@@ -141,7 +141,7 @@ class RzRyJoint(LinearConfigurationSpaceJoint):
 
     @property
     def pose(self):
-        return homogeneousmatrix.rotzy(self.gpos)
+        return homogeneousmatrix.rotzy(self.gpos[0], self.gpos[1])
 
     @property
     def jacobian(self):
@@ -187,7 +187,7 @@ class RzRxJoint(LinearConfigurationSpaceJoint):
 
     @property
     def pose(self):
-        return homogeneousmatrix.rotzx(self.gpos)
+        return homogeneousmatrix.rotzx(self.gpos[0], self.gpos[1])
 
     @property
     def jacobian(self):
@@ -233,7 +233,7 @@ class RyRxJoint(LinearConfigurationSpaceJoint):
 
     @property
     def pose(self):
-        return homogeneousmatrix.rotyx(self.gpos)
+        return homogeneousmatrix.rotyx(self.gpos[0], self.gpos[1])
 
     @property
     def jacobian(self):

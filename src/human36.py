@@ -896,7 +896,7 @@ Tags(q)
         bodyname = humansbodyid_to_humansbodyname_map[t['HumansBodyId']]
         tags[t['HumansName']] = SubFrame(
             bodies[bodyname],
-            Hg.transl(t['Position']),
+            Hg.transl(t['Position'][0], t['Position'][1], t['Position'][2]),
             t['HumansName'])
 
     # Create a world
@@ -908,82 +908,82 @@ Tags(q)
         raise ValueError('the world argument must be an instance of the World class')
 
     rf = SubFrame(w.ground,
-        Hg.transl((0, L['yfootL']+L['ytibiaL']+L['yfemurL'], 0)))
+        Hg.transl(0, L['yfootL']+L['ytibiaL']+L['yfemurL'], 0))
     j = FreeJoint()
     j.attach(rf, bodies['LPT'])
     w.register(j)
     
-    rf = SubFrame(bodies['LPT'], Hg.transl((0, 0, L['zhip']/2.)))
+    rf = SubFrame(bodies['LPT'], Hg.transl(0, 0, L['zhip']/2.))
     j = RzRyRxJoint()
     j.attach(rf, bodies['ThighR'])
     w.register(j)
     
-    rf = SubFrame(bodies['ThighR'], Hg.transl((0, -L['yfemurR'], 0)))
+    rf = SubFrame(bodies['ThighR'], Hg.transl(0, -L['yfemurR'], 0))
     j = RzJoint()
     j.attach(rf, bodies['ShankR'])
     w.register(j)
 
     
-    rf = SubFrame(bodies['ShankR'], Hg.transl((0, -L['ytibiaR'], 0)))
+    rf = SubFrame(bodies['ShankR'], Hg.transl(0, -L['ytibiaR'], 0))
     j = RzRxJoint()
     j.attach(rf, bodies['FootR'])
     w.register(j)
 
-    rf = SubFrame(bodies['LPT'], Hg.transl((0, 0, -L['zhip']/2.)))
+    rf = SubFrame(bodies['LPT'], Hg.transl(0, 0, -L['zhip']/2.))
     j = RzRyRxJoint()
     j.attach(rf, bodies['ThighL'])
     w.register(j)
 
-    rf = SubFrame(bodies['ThighL'], Hg.transl((0, -L['yfemurL'], 0)))
+    rf = SubFrame(bodies['ThighL'], Hg.transl(0, -L['yfemurL'], 0))
     j = RzJoint()
     j.attach(rf,bodies['ShankL'])
     w.register(j)
 
-    rf = SubFrame(bodies['ShankL'], Hg.transl((0, -L['ytibiaL'], 0)))
+    rf = SubFrame(bodies['ShankL'], Hg.transl(0, -L['ytibiaL'], 0))
     j = RzRxJoint()
     j.attach(rf, bodies['FootL'])
     w.register(j)
 
-    rf = SubFrame(bodies['LPT'], Hg.transl((-L['xvT10'], L['yvT10'], 0)))
+    rf = SubFrame(bodies['LPT'], Hg.transl(-L['xvT10'], L['yvT10'], 0))
     j = RzRyRxJoint()
     j.attach(rf, bodies['UPT'])
     w.register(j)
     
     rf = SubFrame(bodies['UPT'], 
-        Hg.transl((L['xsternoclavR'], L['ysternoclavR'], L['zsternoclavR'])))
+        Hg.transl(L['xsternoclavR'], L['ysternoclavR'], L['zsternoclavR']))
     j = RyRxJoint()
     j.attach(rf, bodies['ScapulaR'])
     w.register(j)
     
     rf = SubFrame(bodies['ScapulaR'], 
-        Hg.transl((-L['xshoulderR'], L['yshoulderR'], L['zshoulderR'])))
+        Hg.transl(-L['xshoulderR'], L['yshoulderR'], L['zshoulderR']))
     j = RzRyRxJoint()
     j.attach(rf, bodies['ArmR'])
     w.register(j)
 
-    rf = SubFrame(bodies['ArmR'], Hg.transl((0, -L['yhumerusR'], 0)))
+    rf = SubFrame(bodies['ArmR'], Hg.transl(0, -L['yhumerusR'], 0))
     j = RzRyJoint()
     j.attach(rf, bodies['ForearmR'])
     w.register(j)
     
-    rf = SubFrame(bodies['ForearmR'], Hg.transl((0, -L['yforearmR'], 0)))
+    rf = SubFrame(bodies['ForearmR'], Hg.transl(0, -L['yforearmR'], 0))
     w.register(RzRxJoint(frames=(rf, bodies['HandR'])))
     
     rf = SubFrame(bodies['UPT'], Hg.transl(
-        (L['xsternoclavL'], L['ysternoclavL'], -L['zsternoclavL'])))
+        L['xsternoclavL'], L['ysternoclavL'], -L['zsternoclavL']))
     w.register(RyRxJoint(frames=(rf, bodies['ScapulaL'])))
     
     rf = SubFrame(bodies['ScapulaL'], 
-        Hg.transl((-L['xshoulderL'], L['yshoulderL'], -L['zshoulderL'])))
+        Hg.transl(-L['xshoulderL'], L['yshoulderL'], -L['zshoulderL']))
     w.register(RzRyRxJoint(frames=(rf, bodies['ArmL'])))
     
-    rf = SubFrame(bodies['ArmL'], Hg.transl((0, -L['yhumerusL'], 0)))
+    rf = SubFrame(bodies['ArmL'], Hg.transl(0, -L['yhumerusL'], 0))
     w.register(RzRyJoint(frames=(rf, bodies['ForearmL'])))
     
-    rf = SubFrame(bodies['ForearmL'], Hg.transl((0, -L['yforearmL'], 0)))
+    rf = SubFrame(bodies['ForearmL'], Hg.transl(0, -L['yforearmL'], 0))
     w.register(RzRxJoint(frames=(rf, bodies['HandL'])))
     
-    rf = SubFrame(bodies['UPT'], Hg.transl((L['xvT10'], L['yvC7'], 0)))
+    rf = SubFrame(bodies['UPT'], Hg.transl(L['xvT10'], L['yvC7'], 0))
     w.register(RzRyRxJoint(frames=(rf, bodies['Head'])))
    
     for t in tags.itervalues():

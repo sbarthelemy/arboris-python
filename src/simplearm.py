@@ -60,21 +60,21 @@ def simplearm(world=None, name=None, lengths=(0.5 ,0.4 , 0.2),
             mass_parallelepiped(
                 arm_mass, 
                 (arm_length/10,arm_length,arm_length/10)),
-                Hg.transl((0,arm_length/2,0))))
+                Hg.transl(0,arm_length/2,0)))
     forearm = Body(
         name='ForeArm',
         mass=transport_mass_matrix(
             mass_parallelepiped(
                 forearm_mass, 
                 (forearm_length/10,forearm_length,forearm_length/10)),
-                Hg.transl((0,forearm_length/2,0))))
+                Hg.transl(0,forearm_length/2,0)))
     hand = Body(
         name='Hand',
         mass=transport_mass_matrix(
             mass_parallelepiped(
                 hand_mass, 
                 (hand_length/10,hand_length,hand_length/10)),
-                Hg.transl((0,hand_length/2,0))))
+                Hg.transl(0,hand_length/2,0)))
 
 
     # create a joint between the ground and the arm
@@ -85,7 +85,7 @@ def simplearm(world=None, name=None, lengths=(0.5 ,0.4 , 0.2),
     
     # add a frame to the arm, where the forearm will be anchored
     f = SubFrame(arm,
-        Hg.transl((0,arm_length,0)),
+        Hg.transl(0,arm_length,0),
         'ElbowBaseFrame')
 
     # create a joint between the arm and the forearm
@@ -94,7 +94,7 @@ def simplearm(world=None, name=None, lengths=(0.5 ,0.4 , 0.2),
 
     # add a frame to the forearm, where the hand will be anchored
     f = SubFrame(forearm,
-        Hg.transl((0,forearm_length,0)),
+        Hg.transl(0,forearm_length,0),
         'WristBaseFrame')
 
     # create a joint between the forearm and the hand
@@ -102,7 +102,7 @@ def simplearm(world=None, name=None, lengths=(0.5 ,0.4 , 0.2),
     w.register(wrist)
 
     # create a frame at the end of the hand
-    f = SubFrame(hand, Hg.transl((0,hand_length,0)), 'EndEffector')
+    f = SubFrame(hand, Hg.transl(0,hand_length,0), 'EndEffector')
     w.register(f)
     w.initjointspace()
     return w

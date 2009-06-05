@@ -49,7 +49,7 @@ class RigidMotion(object):
 
     @property
     def itwist(self):
-        return -np.dot(np.asarray(self.iadjoint),self.twist)
+        return -np.dot(self.iadjoint, self.twist)
 
     @property
     def adjoint(self):
