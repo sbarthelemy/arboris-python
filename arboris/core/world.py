@@ -21,9 +21,9 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
 from numpy import ix_, array, zeros, ones, eye, dot
 import numpy
+import twistvector as T
 import homogeneousmatrix as Hg
 import homogeneousmatrix
-import twistvector as T
 import adjointmatrix
 from abc import ABCMeta, abstractmethod, abstractproperty
 from math import pi
@@ -137,7 +137,7 @@ class World(NamedObject):
 
     TODO: provide ability to merge worlds or subtrees
     
-    >>> from robots import simplearm
+    >>> from arboris.robots import simplearm
     >>> w = simplearm()
     >>> w.update_geometric()
     >>> w.update_dynamic()
@@ -292,7 +292,7 @@ class World(NamedObject):
 
         Examples:
 
-        >>> from robots import simplearm
+        >>> from arboris.robots import simplearm
         >>> w = simplearm()
         >>> joints = w.getjointslist()
         >>> joints[0].gvel[0] = 1.
@@ -390,7 +390,7 @@ class World(NamedObject):
         TODO: repair this doctest
         Example:
 
-        >> from robots import simplearm
+        >> from arboris.robots import simplearm
         >> w = simplearm()
         >> from controllers import ProportionalDerivativeController
         >> c0 = ProportionalDerivativeController(w.joints[1:3], name = 'my controller')
@@ -512,7 +512,7 @@ class World(NamedObject):
 
         TODO: check the two last tests results!
 
-        >>> from robots import simplearm
+        >>> from arboris.robots import simplearm
         >>> w = simplearm()
         >>> from controllers import ProportionalDerivativeController
         >>> joints = w.getjointslist()
@@ -722,7 +722,7 @@ class World(NamedObject):
         TODO: repair this doctest
         TODO: check the last test result!
 
-        >> from robots import simplearm
+        >> from arboris.robots import simplearm
         >> w = simplearm()
         >> joints = w.getjointsdict()
         >> joints['Shoulder'].gpos[:] = -1.
@@ -1018,7 +1018,7 @@ def simulate(world, time):
     """
     Example:
 
-    >>> from robots import simplearm
+    >>> from arboris.robots import simplearm
     >>> w = simplearm()
     >>> simulate(w, numpy.arange(0,0.01,0.001))
     """

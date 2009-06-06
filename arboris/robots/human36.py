@@ -48,9 +48,9 @@ function ``SetModelSize`` from the file
 from arboris import World, Body, SubFrame
 import numpy as np
 from numpy import array, diag, dot, hstack
-import homogeneousmatrix as Hg
-from homogeneousmatrix import adjoint
-from joints import *
+import arboris.core.homogeneousmatrix as Hg
+from arboris.core.homogeneousmatrix import adjoint
+from arboris.core.joints import *
 
 def anatomical_lengths(human_height):
     """

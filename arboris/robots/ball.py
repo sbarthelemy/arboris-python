@@ -4,8 +4,8 @@
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
-from joints import FreeJoint
-from shapes import Sphere, Box, Cylinder
+from arboris.core.joints import FreeJoint
+from arboris.core.shapes import Sphere, Box, Cylinder
 from arboris import World, Body
 import numpy
 

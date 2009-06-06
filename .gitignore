@@ -3,5 +3,6 @@
 *.pyc
 src/*.c
 build/
+dist/
 /doc/.build/
 /doc/img/sphere_sphere_collision.png

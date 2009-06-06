@@ -12,8 +12,8 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
 from arboris import World, Body, SubFrame
 import numpy as np
-import homogeneousmatrix as Hg
-from joints import RzJoint
+import arboris.core.homogeneousmatrix as Hg
+from arboris.core.joints import RzJoint
 
 def transport_mass_matrix(mass,H):
     """Transport (express) the mass matrix into another frame."""
