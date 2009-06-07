@@ -100,10 +100,18 @@ class TestCommand(Command):
 setup(
     name='arboris',
     packages=['arboris',
+              'arboris.core',
               'arboris.robots'],
     cmdclass = {'build_ext': build_ext, 'test': TestCommand, 
                 'sphinx': SphinxCommand},
     ext_modules = [Extension("arboris.homogeneousmatrix",
                              ["arboris/homogeneousmatrix.pyx"])]
+    cmdclass = {'build_ext': build_ext, 'test': TestCommand},
+    ext_modules = [Extension("arboris.core.misc_c",
+                             ["arboris/core/misc_c.pyx"]),
+                  Extension("arboris.core.homogeneousmatrix",
+                             ["arboris/core/homogeneousmatrix.pyx"])
+
+                  ]
 )
 

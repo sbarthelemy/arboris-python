@@ -4,7 +4,8 @@ Functions for working with twists stored as [w,v]
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
-from numpy import zeros #,array, sin, cos, eye, dot, hstack, vstack :no more need
+from numpy import zeros, empty
+#,array, sin, cos, eye, dot, hstack, vstack :no more need
 #from numpy.linalg import norm .... no more need
 
 cimport numpy as np
@@ -13,52 +14,83 @@ DTYPE = np.float
 ctypedef np.float_t DTYPE_t
 
 cdef extern from "math.h":
-    float cosf(float theta)
-    float sinf(float theta)
-    float sqrtf(float x)
+    double cos(double angle)
+    double sin(double angle)
+    double sqrt(double x)
+
 cpdef adjacency(np.ndarray tw):
     """
-    return the adjacency matrix
+    Adjacency matrix of the twist.
+
+    Example:
+
+    >>> t = array([1., 2., 3., 10., 11., 12.])
+    >>> adjacency(t)
+    array([[  0.,  -3.,   2.,   0.,   0.,   0.],
+           [  3.,   0.,  -1.,   0.,   0.,   0.],
+           [ -2.,   1.,   0.,   0.,   0.,   0.],
+           [  0., -12.,  11.,   0.,  -3.,   2.],
+           [ 12.,   0., -10.,   3.,   0.,  -1.],
+           [-11.,  10.,   0.,  -2.,   1.,   0.]])
+
     """
-#    return array(
-#        [[     0,-tw[2], tw[1],      0,     0,     0],
-#         [ tw[2],     0,-tw[0],      0,     0,     0],
-#         [-tw[1], tw[0],     0,      0,     0,     0],
-#         [     0,-tw[5], tw[4],      0,-tw[2], tw[1]],
-#         [ tw[5],     0,-tw[3],  tw[2],     0,-tw[0]],
-#         [-tw[4], tw[3],     0, -tw[1], tw[0],     0]])
+    cdef np.ndarray[DTYPE_t, ndim=2] A = empty((6,6),dtype=DTYPE)
+    A[0,0] = 0.
+    A[0,1] = -tw[2]
+    A[0,2] = tw[1]
+    A[0,3] = 0. 
+    A[0,4] = 0. 
+    A[0,5] = 0. 
 
+    A[1,0] = tw[2]
+    A[1,1] = 0. 
+    A[1,2] = -tw[0]
+    A[1,3] = 0. 
+    A[1,4] = 0. 
+    A[1,5] = 0. 
 
+    A[2,0] = -tw[1]
+    A[2,1] = tw[0]
+    A[2,2] = 0. 
+    A[2,3] = 0. 
+    A[2,4] = 0. 
+    A[2,5] = 0. 
 
-    cdef np.ndarray[DTYPE_t, ndim=2] A = zeros((6,6),dtype=DTYPE)
-    A[0,1]=-tw[2]
-    A[0,2]=tw[1]
+    A[3,0] = 0. 
+    A[3,1] = -tw[5]
+    A[3,2] = tw[4]
+    A[3,3] = 0. 
+    A[3,4] = -tw[2]
+    A[3,5] = tw[1]
 
-    A[1,0]=tw[2]
-    A[1,2]=-tw[0]
+    A[4,0] = tw[5]
+    A[4,1] = 0.
+    A[4,2] = -tw[3]
+    A[4,3] = tw[2]
+    A[4,4] = 0.
+    A[4,5] = -tw[0]
 
-    A[2,0]=-tw[1]
-    A[2,1]=tw[0]
-
-    A[3,1]=-tw[5]
-    A[3,2]=tw[4]
-    A[3,4]=-tw[2]
-    A[3,5]=tw[1]
-
-    A[4,0]=tw[5]
-    A[4,2]=-tw[3]
-    A[4,3]=tw[2]
-    A[4,5]=-tw[0]
-
-    A[5,0]=-tw[4]
-    A[5,1]=tw[3]
-    A[5,3]=-tw[1]
-    A[5,4]=tw[0]
+    A[5,0] = -tw[4]
+    A[5,1] = tw[3]
+    A[5,2] = 0.
+    A[5,3] = -tw[1]
+    A[5,4] = tw[0]
+    A[5,5] = 0.
     return A
 
 cpdef exp(np.ndarray tw):
     """
-    return the exponential of the twist matrix
+    Exponential (homogeneous matrix) of the twist.
+
+    Example:
+
+    >>> t = array([1., 2., 3., 10., 11., 12.])
+    >>> exp(t)
+    array([[ -0.69492056,   0.71352099,   0.08929286,  35.29778399],
+           [ -0.19200697,  -0.30378504,   0.93319235,  38.66708228],
+           [  0.69297817,   0.6313497 ,   0.34810748,  34.99594133],
+           [  0.        ,   0.        ,   0.        ,   1.        ]])
+
     """
     cdef int i,j,k
     cdef np.ndarray[DTYPE_t, ndim=1] w = zeros((3),dtype=DTYPE)
@@ -89,7 +121,7 @@ cpdef exp(np.ndarray tw):
     wx[2,1]= tw[0]
 
 #    t = norm(w)
-    cdef float t=sqrtf(w[0]*w[0] + w[1]*w[1]+ w[2]*w[2])
+    cdef float t=sqrt(w[0]*w[0] + w[1]*w[1]+ w[2]*w[2])
     cdef float cc
     cdef float sc
     cdef float dsc

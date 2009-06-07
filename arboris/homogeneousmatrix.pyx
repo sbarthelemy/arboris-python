@@ -5,18 +5,12 @@ Functions for working with homogeneous matrices.
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
+from misc_c cimport asym, sin, cos
 import numpy
-import numpy as np
 from numpy import array, zeros, empty, dot
-cimport numpy
 
 DTYPE = numpy.float
-
-cdef extern from "math.h":
-    double cos(double angle)
-    double sin(double angle)
-
-cdef DTYPE_t tol=1e-12
+cdef DTYPE_t tol = 1e-12
 
 cpdef transl(DTYPE_t t_x, DTYPE_t t_y, DTYPE_t t_z):
     """
@@ -297,30 +291,6 @@ cpdef inv(numpy.ndarray H):
     iH[3,3] = 1.
     return iH
 
-
-cpdef asym(DTYPE_t v_x, DTYPE_t v_y, DTYPE_t v_z):
-    """
-    Asymetric matrix (in so(3) )from a vector (in R^3).
-
-    Example:
-
-    >>> asym(1., 2., 3.)
-    array([[ 0., -3.,  2.],
-           [ 3.,  0., -1.],
-           [-2.,  1.,  0.]])
-
-    """
-    cdef numpy.ndarray[DTYPE_t, ndim=2] R = empty((3,3), dtype=DTYPE)
-    R[0,0] = 0.
-    R[0,1] = -v_z 
-    R[0,2] = v_y
-    R[1,0] = v_z
-    R[1,1] = 0.
-    R[1,2] = -v_x
-    R[2,0] = -v_y
-    R[2,1] = v_x
-    R[2,2] = 0
-    return R
 
 cpdef adjoint(numpy.ndarray H):
     """
