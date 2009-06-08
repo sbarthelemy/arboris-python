@@ -4,9 +4,9 @@
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
-from arboris.core.joints import FreeJoint
-from arboris.core.shapes import Sphere, Box, Cylinder
-from arboris import World, Body
+from arboris.joints import FreeJoint
+from arboris.shapes import Sphere, Box, Cylinder
+from arboris.core import World, Body
 import numpy
 
 def mass_parallelepiped(m,lengths):
@@ -45,8 +45,10 @@ def ball(world=None, radius=1., mass=1., name=None):
     w.register(ball)
     s = Sphere(ball, radius)
     w.register(freejoint)
+    w.initjointspace()
     return w
-    
+ 
+
 def box(world=None, lengths=(1.,1.,1.), mass=1., name='Box'):
     """Build a box robot..
     TODO: fix inertia
@@ -74,7 +76,9 @@ def box(world=None, lengths=(1.,1.,1.), mass=1., name='Box'):
     w.register(box)
     s = Box(box, lengths)
     w.register(freejoint)
+    w.initjointspace()
     return w
+
 
 def cylinder(world=None, radius=1., length=1., mass=1., name='Cylinder'):
     """Build a cylinder robot.
@@ -102,5 +106,6 @@ def cylinder(world=None, radius=1., length=1., mass=1., name='Cylinder'):
     w.register(cylinder)
     s = Cylinder(cylinder, length, radius)
     w.register(s)
+    w.initjointspace()
     return w
     

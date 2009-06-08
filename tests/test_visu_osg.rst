@@ -1,0 +1,46 @@
+
+
+Display a human
+===============
+
+... with a drawer
+-----------------
+
+    >>> from arboris.visu_osg import NodeFactory, WorldDrawer
+    >>> from arboris.robots import human36
+    >>> w = human36()
+    >>> w.update_geometric()
+    >>> nf = NodeFactory(scale=.1)
+    >>> d = WorldDrawer(w, nf)
+    >>> #d.switch('name', False)
+    >>> viewer = d.init_viewer()
+    >>> viewer.realize()
+    >>> joints = w.getjointslist()
+    >>> t = 0.
+    >>> while not(viewer.done()):
+    ...     joints[1].gpos=[t,t,t]
+    ...     joints[2].gpos=[t]
+    ...     joints[3].gpos=[t,t]
+    ...     w.update_geometric()
+    ...     d.update()
+    ...     viewer.frame()
+
+
+... with a drawable world
+-------------------------
+
+    >>> from arboris.visu_osg import NodeFactory, DrawableWorld
+    >>> from arboris.robots import human36
+    >>> w = DrawableWorld(factory=NodeFactory(scale=.1))
+    >>> foo = human36(world=w)
+    >>> w.update_geometric()
+    >>> w.init_graphic()
+    >>> joints = w.getjointslist()
+    >>> t = 0.
+    >>> while not(w.graphic_is_done()):
+    ...     joints[1].gpos=[t,t,t]
+    ...     joints[2].gpos=[t]
+    ...     joints[3].gpos=[t,t]
+    ...     w.update_geometric()
+    ...     w.update_graphic()
+

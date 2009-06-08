@@ -15,7 +15,7 @@ from numpy import array, zeros, eye, dot, hstack
 from numpy.linalg import solve
 import homogeneousmatrix as Hg
 from misc import NamedObject
-from arboris import SubFrame, Constraint, BodyConstraint
+from core import SubFrame, Constraint, BodyConstraint
 
 
 class BallAndSocketConstraint(BodyConstraint):

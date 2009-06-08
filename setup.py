@@ -60,10 +60,11 @@ class TestCommand(Command):
             doctest.testfile(rst)
 
         pymods = [ ]
-        for file in glob(pjoin('arboris/core', '*.py')):
+        #TODO: run tests in robots/ too
+        for file in glob(pjoin('arboris', '*.py')):
             if not file.endswith('__init__.py'):
                 pymods.append('.'.join(
-                    ['arboris.core', splitext(basename(file))[0]]))
+                    ['arboris', splitext(basename(file))[0]]))
         for mod in pymods:
             exec('import {0} as mod'.format(mod))
             doctest.testmod(mod)
@@ -84,7 +85,7 @@ setup(
     packages=['arboris',
               'arboris.robots'],
     cmdclass = {'build_ext': build_ext, 'test': TestCommand},
-    ext_modules = [Extension("arboris.core.homogeneousmatrix",
-                             ["arboris/core/homogeneousmatrix.pyx"])]
+    ext_modules = [Extension("arboris.homogeneousmatrix",
+                             ["arboris/homogeneousmatrix.pyx"])]
 )
 

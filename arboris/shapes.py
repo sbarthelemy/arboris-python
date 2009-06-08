@@ -7,7 +7,7 @@ TODO: add ellipse and pill shapes
 
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
-from arboris import Shape
+from core import Shape
 
 class Point(Shape):
     """

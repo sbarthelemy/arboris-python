@@ -6,7 +6,7 @@ from numpy import array, zeros, eye, dot, sin, cos, dot
 from abc import ABCMeta, abstractmethod
 import homogeneousmatrix
 from misc import NamedObject
-from arboris import Joint
+from core import Joint
 
 class LinearConfigurationSpaceJoint(Joint):
     """

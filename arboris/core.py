@@ -198,7 +198,7 @@ class World(NamedObject):
         ``DuplicateName`` exception.
 
         Example:
-            >>> from joints import FreeJoint
+            >>> from arboris.joints import FreeJoint
             >>> w = World()
             >>> #stone = Body('stone')
             >>> #j = FreeJoint()
@@ -392,7 +392,7 @@ class World(NamedObject):
 
         >> from arboris.robots import simplearm
         >> w = simplearm()
-        >> from controllers import ProportionalDerivativeController
+        >> from arboris.controllers import ProportionalDerivativeController
         >> c0 = ProportionalDerivativeController(w.joints[1:3], name = 'my controller')
         >> w.add_jointcontroller(c0, w.joints[1:3])
         >> c1 = ProportionalDerivativeController(w.joints[0:1])
@@ -514,7 +514,7 @@ class World(NamedObject):
 
         >>> from arboris.robots import simplearm
         >>> w = simplearm()
-        >>> from controllers import ProportionalDerivativeController
+        >>> from arboris.controllers import ProportionalDerivativeController
         >>> joints = w.getjointslist()
         >>> a0 = ProportionalDerivativeController( joints[1:2], 2.)
         >>> w.add_jointcontroller(a0, joints[1:2])
@@ -637,7 +637,7 @@ class World(NamedObject):
         TODO: the following test fails for an unknown reason, maybe a bug in doctest.
 
             >> b0 = Body(mass = eye(6))
-            >> from joints import FreeJoint
+            >> from arboris.joints import FreeJoint
             >> j0 = FreeJoint()
             >> w = World()
             >> j0.attach(w.ground, b0)
@@ -646,10 +646,10 @@ class World(NamedObject):
             >> j1 = FreeJoint()
             >> j1.attach(b0, b1)
             >> w.register(b1)
-            >> from controllers import WeightController
+            >> from arboris.controllers import WeightController
             >> ctrl =  WeightController(w.ground)
             >> w.add_jointcontroller(ctrl)
-            >> from constraints import BallAndSocketConstraint 
+            >> from arboris.constraints import BallAndSocketConstraint 
             >> c0 = BallAndSocketConstraint()
             >> c0._frames = (w.ground, b0)
             >> w.register(c0)
@@ -726,7 +726,7 @@ class World(NamedObject):
         >> w = simplearm()
         >> joints = w.getjointsdict()
         >> joints['Shoulder'].gpos[:] = -1.
-        >> from controllers import ProportionalDerivativeController
+        >> from arboris.controllers import ProportionalDerivativeController
         >> c0 = ProportionalDerivativeController(w.joints[1:2], 1.)
         >> w.add_jointcontroller(c0, w.joints[1:2])
         >> w.update_dynamic()

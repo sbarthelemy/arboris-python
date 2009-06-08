@@ -41,11 +41,11 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
 from OpenSceneGraph import osg, osgDB, osgGA, osgViewer, osgText
 from numpy import pi, arctan2, array, dot, cross, sqrt, eye, cos, sin
 import shapes
-import arboris
+import core
 from misc import NamedObject
 import homogeneousmatrix as Hg
 
-def draw_frame(scale=.1):
+def draw_frame(scale=1.):
     # WARN: we create the leaves and go towards the trunk of the osg tree
     # create the x cylinder
     cyl_x = osg.ShapeDrawable(osg.Cylinder(
@@ -75,9 +75,6 @@ def draw_frame(scale=.1):
     frame.addChild(trans_y)
     frame.addChild(geo_z)
     return frame
-
-#we create the generic frame node and we will re-use it for every frame created
-generic_frame = draw_frame()
 
 def pose2mat(pose):
     """Convert an homogeneous transform matrix from python to osg. The
@@ -142,6 +139,9 @@ class NodeFactory(object):
     def __init__(self, scale=1., body_palette=None):
     
         self.scale = scale
+        # we create the generic frame node and we will 
+        # re-use it for every frame created
+        self._generic_frame = draw_frame(scale=self.scale)
         self.alpha = 0.8
         if body_palette is None:
             self.body_palette = [
@@ -151,6 +151,7 @@ class NodeFactory(object):
                 (1,1,0),
                 (0,1,1)]
         self.body_colors = {}
+
 
     def choose_color(self, body):
         if body in self.body_colors:
@@ -174,8 +175,9 @@ class NodeFactory(object):
         If the optional ``parent`` argument is given, the switches are its
         children
 
-        for instance, if ``obj`` is an instance of :class:`arboris.SubFrame`, 
-        and ``parent`` is given, it will result in the following tree::
+        for instance, if ``obj`` is an instance of 
+        :class:`arboris.core.SubFrame`, and ``parent`` is given, it will 
+        result in the following tree::
 
             parent
               |
@@ -194,11 +196,11 @@ class NodeFactory(object):
             switches['name'] = osg.Switch()
             nodes['name'] = draw_text(obj.name, self.scale)
 
-        if isinstance(obj, arboris.Frame):
+        if isinstance(obj, core.Frame):
             switches['frame'] = osg.Switch()
-            nodes['frame'] = generic_frame
+            nodes['frame'] = self._generic_frame
 
-        if isinstance(obj, arboris.SubFrame):
+        if isinstance(obj, core.SubFrame):
             color = self.choose_color(obj.body)
             nl = draw_line((0,0,0), 
                            -dot(obj.bpose[0:3,0:3].T, obj.bpose[0:3,3]), 
@@ -207,7 +209,7 @@ class NodeFactory(object):
                 switches['link'] = osg.Switch()
                 nodes['link'] = nl
 
-        if isinstance(obj, arboris.Shape):
+        if isinstance(obj, core.Shape):
             color = self.choose_color(obj.frame.body)
 
             if isinstance(obj, shapes.Sphere):
@@ -240,12 +242,12 @@ class NodeFactory(object):
                 parent.addChild(switch)
         return (nodes, switches)
 
-class DrawableWorld(arboris.World):
+class DrawableWorld(core.World):
 
     def __init__(self, world=None, factory=None, *positional_args, 
                  **keyword_args):
         if world is None:
-            arboris.World.__init__(self,*positional_args, **keyword_args)
+            core.World.__init__(self,*positional_args, **keyword_args)
             self.update_geometric()
         else:
             raise NotImplemented
@@ -257,7 +259,7 @@ class DrawableWorld(arboris.World):
             self.factory = factory
 
     def register(self, obj):
-        arboris.World.register(self, obj)
+        core.World.register(self, obj)
         self.drawer.register(obj, self.factory)
 
     def init_graphic(self, *positional_args, **keyword_args):
@@ -300,16 +302,16 @@ class WorldDrawer(object):
             self.register(obj, factory)
 
     def register(self, obj, factory):
-        if isinstance(obj, arboris.Frame):
+        if isinstance(obj, core.Frame):
             if obj in self.transforms:
                 pass
             else:
                 t = osg.MatrixTransform()
                 self.transforms[obj] = t
 
-                if isinstance(obj, arboris.Body):
+                if isinstance(obj, core.Body):
                     self.root.addChild(t)
-                elif isinstance(obj, arboris.SubFrame):
+                elif isinstance(obj, core.SubFrame):
                     self.transforms[obj.body].addChild(t)
                 else:
                     raise NotImplemented()
@@ -317,7 +319,7 @@ class WorldDrawer(object):
                 self.nodes[obj] = nodes
                 self.switches[obj] = switches
 
-        elif isinstance(obj, arboris.Shape):
+        elif isinstance(obj, core.Shape):
             if obj in self.nodes or obj in self.switches:
                 pass
             else:
@@ -326,7 +328,7 @@ class WorldDrawer(object):
                 self.nodes[obj] = nodes
                 self.switches[obj] = switches
 
-        elif isinstance(obj, arboris.Joint):
+        elif isinstance(obj, core.Joint):
             pass
 
         else:
@@ -380,59 +382,3 @@ class WorldDrawer(object):
         viewer.home()
         return viewer
 
-if __name__ == '__main__':
-    from visu_osg import NodeFactory, WorldDrawer
-    
-    #robot = 'simplearm'
-    robot = 'human36'
-    #robot = 'ball'
-    #robot = 'box'
-    #robot = 'cylinder'
-
-    if robot == 'simplearm':
-        from robots import simplearm
-        w = simplearm()
-    elif robot == 'human36':
-        from robots import human36
-        w = human36()
-    elif robot == 'ball':
-        from robots import ball
-        w = ball()
-    elif robot == 'box':
-        from robots import box
-        w = box(lengths=(1,2,3))
-    elif robot == 'cylinder':
-        from robots import cylinder
-        w = cylinder(radius=1., length=2)
-
-    w.update_geometric()
-    nf = NodeFactory(scale=.1)
-    vw = WorldDrawer(w, nf)
-    #vw.switch('name', False)
-    viewer = vw.init_viewer()
-    viewer.realize()
-    joints = w.getjointslist()
-    t = 0.
-    while(not(viewer.done())):
-        t+=1/800.
-        if robot == 'simplearm':
-            joints[0].gpos[0]=t
-            joints[1].gpos[0]=t
-            joints[2].gpos[0]=t
-        elif robot == 'human36':
-            joints[1].gpos=[t,t,t]
-            joints[2].gpos=[t]
-            joints[3].gpos=[t,t]
-        elif robot == 'box':
-            c = cos(pi/4)
-            s = sin(pi/4)
-            joints[0].gpos = numpy.array([[1,0,0,0],[0,c,s,0],[0,-s,c,0],[0,0,0,1]])
-        elif robot == 'cylinder':
-            c = cos(pi/4)
-            s = sin(pi/4)
-            joints[0].gpos = array([[1,0,0,0],[0,c,s,0],[0,-s,c,0],[0,0,0,1]])
-        w.update_geometric()
-        vw.update()
-        viewer.frame()
-        
-        

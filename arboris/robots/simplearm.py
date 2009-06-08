@@ -10,10 +10,10 @@ When ran as a script, the module shows the robot in motion.
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
-from arboris import World, Body, SubFrame
+from arboris.core import World, Body, SubFrame
 import numpy as np
-import arboris.core.homogeneousmatrix as Hg
-from arboris.core.joints import RzJoint
+import arboris.homogeneousmatrix as Hg
+from arboris.joints import RzJoint
 
 def transport_mass_matrix(mass,H):
     """Transport (express) the mass matrix into another frame."""
@@ -36,6 +36,13 @@ def simplearm(world=None, name=None, lengths=(0.5 ,0.4 , 0.2),
     """Build a  planar 3-R robot.
 
     TODO: make use of the ``name`` input argument to prefix bodies and joints names
+
+    Example:
+
+        >>> from arboris.robots import simplearm
+        >>> r = simplearm()
+        >>> r.update_dynamic()
+
     """
 
     arm_length = lengths[0]

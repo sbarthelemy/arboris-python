@@ -45,12 +45,12 @@ function ``SetModelSize`` from the file
     Human Motion Analysis and Simulation toolbox
 
 """
-from arboris import World, Body, SubFrame
+from arboris.core import World, Body, SubFrame
 import numpy as np
 from numpy import array, diag, dot, hstack
-import arboris.core.homogeneousmatrix as Hg
-from arboris.core.homogeneousmatrix import adjoint
-from arboris.core.joints import *
+import arboris.homogeneousmatrix as Hg
+from arboris.homogeneousmatrix import adjoint
+from arboris.joints import *
 
 def anatomical_lengths(human_height):
     """
