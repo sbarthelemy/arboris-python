@@ -1030,9 +1030,5 @@ def simulate(world, time):
         world.update_controllers(dt)
         world.update_constraints(dt)
         world.integrate(dt)
-
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
+        
 

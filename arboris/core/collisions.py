@@ -84,9 +84,3 @@ def _sphere_sphere_collision(p_g0, p_g1, radius0, radius1):
 def point_box_collision():
     pass
 
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
-
-

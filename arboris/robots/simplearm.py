@@ -107,10 +107,3 @@ def simplearm(world=None, name=None, lengths=(0.5 ,0.4 , 0.2),
     w.initjointspace()
     return w
 
-if __name__ == "__main__":
-
-    w = simplearm()
-    
-    #compute dynamic model
-    w.update_dynamic()
-

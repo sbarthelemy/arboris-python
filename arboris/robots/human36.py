@@ -991,7 +991,3 @@ Tags(q)
     w.initjointspace()
     return (w, bodies, tags)
 
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
-

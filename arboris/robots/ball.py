@@ -21,6 +21,12 @@ def mass_parallelepiped(m,lengths):
 def ball(world=None, radius=1., mass=1., name=None):
     """Build a ball robot.
     TODO: fix inertia
+
+    Example:
+
+        >>> r = ball()
+        >>> r.update_dynamic()
+
     """
 
     # Create a world
@@ -44,6 +50,12 @@ def ball(world=None, radius=1., mass=1., name=None):
 def box(world=None, lengths=(1.,1.,1.), mass=1., name='Box'):
     """Build a box robot..
     TODO: fix inertia
+    
+    Example:
+
+        >>> r = box()
+        >>> r.update_dynamic()
+
     """
 
     # Create a world
@@ -67,6 +79,12 @@ def box(world=None, lengths=(1.,1.,1.), mass=1., name='Box'):
 def cylinder(world=None, radius=1., length=1., mass=1., name='Cylinder'):
     """Build a cylinder robot.
     TODO: fix inertia
+
+    Example:
+
+        >>> r = cylinder()
+        >>> r.update_dynamic()
+
     """
 
     # Create a world
@@ -86,10 +104,3 @@ def cylinder(world=None, radius=1., length=1., mass=1., name='Cylinder'):
     w.register(s)
     return w
     
-if __name__ == "__main__":
-
-    w = ball()
-    
-    #compute dynamic model
-    w.update_dynamic()
-

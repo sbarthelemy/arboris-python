@@ -113,22 +113,4 @@ class ProportionalDerivativeController(JointController):
         return dot(self.Kp, self.gpos_des - gpos) + \
                dot(self.Kd, self.gvel_des - gvel)
 
-if __name__ == "__main__":
-    
-    from robots import simplearm
-    from numpy import diag
-    w = simplearm()
-    Kp = diag([10.,5.,1.],0)
-    Kd = diag([2.5,1.,0.1],0)
-    gpos_des = [1.,2.,3.]
-    joints = w.getjointslist()
-    c0 = ProportionalDerivativeController(joints[0:3], Kp, Kd, gpos_des)
-    w.add_jointcontroller(c0, joints[0:3])
-    w.update_dynamic()
-    t = 0
-    dt = 0.001
-    while t < 0.1:
-        t += dt 
-        w.update_dynamic()
-        w.update_controllers(dt)
-        w.integrate(dt)
+

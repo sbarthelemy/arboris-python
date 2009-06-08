@@ -44,7 +44,3 @@ class Sphere(Shape):
         Shape.__init__(self, frame)
         self.radius = radius
 
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()

@@ -601,7 +601,3 @@ TODO: how do we find s ?
                 self._force = force
                 return dforce
         
-        
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
