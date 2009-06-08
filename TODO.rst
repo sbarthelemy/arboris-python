@@ -16,14 +16,8 @@ Miscalleneous
 Packaging
 =========
 
-- Move from make to setuptools or scons
-- make a python package (with an __init__.py) instead of a module
-- fix program version in sphinx doc
-- generate a package with
-  - changelog
-  - version numbers
-  - tar/deb
-
+- fix program version in sphinx doc & setup.py
+- compile the doc from setup.py
 
 Programming
 ===========
@@ -74,6 +68,12 @@ API is quite bad, for several reasons:
 A solution might be to remove the encapsulation: every controller would produce gforces and viscosity for every joint. (controllers would stil need to know w.ndof.) We could additionnaly provide an "encapsulator" controller class which would do the encapsulation.
 
 We could also give to the controller views of the global gforce and viscosity that it would update.
+
+Visu_osg
+--------
+
+- add more colors for bodies
+
 
 Done (and kept for reference)
 =============================
