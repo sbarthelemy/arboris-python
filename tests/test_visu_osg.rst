@@ -12,7 +12,6 @@ Display a human
     >>> w.update_geometric()
     >>> nf = NodeFactory(scale=.1)
     >>> d = WorldDrawer(w, nf)
-    >>> #d.switch('name', False)
     >>> viewer = d.init_viewer()
     >>> viewer.realize()
     >>> joints = w.getjointslist()
@@ -24,6 +23,7 @@ Display a human
     ...     w.update_geometric()
     ...     d.update()
     ...     viewer.frame()
+    ...     t += 1./180
 
 
 ... with a drawable world
@@ -43,4 +43,5 @@ Display a human
     ...     joints[3].gpos=[t,t]
     ...     w.update_geometric()
     ...     w.update_graphic()
+    ...     t += 1./180
 
