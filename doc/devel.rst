@@ -11,7 +11,7 @@ What we use...
 ...for the simulation
 ---------------------
 
-All the program is written in python2.6. See Python26Doc_ (or Python26LocalDoc_) and start with the tutorial. We also use numpy. See `the numpy documentation <http://docs.scipy.org/doc/>`_ and `NumPy_for_Matlab_Users <http://www.scipy.org/NumPy_for_Matlab_Users>`_. Numpy supports n-dimensionnal arrays (class :class:`numpy.ndarray`) and matrices (built with `numpy.matrix`) which are 2-d matrices with special behavior, similar to the matlab one. In arboris-python we never uses matrices. 
+The program is written in python 2.6 and in cython. Cython is a language which extends python with typed variables in order to allow C-code generation (and thus faster execution). See Python26Doc_ (or Python26LocalDoc_) and start with the tutorial. We also use numpy. See `the numpy documentation <http://docs.scipy.org/doc/>`_ and `NumPy_for_Matlab_Users <http://www.scipy.org/NumPy_for_Matlab_Users>`_. Numpy supports n-dimensionnal arrays (class :class:`numpy.ndarray`) and matrices (built with `numpy.matrix`) which are 2-d matrices with special behavior, similar to the matlab one. In arboris-python we never uses matrices. 
 
 .. _Python26Doc:
   http://docs.python.org/
@@ -185,6 +185,27 @@ Then he sends the patch to Seb by email, who applies it and push the result back
 Eventually, when Joe issues a new pull, everything gets merged gracefully::
 
   joe@joe-laptop$ git pull
+
+
+Debugging
+=========
+
+with IPython
+------------
+
+A quite easy way to debug without breakpoints is to embed an ipython shell in te program. For instance, the following program computes an IK notion::
+
+  TODO
+
+You can examine the context at t==10::
+
+        if 10< t <= 11:
+            from IPython.Shell import IPShellEmbed
+            ipshell = IPShellEmbed()
+            ipshell()
+
+with winpdb
+-----------
 
 
 Future
