@@ -23,12 +23,10 @@ from numpy import ix_, array, zeros, ones, eye, dot
 import numpy
 import twistvector as T
 import homogeneousmatrix as Hg
-import homogeneousmatrix
-import adjointmatrix
 from abc import ABCMeta, abstractmethod, abstractproperty
-from math import pi
 from misc import NamedObject
 from rigidmotion import RigidMotion
+
 
 class Joint(RigidMotion, NamedObject):
     """A generic class for ideal joints.
@@ -57,7 +55,6 @@ class Joint(RigidMotion, NamedObject):
         else:
             return self._dof.size
             
-
     @property
     def frames(self):
         return self._frames
@@ -75,27 +72,24 @@ class Joint(RigidMotion, NamedObject):
     def twist(self):
         return dot(self.jacobian, self.gvel)
 
-    
     @abstractproperty
     def ndof(self):
         """Number of degrees of freedom of the joint
         """
         pass
 
-
     @abstractproperty
     def jacobian(self):
         pass
-
 
     @abstractproperty
     def djacobian(self):
         pass
 
-
     @abstractproperty
     def integrate(self, dt):
         pass
+
 
 class Constraint(NamedObject):
 
@@ -105,6 +99,7 @@ class Constraint(NamedObject):
     @abstractmethod
     def gforce(self):
         pass
+
 
 class BodyConstraint(Constraint):
     __metaclass__ = ABCMeta
@@ -162,8 +157,8 @@ class Controller(NamedObject):
 class World(NamedObject):
     """
 
-    TODO: provide ability to merge worlds or subtrees
-    
+    Example:
+
     >>> from arboris.robots import simplearm
     >>> w = simplearm()
     >>> w.update_geometric()
@@ -192,12 +187,10 @@ class World(NamedObject):
         for b in self.ground.iter_descendant_bodies():
             yield b
 
-
     def itersubframes(self):
         """Iterate over all subframes"""
         for obj in self._subframes:
             yield obj
-
 
     def iterframes(self):
         """Iterate over all subframes"""
@@ -206,12 +199,10 @@ class World(NamedObject):
         for obj in self.itersubframes():
             yield obj
 
-
     def itershapes(self):
         """Iterate over all shapes"""
         for obj in self._shapes:
             yield obj
-
 
     def iterjoints(self):
         """Iterate over all joints, with a depth-first strategy"""
@@ -305,7 +296,6 @@ class World(NamedObject):
             joints_list.append(j)
         return joints_list
 
-
     def register(self, obj):
         """
         Register an object into the world.
@@ -321,28 +311,15 @@ class World(NamedObject):
 
         >>> from arboris.robots import simplearm
         >>> w = simplearm()
+        >>> from arboris.controllers import ProportionalDerivativeController
         >>> joints = w.getjointslist()
-        >>> joints[0].gvel[0] = 1.
-        >>> w._gvel
-        array([ 1.,  0.,  0.])
-        >>> w._gvel[1] = 2.
-        >>> joints[1].gvel
-        array([ 2.])
-
-
-        TODO: repair this doctest
-        Example:
-
-        >> from arboris.robots import simplearm
-        >> w = simplearm()
-        >> from arboris.controllers import ProportionalDerivativeController
-        >> c0 = ProportionalDerivativeController(w.ndof, w.joints[1:3], name = 'my controller')
-        >> w.register(c0)
-        >> c1 = ProportionalDerivativeController(w.ndof, w.joints[0:1])
-        >> w.register(c1])
+        >>> c0 = ProportionalDerivativeController(w.ndof, joints[1:3], 
+        ...     name = 'my controller')
+        >>> w.register(c0)
+        >>> c1 = ProportionalDerivativeController(w.ndof, joints[0:1])
+        >>> w.register(c1)
 
         """
-
         if isinstance(obj, Body):
             pass
         
@@ -371,9 +348,9 @@ class World(NamedObject):
                 self._controllers.append(obj)
 
         else:
-            raise ValueError()
+            raise ValueError(
+                'I do not know how to register objects of type {0}'.format(type(obj)))
 
-    
     def initjointspace(self):
         """ Init the joins-space model of the world.
         """
@@ -425,7 +402,6 @@ class World(NamedObject):
     def gvel(self):
         return self._gvel.copy()
 
-
     def update_geometric(self):
         """
         Compute the forward geometric model. 
@@ -433,7 +409,6 @@ class World(NamedObject):
         This will recursively update each body pose attribute.
         """
         self.ground.update_geometric(eye(4))
-
 
     def update_kinematic(self):
         """
@@ -444,7 +419,6 @@ class World(NamedObject):
         """
         self.ground.update_kinematic(eye(4),zeros((6,self._ndof)))
 
-
     def update_dynamic(self):
         """
         Compute the forward geometric, kinematic and dynamic models. 
@@ -454,7 +428,6 @@ class World(NamedObject):
         - each body pose, jacobian, djacobian, twist and nleffects 
           attributes 
         - the world mass, viscosity and nleffects attributes
-
 
         """        
         self.ground.update_dynamic(
@@ -476,7 +449,6 @@ class World(NamedObject):
             self._nleffects += dot(
                 b.jacobian.T,
                 dot(b.mass, b.djacobian) + dot(b.nleffects, b.jacobian))
-
 
     def update_controllers(self, dt, t=None):
         r"""
@@ -558,7 +530,6 @@ class World(NamedObject):
         self._impedance = self._mass/dt + self._viscosity + \
             self._nleffects - self._controller_viscosity 
         self._admittance = numpy.linalg.inv(self._impedance)
-
 
     def update_constraints(self, dt):
         r"""
@@ -644,46 +615,6 @@ class World(NamedObject):
           :math:`\pre[c]f`. At each iteration the force is 
           updated by :math:`\Delta\pre[c]f`
         
-
-        Test:
-
-        TODO: the following test fails for an unknown reason, maybe a bug in doctest.
-
-            >> b0 = Body(mass = eye(6))
-            >> from arboris.joints import FreeJoint
-            >> j0 = FreeJoint()
-            >> w = World()
-            >> j0.attach(w.ground, b0)
-            >> j0.register(b0)
-            >> b1 = Body(mass = eye(6))
-            >> j1 = FreeJoint()
-            >> j1.attach(b0, b1)
-            >> w.register(b1)
-            >> from arboris.controllers import WeightController
-            >> ctrl =  WeightController(w.ndof, w.ground)
-            >> w.register(ctrl)
-            >> from arboris.constraints import BallAndSocketConstraint 
-            >> c0 = BallAndSocketConstraint()
-            >> c0._frames = (w.ground, b0)
-            >> w.register(c0)
-            >> w.update_dynamic()
-            >> dt = 0.001
-            >> w.update_controllers(dt)
-            >> w.update_constraints(dt)
-            >> c0._force
-            array([ 0.  ,  9.81,  0.  ])
-            >> w.integrate(dt)
-            >> w.update_dynamic()
-            >> b0.pose
-            array([[  1.00000000e+00,   0.00000000e+00,   0.00000000e+00,
-                      0.00000000e+00],
-                   [  0.00000000e+00,   1.00000000e+00,   0.00000000e+00,
-                     -3.09167026e-22],
-                   [  0.00000000e+00,   0.00000000e+00,   1.00000000e+00,
-                      0.00000000e+00],
-                   [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
-                      1.00000000e+00]])
-
         """
 
         constraints = []
@@ -712,7 +643,6 @@ class World(NamedObject):
                 vel += dot(admittance[:,c._dol], dforce)
         for c in constraints:
             self._gforce += c.gforce()
-
 
     def integrate(self, dt):
         r"""
@@ -785,7 +715,7 @@ class SubFrame(NamedObject, Frame):
         """Create a frame rigidly fixed to a body. 
         
         >>> b = Body()
-        >>> f = SubFrame(b,Hg.rotz(3.14/3.),'Brand New Frame')
+        >>> f = SubFrame(b, Hg.rotz(3.14/3.),'Brand New Frame')
         
         The ``body`` argument must be a member of the ``Body`` class:
         >>> f = SubFrame(None, Hg.rotz(3.14/3.))
@@ -1019,11 +949,11 @@ class Body(NamedObject, Frame):
             child_twist = dot(Ad_cp, T_pg) + dot(Ad_cn, T_nr)
             child_jac = dot(Ad_cp, J_pg)
             child_jac[:,j._dof] += dot(Ad_cn, J_nr)
+
             child_djac = dot(dAd_cp, J_pg) + dot(Ad_cp, dJ_pg)
             child_djac[:,j._dof] += dot(Ad_cn, dJ_nr)
             j._frames[1].body.update_dynamic(child_pose, child_jac, child_djac, 
                                      child_twist)
-
 
 
 def simulate(world, time):

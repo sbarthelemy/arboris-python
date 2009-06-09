@@ -32,8 +32,6 @@ window(s) and graphics context(s) based on the underlying graphics system
 capabilities, so a single Viewer-based application executable runs on single or
 multiple display systems.
 
-TODO: try on windows
-
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
               "Joseph SALINI <joseph.salini@gmail.com>")
@@ -329,6 +327,12 @@ class WorldDrawer(object):
                 self.switches[obj] = switches
 
         elif isinstance(obj, core.Joint):
+            pass
+
+        elif isinstance(obj, core.Constraint):
+            pass
+
+        elif isinstance(obj, core.Controller):    
             pass
 
         else:

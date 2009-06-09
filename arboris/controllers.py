@@ -6,19 +6,32 @@ import homogeneousmatrix
 from joints import LinearConfigurationSpaceJoint
 
 class WeightController(Controller):
+    """
 
+    >>> from arboris.robots import simplearm
+    >>> w = simplearm()
+    >>> joints = w.getjointsdict()
+    >>> joints['Shoulder'].gpos[0] = 3.14/4
+    >>> joints['Elbow'].gpos[0] = 3.14/4
+    >>> joints['Wrist'].gpos[0] = 3.14/4
+    >>> c = WeightController(w)
+    >>> w.register(c)
+    >>> w.update_dynamic() #TODO change for update_kinematic
+    >>> (gforce, viscosity) = c.update()
+
+    """
     def __init__(self, world, gravity=None, name=None):
         self.ground = world.ground
         self._wndof = world.ndof
         if gravity is None:
             self._gravity = array([0., 0., 0., 0., -9.81, 0.])
         else:
-            self._gravity = gravity
+            self._gravity = array(gravity)
         Controller.__init__(self, name=name)
 
-    def update(self,dt):
+    def update(self, dt=None, t=None):
         gforce = zeros(self._wndof)
-        for b in self.ground.iterdescendants():
+        for b in self.ground.iter_descendant_bodies():
             # gravity acceleration expressed in body frame
             g = dot(homogeneousmatrix.iadjoint(b.pose), self._gravity)
             gforce += dot(b.jacobian.T, dot(b.mass, g))
@@ -38,8 +51,8 @@ class ProportionalDerivativeController(Controller):
             if not isinstance(j, LinearConfigurationSpaceJoint):
                 raise ValueError('Joints must be LinearConfigurationSpaceJoint instances')
             else:
-                    self._cndof += j.ndof
-                    dof_map.extend(range(j.dof.start, j.dof.stop))
+                self._cndof += j.ndof
+                dof_map.extend(range(j.dof.start, j.dof.stop))
         self._dof_map = array(dof_map)
         self.joints = joints
         self._wndof = wndof
