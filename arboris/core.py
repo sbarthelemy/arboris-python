@@ -27,7 +27,6 @@ import homogeneousmatrix
 import adjointmatrix
 from abc import ABCMeta, abstractmethod, abstractproperty
 from math import pi
-from controllers import Controller
 from misc import NamedObject
 from rigidmotion import RigidMotion
 
@@ -42,6 +41,22 @@ class Joint(RigidMotion, NamedObject):
             self.attach(frames[0], frames[1])
         else:
             self._frames = (None, None)
+        self._dof = None # will be set by World.initjoinspace()
+
+    @property
+    def dof(self):
+        if self._dof is None:
+            raise ValueError
+        else:
+            return self._dof
+
+    @property
+    def ndof(self):
+        if self._dof is None:
+            raise ValueError
+        else:
+            return self._dof.size
+            
 
     @property
     def frames(self):
@@ -53,7 +68,7 @@ class Joint(RigidMotion, NamedObject):
             frame1.body.parentjoint = self
         else:
             raise ValueError(
-                'frame1\'s body already as a parentjoint, which means you\'re probably trying to create a kinematic loop. Try using a constraint instead of a class')
+                'frame1\'s body already as a parentjoint, which means you\'re probably trying to create a kinematic loop. Try using a constraint instead.')
         frame0.body.childrenjoints.append(self)
 
     @property
@@ -127,10 +142,22 @@ class BodyConstraint(Constraint):
 
 
 class Shape(object):
-    """A generic class for geometrical shapes used in collision detectction
+    """A generic class for geometrical shapes used in collision detection
     """
     def __init__(self, frame):
         self.frame = frame
+
+
+class Controller(NamedObject):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, name=None):
+        NamedObject.__init__(self, name)
+
+    @abstractmethod
+    def update(self, dt, t):
+        pass
+
 
 class World(NamedObject):
     """
@@ -302,7 +329,20 @@ class World(NamedObject):
         >>> joints[1].gvel
         array([ 2.])
 
+
+        TODO: repair this doctest
+        Example:
+
+        >> from arboris.robots import simplearm
+        >> w = simplearm()
+        >> from arboris.controllers import ProportionalDerivativeController
+        >> c0 = ProportionalDerivativeController(w.ndof, w.joints[1:3], name = 'my controller')
+        >> w.register(c0)
+        >> c1 = ProportionalDerivativeController(w.ndof, w.joints[0:1])
+        >> w.register(c1])
+
         """
+
         if isinstance(obj, Body):
             pass
         
@@ -325,6 +365,10 @@ class World(NamedObject):
             if isinstance(obj, BodyConstraint):
                 self.register(obj._frames[0])
                 self.register(obj._frames[1])
+
+        elif isinstance(obj, Controller):
+            if not obj in self._controllers:
+                self._controllers.append(obj)
 
         else:
             raise ValueError()
@@ -382,44 +426,13 @@ class World(NamedObject):
         return self._gvel.copy()
 
 
-
-    def add_jointcontroller(self, controller, joints=None):
-        """
-        Add a joint controller to the world
-
-        TODO: repair this doctest
-        Example:
-
-        >> from arboris.robots import simplearm
-        >> w = simplearm()
-        >> from arboris.controllers import ProportionalDerivativeController
-        >> c0 = ProportionalDerivativeController(w.joints[1:3], name = 'my controller')
-        >> w.add_jointcontroller(c0, w.joints[1:3])
-        >> c1 = ProportionalDerivativeController(w.joints[0:1])
-        >> w.add_jointcontroller(c1, w.joints[0:1])
-        
-        """
-        for c in self._controllers:
-            if c is controller:
-                raise ValueError("the controller is already in the world")
-
-        if joints is None:
-            controller._dof = range(self.ndof)
-        else:
-            controller._dof = []
-            for j in joints:
-                controller._dof.extend(range(j._dof.start, j._dof.stop))
-        
-        self._controllers.append(controller)
-
-
     def update_geometric(self):
         """
         Compute the forward geometric model. 
         
         This will recursively update each body pose attribute.
         """
-        self.ground.geometric(eye(4))
+        self.ground.update_geometric(eye(4))
 
 
     def update_kinematic(self):
@@ -429,7 +442,7 @@ class World(NamedObject):
         This will recursively update all each body pose and jacobian
         attributes.
         """
-        self.ground.kinematic(eye(4),zeros((6,self._ndof)))
+        self.ground.update_kinematic(eye(4),zeros((6,self._ndof)))
 
 
     def update_dynamic(self):
@@ -464,13 +477,14 @@ class World(NamedObject):
                 b.jacobian.T,
                 dot(b.mass, b.djacobian) + dot(b.nleffects, b.jacobian))
 
-    def update_controllers(self, dt):
+
+    def update_controllers(self, dt, t=None):
         r"""
 
         Let's consider the following discretized 2nd-order model:
 
         .. math::
-            M(t) \dot\GVel(t+dt) + \left( N(t)+B(t )\right) \GVel(t+dt) &= 
+            M(t) \dot\GVel(t+dt) + \left( N(t)+B(t) )\right) \GVel(t+dt) &= 
             \GForce(t)
 
         considering
@@ -516,8 +530,8 @@ class World(NamedObject):
         >>> w = simplearm()
         >>> from arboris.controllers import ProportionalDerivativeController
         >>> joints = w.getjointslist()
-        >>> a0 = ProportionalDerivativeController( joints[1:2], 2.)
-        >>> w.add_jointcontroller(a0, joints[1:2])
+        >>> a0 = ProportionalDerivativeController(w.ndof, joints[1:2], 2.)
+        >>> w.register(a0)
         >>> w.update_dynamic()
         >>> w.update_controllers(0.001)
         >>> w._controller_viscosity
@@ -537,10 +551,9 @@ class World(NamedObject):
         self._controller_viscosity[:] = 0.
         self._gforce[:] = 0.
         for a in self._controllers:
-            a.update(dt)
-            self._controller_viscosity[
-                ix_(a._dof, a._dof)] += a.viscosity
-            self._gforce[a._dof] += a.gforce
+            (gforce, viscosity) = a.update(dt, t)
+            self._gforce += gforce
+            self._controller_viscosity += viscosity
         
         self._impedance = self._mass/dt + self._viscosity + \
             self._nleffects - self._controller_viscosity 
@@ -647,8 +660,8 @@ class World(NamedObject):
             >> j1.attach(b0, b1)
             >> w.register(b1)
             >> from arboris.controllers import WeightController
-            >> ctrl =  WeightController(w.ground)
-            >> w.add_jointcontroller(ctrl)
+            >> ctrl =  WeightController(w.ndof, w.ground)
+            >> w.register(ctrl)
             >> from arboris.constraints import BallAndSocketConstraint 
             >> c0 = BallAndSocketConstraint()
             >> c0._frames = (w.ground, b0)
@@ -727,8 +740,8 @@ class World(NamedObject):
         >> joints = w.getjointsdict()
         >> joints['Shoulder'].gpos[:] = -1.
         >> from arboris.controllers import ProportionalDerivativeController
-        >> c0 = ProportionalDerivativeController(w.joints[1:2], 1.)
-        >> w.add_jointcontroller(c0, w.joints[1:2])
+        >> c0 = ProportionalDerivativeController(w.ndof, w.joints[1:2], 1.)
+        >> w.register(c0)
         >> w.update_dynamic()
         >> dt = 0.001
         >> w.update_controllers(dt)
@@ -903,7 +916,7 @@ class Body(NamedObject, Frame):
     def body(self):
         return self
 
-    def geometric(self,pose):
+    def update_geometric(self,pose):
         """
         - g: ground body
         - p: parent body
@@ -924,9 +937,9 @@ class Body(NamedObject, Frame):
             H_rn = j.pose
             H_pc = dot(H_pr, dot(H_rn, Hg.inv(H_cn)))
             child_pose = dot(H_gp, H_pc)
-            j._frames[1].body.geometric(child_pose)
+            j._frames[1].body.update_geometric(child_pose)
         
-    def kinematic(self,pose,jac):
+    def update_kinematic(self,pose,jac):
         raise NotImplemented #TODO: remove the method or implement it
     
     def update_dynamic(self,pose,jac,djac,twist):
@@ -1027,7 +1040,7 @@ def simulate(world, time):
     for t in time[1:]:
         dt = t - previous_t
         world.update_dynamic()
-        world.update_controllers(dt)
+        world.update_controllers(dt, t)
         world.update_constraints(dt)
         world.integrate(dt)
         

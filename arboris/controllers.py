@@ -1,116 +1,86 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
-from numpy import array, zeros, ones, eye, dot
+from core import Controller
+from numpy import array, zeros, dot, ix_
 from misc import NamedObject
 import homogeneousmatrix
+from joints import LinearConfigurationSpaceJoint
 
-class Controller(NamedObject):
-    def __init__(self, name=None):
-        NamedObject.__init__(self, name)
+class WeightController(Controller):
 
-class JointController(Controller):
-    __metaclass__ = ABCMeta
-
-    def ndof(self):
-        return len(self._dof)
-
-            
-    @abstractmethod
-    def update(self, dt):
-        pass
-
-
-    @abstractproperty
-    def viscosity(self):
-        pass
-
-
-    @abstractproperty
-    def gforce(self):
-        pass
-
-
-class WeightController(JointController):
-
-    def __init__(self, ground, gravity=None):
-
-        self.ground = ground
+    def __init__(self, world, gravity=None, name=None):
+        self.ground = world.ground
+        self._wndof = world.ndof
         if gravity is None:
             self._gravity = array([0., 0., 0., 0., -9.81, 0.])
         else:
             self._gravity = gravity
-
+        Controller.__init__(self, name=name)
 
     def update(self,dt):
-        self._gforce = zeros(self.ndof())
+        gforce = zeros(self._wndof)
         for b in self.ground.iterdescendants():
             # gravity acceleration expressed in body frame
             g = dot(homogeneousmatrix.iadjoint(b.pose), self._gravity)
-            self._gforce += dot(b.jacobian.T, dot(b.mass, g))
+            gforce += dot(b.jacobian.T, dot(b.mass, g))
+
+        viscosity = zeros( (self._wndof, self._wndof) )
+        return (gforce, viscosity)
             
-    @property
-    def viscosity(self):
-        return zeros( (self.ndof(), self.ndof()) )
 
-    @property
-    def gforce(self):
-        return self._gforce
+class ProportionalDerivativeController(Controller):
 
-
-
-
-class ProportionalDerivativeController(JointController):
-
-    def __init__(self, joints, Kp=None, Kd=None, gpos_des=None, 
+    def __init__(self, wndof, joints, kp=None, kd=None, gpos_des=None, 
                  gvel_des=None, name=None):
-            ndof = 0
-            from joints import LinearConfigurationSpaceJoint
-            for j in joints:
-                if not isinstance(j, LinearConfigurationSpaceJoint):
-                    raise ValueError('Joints must be LinearConfigurationSpaceJoint instances')
-                ndof += j.ndof
-            JointController.__init__(self, name)
-            self.joints = joints
-            if Kp is None:
-                self.Kp = zeros((ndof, ndof))
+        Controller.__init__(self, name=name)
+        self._cndof = 0
+        dof_map = []
+        for j in joints:
+            if not isinstance(j, LinearConfigurationSpaceJoint):
+                raise ValueError('Joints must be LinearConfigurationSpaceJoint instances')
             else:
-                self.Kp = array(Kp)
+                    self._cndof += j.ndof
+                    dof_map.extend(range(j.dof.start, j.dof.stop))
+        self._dof_map = array(dof_map)
+        self.joints = joints
+        self._wndof = wndof
 
-            if Kd is None:
-                self.Kd = zeros((ndof,ndof))
-            else:
-                self.Kd = array(Kd)
+        if kp is None:
+            self.kp = zeros((self._cndof, self._cndof))
+        else :
+            self.kp = array(kp).reshape((self._cndof, self._cndof))
 
-            if gpos_des is None:
-                self.gpos_des = zeros(ndof)
-            else:
-                self.gpos_des = array(gpos_des)
+        if kd is None:
+            self.kd = zeros((self._cndof, self._cndof))
+        else :
+            self.kd = array(kd).reshape((self._cndof, self._cndof))
 
-            if gvel_des is None:
-                self.gvel_des = zeros(ndof)
-            else:
-                self.gvel_des = array(gvel_des)
-            
-    def update(self, dt):
-        pass
+        if gpos_des is None:
+            self.gpos_des = zeros(self._cndof)
+        else:
+            self.gpos_des = array(gpos_des).reshape(self._cndof)
 
-    @property 
-    def viscosity(self):
+        if gvel_des is None:
+            self.gvel_des = zeros(self._cndof)
+        else:
+            self.gvel_des = array(gvel_des).reshape(self._cndof)
+
+    def update(self, dt, t):
         """
         TODO: return non-zero viscosity
         """
-        return zeros( (self.ndof(), self.ndof()) )
-
-    @property
-    def gforce(self):
+        gforce = zeros(self._wndof)
+        viscosity = zeros((self._wndof, self._wndof))
         
-        gpos = []
+        gpos = [] 
         gvel = []
         for j in self.joints:
             gpos.append(j.gpos)
             gvel.append(j.gvel)
-        gpos = array(gpos).reshape(self.ndof())
-        gvel = array(gvel).reshape(self.ndof())
-        return dot(self.Kp, self.gpos_des - gpos) + \
-               dot(self.Kd, self.gvel_des - gvel)
+        gpos = array(gpos)
+        gvel = array(gvel)
+        gforce[ix_(self._dof_map)] = \
+                dot(self.kp, self.gpos_des - gpos) + \
+                dot(self.kd, self.gvel_des - gvel)
+        return (gforce, viscosity)
 
 
