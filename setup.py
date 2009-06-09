@@ -43,8 +43,25 @@ def fix_module_doctests(module):
           _from_module(module, value):
            module.__test__[name] = value.__doc__
 
+class SphinxCommand(Command):
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        os.chdir('doc')
+        pid = os.fork()
+        if not pid:
+            os.execvp("make",['', 'html'])
+        os.wait()
+
+
 class TestCommand(Command):
-    user_options = [ ]
+    user_options = []
 
     def initialize_options(self):
         pass
@@ -84,7 +101,8 @@ setup(
     name='arboris',
     packages=['arboris',
               'arboris.robots'],
-    cmdclass = {'build_ext': build_ext, 'test': TestCommand},
+    cmdclass = {'build_ext': build_ext, 'test': TestCommand, 
+                'sphinx': SphinxCommand},
     ext_modules = [Extension("arboris.homogeneousmatrix",
                              ["arboris/homogeneousmatrix.pyx"])]
 )
