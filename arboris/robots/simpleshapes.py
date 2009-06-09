@@ -1,6 +1,7 @@
 # coding=utf-8
 
 """
+This module builds worlds composed of a single shape.
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
@@ -50,7 +51,8 @@ def ball(world=None, radius=1., mass=1., name=None):
  
 
 def box(world=None, lengths=(1.,1.,1.), mass=1., name='Box'):
-    """Build a box robot..
+    """Build a box robot.
+
     TODO: fix inertia
     
     Example:
@@ -82,6 +84,7 @@ def box(world=None, lengths=(1.,1.,1.), mass=1., name='Box'):
 
 def cylinder(world=None, radius=1., length=1., mass=1., name='Cylinder'):
     """Build a cylinder robot.
+
     TODO: fix inertia
 
     Example:

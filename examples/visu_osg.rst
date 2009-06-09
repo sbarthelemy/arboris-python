@@ -7,7 +7,7 @@ Display a human
 -----------------
 
     >>> from arboris.visu_osg import NodeFactory, WorldDrawer
-    >>> from arboris.robots import human36
+    >>> from arboris.robots.human36 import human36
     >>> w = human36()
     >>> w.update_geometric()
     >>> nf = NodeFactory(scale=.1)
@@ -30,7 +30,7 @@ Display a human
 -------------------------
 
     >>> from arboris.visu_osg import NodeFactory, DrawableWorld
-    >>> from arboris.robots import human36
+    >>> from arboris.robots.human36 import human36
     >>> w = DrawableWorld(factory=NodeFactory(scale=.1))
     >>> foo = human36(world=w)
     >>> w.update_geometric()

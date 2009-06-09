@@ -88,33 +88,6 @@ def _humans_anatomical_lengths(human_height):
       constant (= 0.09085) but are implemented as size-dependant 
       (= 0.0526 *  human_height)
 
-    Examples:
-
-    >>> def convert_to_array(lengths):
-    ...     \"\"\"Convert the anatomical lengths dictionary into an array
-    ...
-    ...     The array is the same that the one returned by the
-    ...     ``GetAnatomicalLengths`` function from the HuMAnS toolbox.
-    ...     \"\"\"
-    ...     L = np.zeros((len(lengths)))
-    ...     for length in lengths:
-    ...         L[length['HumansId']-1] = length["Value"]
-    ...     return L
-    >>> convert_to_array(_humans_anatomical_lengths(1.741))
-    array([ 0.3612575,  0.0915766,  0.1744482,  0.0386502,  0.4340313,
-            0.4221925,  0.170618 ,  0.0127   ,  0.1831532,  0.0181064,
-            0.2127595,  0.0915766,  0.2816938,  0.0386502,  0.4340313,
-            0.4221925,  0.170618 ,  0.0127   ,  0.1831532,  0.0181064,
-            0.2127595,  0.0915766,  0.2816938,  0.2688104,  0.2688104,
-            0.241999 ,  0.1899431,  0.1899431,  0.2428695,  0.2580162,
-            0.2580162])
-    >>> convert_to_array(_humans_anatomical_lengths(0.))
-    array([ 0.    ,  0.    ,  0.    ,  0.    ,  0.    ,  0.    ,  0.    ,
-            0.0127,  0.    ,  0.    , -0.0127,  0.    ,  0.    ,  0.    ,
-            0.    ,  0.    ,  0.    ,  0.0127,  0.    ,  0.    , -0.0127,
-            0.    ,  0.    ,  0.    ,  0.    ,  0.    ,  0.    ,  0.    ,
-            0.    ,  0.    ,  0.    ])
-
     """
 
     yfoot =  0.0222 * human_height
@@ -305,96 +278,13 @@ def height(lengths):
         raise ValueError("The legs have different lengths")
     return left_leg + lengths['yvT10'] + lengths['yvC7'] + lengths['yhead']
 
-def tags(human_height):
-    """
-    TODO: add body name
-    """
-    tdict = {}
-    for t in _humans_tags(human_height):
-        tdict[t['HumansName']] = {
-            'Position': t['Position'],
-        }
-    return tdict
-
 def _humans_tags(human_height):
     """
+    
     - ``HumansName`` and ``HumansId`` come from 
       ``AdditionnalData.maple``. 
     - ``Position`` refer to ``AddL`` and come from ``Humans36.c``
     
-    
-    Examples:
-
-    >>> def convert_to_array(tags):
-    ...     \"\"\"Convert the tags dictionary into an array
-    ...
-    ...     The array elements are in the same order that in the array
-    ...     returned by the ``GetTag2JointLengths`` function from the 
-    ...     HuMAnS toolbox.
-    ...     \"\"\"
-    ...     t = np.zeros((len(tags),3))
-    ...     for tag in tags:
-    ...         t[tag['HumansId']-1,:] = tag["Position"][:]
-    ...     return t
-    >>> convert_to_array(_humans_tags(1.741))
-    array([[ 0.2150135, -0.0386502,  0.       ],
-           [-0.0431768, -0.0386502,  0.       ],
-           [ 0.1152542, -0.0386502,  0.0531005],
-           [ 0.1152542, -0.0386502, -0.0531005],
-           [ 0.       , -0.4340313,  0.0433509],
-           [ 0.       , -0.4221925,  0.050489 ],
-           [ 0.       ,  0.       ,  0.076604 ],
-           [ 0.0471811,  0.0637206,  0.1213477],
-           [ 0.2150135, -0.0386502,  0.       ],
-           [-0.0431768, -0.0386502,  0.       ],
-           [ 0.1152542, -0.0386502, -0.0531005],
-           [ 0.1152542, -0.0386502,  0.0531005],
-           [ 0.       , -0.4340313, -0.0433509],
-           [ 0.       , -0.4221925, -0.050489 ],
-           [ 0.       ,  0.       , -0.076604 ],
-           [ 0.0471811,  0.0637206, -0.1213477],
-           [ 0.2122279,  0.       ,  0.       ],
-           [ 0.1831532,  0.170618 ,  0.       ],
-           [-0.0915766,  0.0525782,  0.2127595],
-           [ 0.       , -0.2816938,  0.0367351],
-           [ 0.       , -0.2668953,  0.0576271],
-           [ 0.       , -0.1899431,  0.       ],
-           [-0.0915766,  0.0525782, -0.2127595],
-           [ 0.       , -0.2816938, -0.0367351],
-           [ 0.       , -0.2668953, -0.0576271],
-           [ 0.       , -0.1899431,  0.       ],
-           [ 0.0915766,  0.241999 ,  0.       ],
-           [ 0.       ,  0.2428695,  0.       ]])
-    >>> convert_to_array(_humans_tags(0.))
-    array([[ 0.    , -0.    ,  0.    ],
-           [-0.    , -0.    ,  0.    ],
-           [ 0.    , -0.    ,  0.    ],
-           [ 0.    , -0.    , -0.    ],
-           [ 0.    , -0.    ,  0.    ],
-           [ 0.    , -0.    ,  0.    ],
-           [ 0.    ,  0.    ,  0.    ],
-           [ 0.    ,  0.    ,  0.    ],
-           [ 0.    , -0.    ,  0.    ],
-           [-0.    , -0.    ,  0.    ],
-           [ 0.    , -0.    , -0.    ],
-           [ 0.    , -0.    ,  0.    ],
-           [ 0.    , -0.    , -0.    ],
-           [ 0.    , -0.    , -0.    ],
-           [ 0.    ,  0.    ,  0.    ],
-           [ 0.    ,  0.    , -0.    ],
-           [ 0.    ,  0.    ,  0.    ],
-           [ 0.    ,  0.    ,  0.    ],
-           [-0.    ,  0.    , -0.0127],
-           [ 0.    , -0.    ,  0.    ],
-           [ 0.    , -0.    ,  0.    ],
-           [ 0.    , -0.    ,  0.    ],
-           [-0.    ,  0.    ,  0.0127],
-           [ 0.    , -0.    , -0.    ],
-           [ 0.    , -0.    , -0.    ],
-           [ 0.    , -0.    ,  0.    ],
-           [ 0.    ,  0.    ,  0.    ],
-           [ 0.    ,  0.    ,  0.    ]])
-
     """
     h = human_height
     L = anatomical_lengths(h)
@@ -574,6 +464,18 @@ def _humans_tags(human_height):
     return tags
 
 
+def tags(human_height):
+    """
+    TODO: add body name
+    """
+    tdict = {}
+    for t in _humans_tags(human_height):
+        tdict[t['HumansName']] = {
+            'Position': t['Position'],
+        }
+    return tdict
+
+
 
 def _humans_bodies(height, mass):
     """
@@ -703,169 +605,10 @@ def _humans_bodies(height, mass):
          "GyrationRadius": array([0.303, 0.261, 0.315])*L['yhead']})
     return bodies
 
-def human36(height=1.741, mass=73, name='', world=None): 
+def _human36(height=1.741, mass=73, name='', world=None): 
     """
 
     TODO: HuMAnS' doc about inertia is erroneous (the real math is in the IOMatrix proc in DynamicData.maple)
-    
-
-    Test:
-
-    >>> (w, bodies, tags) = human36()
-    >>> w.update_geometric()
-    >>> def tag_positions(tag_frames):
-    ...     \"\"\"The tags absolute position
-    ...
-    ...     The array elements are in the same order that in the array
-    ...     returned by the ``Tags`` function from the 
-    ...     HuMAnS toolbox. In HuMAnS, though, there is an 29th line
-    ...     which contains the center of mass position.
-    ...     \"\"\"
-    ...     from numpy import dot
-    ...     pos_dict= {}
-    ...     for (key, val) in tag_frames.iteritems():
-    ...         pos_dict[key] = dot(val.body.pose, val._bpose)[0:3,3]
-    ...
-    ...     pos_array = np.zeros((len(tag_frames),3))
-    ...     for t in _humans_tags(1.741):
-    ...         pos_array[t['HumansId']-1,:] = pos_dict[t['HumansName']]
-    ...     return pos_array
-    >>> p = tag_positions(tags)
-    >>> p
-    array([[  2.15013500e-01,   2.08166817e-17,   8.72241000e-02],
-           [ -4.31768000e-02,   2.08166817e-17,   8.72241000e-02],
-           [  1.15254200e-01,   2.08166817e-17,   1.40324600e-01],
-           [  1.15254200e-01,   2.08166817e-17,   3.41236000e-02],
-           [  0.00000000e+00,   3.86502000e-02,   1.30575000e-01],
-           [  0.00000000e+00,   4.72681500e-01,   1.37713100e-01],
-           [  0.00000000e+00,   8.94874000e-01,   1.63828100e-01],
-           [  4.71811000e-02,   9.58594600e-01,   1.21347700e-01],
-           [  2.15013500e-01,   2.08166817e-17,  -8.72241000e-02],
-           [ -4.31768000e-02,   2.08166817e-17,  -8.72241000e-02],
-           [  1.15254200e-01,   2.08166817e-17,  -1.40324600e-01],
-           [  1.15254200e-01,   2.08166817e-17,  -3.41236000e-02],
-           [  0.00000000e+00,   3.86502000e-02,  -1.30575000e-01],
-           [  0.00000000e+00,   4.72681500e-01,  -1.37713100e-01],
-           [  0.00000000e+00,   8.94874000e-01,  -1.63828100e-01],
-           [  4.71811000e-02,   9.58594600e-01,  -1.21347700e-01],
-           [  1.20651300e-01,   1.25613150e+00,   0.00000000e+00],
-           [  9.15766000e-02,   1.42674950e+00,   0.00000000e+00],
-           [  0.00000000e+00,   1.47932770e+00,   2.25459500e-01],
-           [  0.00000000e+00,   1.16316210e+00,   2.62194600e-01],
-           [  0.00000000e+00,   8.96266800e-01,   2.83086600e-01],
-           [  0.00000000e+00,   7.04408600e-01,   2.25459500e-01],
-           [  0.00000000e+00,   1.47932770e+00,  -2.25459500e-01],
-           [  0.00000000e+00,   1.16316210e+00,  -2.62194600e-01],
-           [  0.00000000e+00,   8.96266800e-01,  -2.83086600e-01],
-           [  0.00000000e+00,   7.04408600e-01,  -2.25459500e-01],
-           [  0.00000000e+00,   1.49813050e+00,   0.00000000e+00],
-           [  0.00000000e+00,   1.74100000e+00,   0.00000000e+00]])
-
-Here is another HuMAnS result
- q  =
- 
-    0.         
-    0.         
-  - 0.8147779  
-    0.         
-    0.         
-  - 0.0402589  
-    0.         
-    0.         
-  - 0.2575124  
-    0.         
-    0.         
-    0.2036690  
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.         
-    0.2        
-    0.         
-    0.         
-    0.         
-    0.         
- 
-Tags(q)             
- ans  =
- 
-  - 0.2325857    0.2006062    0.0872241  
-  - 0.4020078    0.3954354    0.0872241  
-  - 0.2980468    0.2758841    0.1403246  
-  - 0.2980468    0.2758841    0.0341236  
-  - 0.3445103    0.3882163    0.130575   
-  - 0.0169924    0.6730236    0.1377131  
-    0.           1.094874     0.1638281  
-    0.0471811    1.1585946    0.1213477  
-    0.2746577    0.1978398  - 0.0872241  
-    0.0168416    0.2117349  - 0.0872241  
-    0.1750430    0.2032086  - 0.1403246  
-    0.1750430    0.2032086  - 0.0341236  
-    0.0620359    0.2480055  - 0.130575   
-    0.0853943    0.6814078  - 0.1377131  
-    0.           1.094874   - 0.1638281  
-    0.0471811    1.1585946  - 0.1213477  
-    0.1206513    1.4561315    0.         
-    0.0915766    1.6267495    0.         
-    0.           1.6793277    0.2254595  
-    0.           1.3631621    0.2621946  
-    0.           1.0962668    0.2830866  
-    0.           0.9044086    0.2254595  
-    0.           1.6793277  - 0.2254595  
-    0.           1.3631621  - 0.2621946  
-    0.           1.0962668  - 0.2830866  
-    0.           0.9044086  - 0.2254595  
-    0.           1.6981305    0.         
-    0.           1.941        0.         
-  - 0.0023268    1.1764976    1.894E-20  
-
-           COM position as returned by HuMAnS for q(:)=0
-           0.0019382    0.9712007    1.894E-20 
-    > convert_to_array(_humans_tags(1.741))
-    
-    Test dynamical model (these were checked against HuMAnS):
-
-    >>> w = human36()[0]
-    >>> w.update_dynamic()
-    >>> w.mass[5,5]
-    73.000000000000014
-    >>> w.mass[41, 41] # neck
-    0.10430013572386694
-    >>> w.mass[40,40] # neck
-    0.020356790291165189
-    >>> w.mass[39, 39] # neck
-    0.10208399155688053
-    >>> w.mass[16, 16] # foot
-    0.001397215796713388
-    >>> w.mass[17, 17] # foot
-    0.0093741757009949949
-    >>> w.mass[10, 10] # foot
-    0.001397215796713388
-    >>> w.mass[11, 11] # foot
-    0.0093741757009949949
-
-
 
     """
     lengths = anatomical_lengths(height)
@@ -991,3 +734,5 @@ Tags(q)
     w.initjointspace()
     return (w, bodies, tags)
 
+def human36(height=1.741, mass=73, name='', world=None):
+    return _human36(height=height, mass=mass, name=name, world=world)[0]

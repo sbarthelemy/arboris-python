@@ -39,7 +39,7 @@ def simplearm(world=None, name=None, lengths=(0.5 ,0.4 , 0.2),
 
     Example:
 
-        >>> from arboris.robots import simplearm
+        >>> from arboris.robots.simplearm import simplearm
         >>> r = simplearm()
         >>> r.update_dynamic()
 

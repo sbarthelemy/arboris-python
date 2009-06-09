@@ -3,7 +3,7 @@ Test
 ====
 
 
-    >>> from arboris.robots import simplearm
+    >>> from arboris.robots.simplearm import simplearm
     >>> w = simplearm()
     >>> joints  = w.getjointslist()
     >>> joints[0].gpos[0]=0.5

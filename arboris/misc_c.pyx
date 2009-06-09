@@ -31,9 +31,22 @@ cdef asym(DTYPE_t v_x, DTYPE_t v_y, DTYPE_t v_z):
     R[1,2] = -v_x
     R[2,0] = -v_y
     R[2,1] = v_x
-    R[2,2] = 0
+    R[2,2] = 0.
     return R
 
+cdef norm3(DTYPE_t v_x, DTYPE_t v_y, DTYPE_t v_z):
+    """
+    Norm of a vector in R^3.
+    """
+    return sqrt(v_x*v_x+v_y*v_y+v_z*v_z)
+
+cdef norm6(DTYPE_t w_x, DTYPE_t w_y, DTYPE_t w_z, \
+           DTYPE_t v_x, DTYPE_t v_y, DTYPE_t v_z):
+    """
+    Norm of a vector in R^6.
+    """
+    return sqrt(v_x*v_x + v_y*v_y + v_z*v_z + \
+                w_x*w_x + w_y*w_y + w_z*w_z)
 
 
 #import Exception 

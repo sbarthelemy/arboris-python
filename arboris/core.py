@@ -159,7 +159,7 @@ class World(NamedObject):
 
     Example:
 
-    >>> from arboris.robots import simplearm
+    >>> from arboris.robots.simplearm import simplearm
     >>> w = simplearm()
     >>> w.update_geometric()
     >>> w.update_dynamic()
@@ -309,7 +309,7 @@ class World(NamedObject):
 
         Examples:
 
-        >>> from arboris.robots import simplearm
+        >>> from arboris.robots.simplearm import simplearm
         >>> w = simplearm()
         >>> from arboris.controllers import ProportionalDerivativeController
         >>> joints = w.getjointslist()
@@ -498,7 +498,7 @@ class World(NamedObject):
 
         TODO: check the two last tests results!
 
-        >>> from arboris.robots import simplearm
+        >>> from arboris.robots.simplearm import simplearm
         >>> w = simplearm()
         >>> from arboris.controllers import ProportionalDerivativeController
         >>> joints = w.getjointslist()
@@ -665,7 +665,7 @@ class World(NamedObject):
         TODO: repair this doctest
         TODO: check the last test result!
 
-        >> from arboris.robots import simplearm
+        >> from arboris.robots.simplearm import simplearm
         >> w = simplearm()
         >> joints = w.getjointsdict()
         >> joints['Shoulder'].gpos[:] = -1.
@@ -961,7 +961,7 @@ def simulate(world, time):
     """
     Example:
 
-    >>> from arboris.robots import simplearm
+    >>> from arboris.robots.simplearm import simplearm
     >>> w = simplearm()
     >>> simulate(w, numpy.arange(0,0.01,0.001))
     """
