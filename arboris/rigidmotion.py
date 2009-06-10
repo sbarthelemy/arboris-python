@@ -5,7 +5,7 @@ TODO: add doctests
 TODO: add support for FreeMotion
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
-import numpy as np
+from numpy import dot 
 import homogeneousmatrix as Hg
 import twistvector as T
 from abc import ABCMeta, abstractproperty
@@ -37,7 +37,7 @@ class RigidMotion(object):
 
     @property
     def ipose(self):
-        """Inverse of pose()
+        """Inverse of pose
         """
         return Hg.inv(self.pose)
 
@@ -49,7 +49,7 @@ class RigidMotion(object):
 
     @property
     def itwist(self):
-        return -np.dot(self.iadjoint, self.twist)
+        return -dot(self.iadjoint, self.twist)
 
     @property
     def adjoint(self):
@@ -69,10 +69,10 @@ class RigidMotion(object):
 
     @property
     def dadjoint(self):
-        return np.dot(np.asarray(self.adjoint),self.adjacency)
+        return dot(asarray(self.adjoint), self.adjacency)
     
     @property
     def idadjoint(self):
-        return np.dot(np.asarray(self.iadjoint),self.iadjacency)
+        return dot(self.iadjoint, self.iadjacency)
 
 
