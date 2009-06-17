@@ -48,6 +48,8 @@ Small changes
 
 - add visco-elastic joints
 
+- clean the cython mess (remove all or at least provide a .py equivalent)
+
 Contacts
 --------
 
