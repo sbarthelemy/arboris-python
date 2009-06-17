@@ -5,13 +5,13 @@ Constraints and contacts
 Gauss-Seidel algorithm
 ======================
 
-.. automethod:: arboris.World.update_constraints
+.. automethod:: arboris.core.World.update_constraints
 
 
 Constraints
 ===========
 
-.. currentmodule:: constraints
+.. currentmodule:: arboris.constraints
 
 
 Kinematic Constraints
@@ -21,8 +21,8 @@ Kinematic Constraints
    :members: update, solve
 
 
-Contact Constraints
--------------------
+Contacts
+--------
 
 .. note::
    we do not deal with non-point contact

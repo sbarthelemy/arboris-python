@@ -16,14 +16,15 @@ import sys, os
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
-sys.path.append(os.path.abspath('../src'))
+sys.path.append(os.path.abspath('..'))
 
 # General configuration
 # ---------------------
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.pngmath']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.pngmath',
+              'sphinx.ext.todo']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
@@ -42,9 +43,9 @@ copyright = '2009, Sébastien BARTHÉLEMY'
 # other places throughout the built documents.
 #
 # The short X.Y version.
-version = '4'
+version = '0.1'
 # The full version, including alpha/beta/rc tags.
-release = '4.1'
+release = '0.1.0pre2'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -61,6 +62,7 @@ today_fmt = '%B %d, %Y'
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
+default_role = 'math'
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 #add_function_parentheses = True
@@ -158,7 +160,7 @@ htmlhelp_basename = 'arboris-pythondoc'
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
   ('index', 'arboris-python.tex', 'arboris-python Documentation',
-   'Sébastien BARTHÉLEMY', 'manual'),
+   'Sebastien BARTHELEMY', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -180,14 +182,23 @@ latex_preamble = ''
 pngmath_latex_preamble = r"""\providecommand{\SO}{\text{SO}}
 \providecommand{\pre}[2][{}]{\vphantom{#2}^{#1}\!#2}
 \providecommand{\twist}[1][{}]{\vphantom{V}^{#1}\!V}
+\providecommand{\dtwist}[1][{}]{\vphantom{V}^{#1}\!\dot{V}}
+\providecommand{\J}[1][{}]{\vphantom{J}^{#1}\!J}
+\providecommand{\dJ}[1][{}]{\vphantom{J}^{#1}\!\dot{J}}
 \providecommand{\wrench}[1][{}]{\vphantom{W}^{#1}\!W}
 \providecommand{\vect}[2]{\vphantom{#2}^{#1}#2}
 \providecommand{\Hg}[1][{}]{\vphantom{H}^{#1}H}
+\providecommand{\H}[1][{}]{\vphantom{H}^{#1}H}
 \providecommand{\Ad}[1][{}]{\,\vphantom{Ad}^{#1}\!\!Ad}
+\providecommand{\dAd}[1][{}]{\,\vphantom{Ad}^{#1}\!\!\dot{Ad}}
 \providecommand{\GPos}{Q}
 \providecommand{\GPosSet}{\bar{\mathcal{Q}}}
 \providecommand{\GVel}{\nu}
+\providecommand{\dGVel}{\dot{\nu}}
 \providecommand{\GAcc}{\dot{\nu}}
 \providecommand{\GForce}{\tau}
 """
 
+#Misc
+#====
+todo_include_todos = True

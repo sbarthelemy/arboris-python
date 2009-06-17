@@ -4,6 +4,8 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 from distutils.core import setup, Command
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
+from sphinx.setup_command import BuildDoc
+
 
 from glob import glob
 import os
@@ -96,14 +98,16 @@ class TestCommand(Command):
         for rst in glob(pjoin('tests', '*.rst')):
             doctest.testfile(rst)
 
-
+version = '0.1.0pre2'
 
 setup(
     name='arboris',
+    author = 'Sébastien BARTHÉLEMY',
+    version = version,
     packages=['arboris',
               'arboris.robots'],
     cmdclass = {'build_ext': build_ext, 'test': TestCommand, 
-                'sphinx': SphinxCommand},
+                'sphinx': SphinxCommand, 'build_sphinx': BuildDoc},
     ext_modules = [Extension("arboris.misc_c",
                              ["arboris/misc_c.pyx"]),
                   Extension("arboris.homogeneousmatrix",

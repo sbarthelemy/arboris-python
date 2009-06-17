@@ -17,7 +17,7 @@ class WeightController(Controller):
     >>> c = WeightController(w)
     >>> w.register(c)
     >>> w.update_dynamic() #TODO change for update_kinematic
-    >>> (gforce, viscosity) = c.update()
+    >>> (gforce, impedance) = c.update()
 
     """
     def __init__(self, world, gravity=None, name=None):
@@ -36,8 +36,8 @@ class WeightController(Controller):
             g = dot(homogeneousmatrix.iadjoint(b.pose), self._gravity)
             gforce += dot(b.jacobian.T, dot(b.mass, g))
 
-        viscosity = zeros( (self._wndof, self._wndof) )
-        return (gforce, viscosity)
+        impedance = zeros( (self._wndof, self._wndof) )
+        return (gforce, impedance)
             
 
 class ProportionalDerivativeController(Controller):
@@ -79,10 +79,10 @@ class ProportionalDerivativeController(Controller):
 
     def update(self, dt, t):
         """
-        TODO: return non-zero viscosity
+        TODO: return non-zero impedance
         """
         gforce = zeros(self._wndof)
-        viscosity = zeros((self._wndof, self._wndof))
+        impedance = zeros((self._wndof, self._wndof))
         
         gpos = [] 
         gvel = []
@@ -94,6 +94,6 @@ class ProportionalDerivativeController(Controller):
         gforce[ix_(self._dof_map)] = \
                 dot(self.kp, self.gpos_des - gpos) + \
                 dot(self.kd, self.gvel_des - gvel)
-        return (gforce, viscosity)
+        return (gforce, impedance)
 
 

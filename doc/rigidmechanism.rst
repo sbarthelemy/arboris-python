@@ -7,12 +7,12 @@ We define a rigid mechanism as a finite number of rigid bodies interconnected by
 Ideal Joints
 ============
 
-An ideal joint is a kinematic restriction of the allowed relative twist of two rigid bodies :math:`i` and :math:`j` to a linear subspace of dimension :math:`k`, where the relative motion of the bodies is described by two sets of states, namely 
+An ideal joint is a kinematic restriction of the allowed relative twist of two rigid bodies `i` and `j` to a linear subspace of dimension `k`, where the relative motion of the bodies is described by two sets of states, namely 
 
-- a matrix :math:`\GPos`, parameterizing the relative configuration as :math:`\Hg[i]_j = \Hg[i]_j(\GPos)`,
-- a vector :math:`\GVel \in \Re^k`, parameterizing the relative twist as :math:`\twist[i]_{i/j} = X(\GPos) \GVel`
+- a matrix `\GPos`, parameterizing the relative configuration as `\Hg[i]_j = \Hg[i]_j(\GPos)`,
+- a vector `\GVel \in \Re^k`, parameterizing the relative twist as `\twist[i]_{i/j} = X(\GPos) \GVel`
 
-where :math:`X(\GPos)` depends smoothly on :math:`\GPos` and :math:`\nu = V_\GPos(\dot{\GPos})` with :math:`V_\GPos` invertible and linear in :math:`\dot{\GPos}`. Furthermore, there exists a mapping :math:`F_\GPos : \Re^k \rightarrow \GPosSet`.
+where `X(\GPos)` depends smoothly on `\GPos` and `\nu = V_\GPos(\dot{\GPos})` with `V_\GPos` invertible and linear in `\dot{\GPos}`. Furthermore, there exists a mapping `F_\GPos : \Re^k \rightarrow \GPosSet`.
 
 Implementation
 ==============
@@ -26,7 +26,7 @@ Several ideal joints are already implemented:
 - :class:`FreeJoint` for "free" joints, that do not constrain the relative
   motion.
 
-Let's take the example of an hinge joint, it has 1 dof, and may be parametrized by the angle :math:`q` and its derivative :math:`\dot{q}`. Here we create a joint, with angle of 60 degrees and rotational velocity of 2 radians per second.
+Let's take the example of an hinge joint, it has 1 dof, and may be parametrized by the angle `q` and its derivative `\dot{q}`. Here we create a joint, with angle of 60 degrees and rotational velocity of 2 radians per second.
 
 .. doctest::
 
@@ -37,7 +37,7 @@ Let's take the example of an hinge joint, it has 1 dof, and may be parametrized 
   >>> j.gpos
   >>> j.gvel
 
-The relative configuration corresponding to this joint is defined by the homogeneous :math:`\Hg[r]_n` is given by ``pose()``
+The relative configuration corresponding to this joint is defined by the homogeneous `\Hg[r]_n` is given by ``pose()``
 
 .. math::
 
@@ -57,7 +57,7 @@ The relative configuration corresponding to this joint is defined by the homogen
          [ 0.        ,  0.        ,  1.        ,  0.        ],
          [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
-Its inverse, :math:`\Hg[n]_r = \Hg[r]_n^{-1}` is given by ``ipose()``
+Its inverse, `\Hg[n]_r = \Hg[r]_n^{-1}` is given by ``ipose()``
 
 .. doctest::
 
@@ -67,7 +67,7 @@ Its inverse, :math:`\Hg[n]_r = \Hg[r]_n^{-1}` is given by ``ipose()``
          [ 0.        ,  0.        ,  1.        ,  0.        ],
          [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
-Similarly, the relative twist :math:`\twist[n]_{n/r}` is given by ``twist()`` and its inverse by ``itwist()``
+Similarly, the relative twist `\twist[n]_{n/r}` is given by ``twist()`` and its inverse by ``itwist()``
 
 .. doctest::
 
@@ -76,7 +76,7 @@ Similarly, the relative twist :math:`\twist[n]_{n/r}` is given by ``twist()`` an
   >>> j.itwist()
   array([ 0.,  0., -2.,  0.,  0.,  0.])
 
-Eventually, the :math:`X(\GPos)` matrix, which we (perhaps improperly) call 
+Eventually, the `X(\GPos)` matrix, which we (perhaps improperly) call 
 jacobian, is given by ``jacobian()``
 
 .. doctest::

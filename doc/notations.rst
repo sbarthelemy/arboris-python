@@ -8,12 +8,21 @@ A notation conversion table
 =======================  =======================  =======================  =======================  ============
 arboris-python           stramigioli icra2001     duindam 2006             li & sastry
 =======================  =======================  =======================  =======================  ============
-:math:`\Hg[i]_j`         :math:`H^i_j`            :math:`H^i_j`            :math:`g_{ij}`
-:math:`\twist[k]_{j/i}`  :math:`T^{k,i}_j` (p24)                                                    twist of j with respect to i expressed in k
-:math:`\twist[j]_{j/i}`  :math:`T^{j,i}_j`                                                          body twist
-:math:`\twist[i]_{j/i}`  :math:`T^{i,i}_j`                                                          "world" twist
+`\Hg[i]_j`               `H^i_j`                  `H^i_j`                  `g_{ij}`
+`\twist[k]_{j/i}`        `T^{k,i}_j` (p24)                                                          twist of `j` with respect to `i` expressed in `k`
+`\twist[j]_{j/i}`        `T^{j,i}_j`                                                                body twist
+`\twist[i]_{j/i}`        `T^{i,i}_j`                                                                "world" twist
 =======================  =======================  =======================  =======================  ============
 
+=======================  =======================  ==========================
+documentation            latex                    sourcecode
+=======================  =======================  ==========================
+`\Hg[i]_j`               ``\Hg[i]_j``             ``H_ij``
+`\Ad[i]_j`               ``\Ad[i]_j``             ``Ad_ij``
+`\twist[j]_{j/i}`        ``\twist[j]_{j/i}``      ``T_ji``
+`\J[j]_{j/i}`            ``\J[j]_{j/i}``          ``J_ji``
+`\dJ[j]_{j/i}`           ``\dJ[j]_{j/i}``         ``dJ_ji``
+=======================  =======================  ==========================
 
 Some formulas
 =============

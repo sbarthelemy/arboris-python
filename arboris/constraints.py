@@ -40,8 +40,8 @@ class BallAndSocketConstraint(BodyConstraint):
     Solving the constraint means computing the right constraint force that will
     ensure that the kinematic condition will be met.
 
-    Let's define the constraint velocity :math:`v` and the constraint force
-    :math:`f` as
+    Let's define the constraint velocity `v` and the constraint force
+    `f` as
 
     .. math::
 
@@ -54,12 +54,12 @@ class BallAndSocketConstraint(BodyConstraint):
         0 & 0 & 0 & 0 & 0 & 1
         \end{bmatrix} 
 
-   The constraint jacobian is then given by :math:`( \Ad[0]_1 \; \pre[1]J_{1/g} - \pre[0]J_{0/g} )`
+   The constraint jacobian is then given by `( \Ad[0]_1 \; \pre[1]J_{1/g} - \pre[0]J_{0/g} )`
 
-   In order to solve the constraint, an adjustement :math:`\Delta f` of the
+   In order to solve the constraint, an adjustement `\Delta f` of the
    constraint force is computed by the ``solve`` method. 
    This method is given as argument the current estimation of constraint
-   velocity, which corresponds to :math:`\Delta f = 0` and takes into account
+   velocity, which corresponds to `\Delta f = 0` and takes into account
    the coupling between the contraints.
 
     .. math::
@@ -87,7 +87,7 @@ class BallAndSocketConstraint(BodyConstraint):
     def update(self):
         r"""
         Compute the predicted relative position error between the socket and
-        ball centers, :math:`\pre[0]p_1(t)` and save it in ``self._pos0``.
+        ball centers, `\pre[0]p_1(t)` and save it in ``self._pos0``.
 
         .. math::
 
@@ -121,7 +121,7 @@ class BallAndSocketConstraint(BodyConstraint):
             \pre[0]p_1^k(t+dt) 
              &= \pre[0]p_1(t) + dt \; ( v^* +  Y \; \Delta f) 
 
-        given that we want :math:`\pre[0]p_1(t+dt) = 0`, we return 
+        given that we want `\pre[0]p_1(t+dt) = 0`, we return 
 
         .. math::
             \Delta f = -Y^{-1} \; 
@@ -129,13 +129,13 @@ class BallAndSocketConstraint(BodyConstraint):
                 \frac{\pre[0]p_1(t)}{dt} + v^* 
             \right)
 
-        and update the constraint force adjustment :math:`\Delta f` 
+        and update the constraint force adjustment `\Delta f` 
 
         The function arguments are
 
-        - ``vel``: :math:`v^*`
-        - ``admittance``: :math:`Y`
-        - ``dt``: :math:`dt`
+        - ``vel``: `v^*`
+        - ``admittance``: `Y`
+        - ``dt``: `dt`
 
         Tests:
 
@@ -165,7 +165,7 @@ class BallAndSocketConstraint(BodyConstraint):
 proximity = 0.01
 
 class PointContact(BodyConstraint):
-    r"""
+    r"""Parent class for all point contacts.
     
     Solving a contact constraint involves two steps:
 
@@ -199,7 +199,7 @@ class PointContact(BodyConstraint):
         This method calls the collision solver and updates the constraint
         status and the contact frames poses accordingly.
         The two frames have the same orientation, with the contact normal along
-        the :math:`z`-axis
+        the `z`-axis
         """
         (sdist, H_gc0, H_gc1) = self._collision_solver(self._shapes)
         #self._frames[0].bpose = dot(self._shapes[0].frame.bpose, H_s0c0)
@@ -217,9 +217,7 @@ class PointContact(BodyConstraint):
 
 
 class SoftFingerContact(PointContact):
-    r"""
-   
-    This class implements a "soft-finger" point contact constraint. 
+    r"""This class implements a "soft-finger" point contact constraint. 
 
     Let's consider two convex objects (shapes) and attach a frame to each of
     them in such a way that:
@@ -241,8 +239,8 @@ class SoftFingerContact(PointContact):
         0 & 0 & 0 & 1
         \end{bmatrix}
     
-    where :math:`d` is the signed distance between the objects. 
-    If :math:`d = 0`, the objects are in contact, if :math:`d < 0` they 
+    where `d` is the signed distance between the objects. 
+    If `d = 0`, the objects are in contact, if `d < 0` they 
     penetrate each other.
 
     We consider here point contacts with a Coulomb friction model,
@@ -264,7 +262,7 @@ class SoftFingerContact(PointContact):
         d &\ge 0 \\
         d \cdot f_z &=0
 
-    which are often sumarized as :math:`0 \le d \perp f_z \ge 0`.
+    which are often sumarized as `0 \le d \perp f_z \ge 0`.
 
     .. todo:: 
         check the contact rupture condition is good. (Duindam, in his phd, 
@@ -272,14 +270,14 @@ class SoftFingerContact(PointContact):
     
     Additionnaly, the Coulomb law of friction with the elliptic friction 
     model states that the contact is in static friction mode and only 
-    rolling motion occurs if :math:`d = 0` and:
+    rolling motion occurs if `d = 0` and:
 
     .. math::
         \frac{m_z^2}{e_p^2} + \frac{f_x^2}{e_x^2} + \frac{f_y^2}{e_y^2}
         &\le \mu^2 \cdot f_z^2
 
-    where :math:`e_p`, :math:`e_x`, :math:`e_y` are normalization coefficents
-    and :math:`\mu` is the coefficient of friction. 
+    where `e_p`, `e_x`, `e_y` are normalization coefficents
+    and `\mu` is the coefficient of friction. 
     In such a case, the contact relative twist has the form:
     
     .. math::
@@ -310,6 +308,7 @@ class SoftFingerContact(PointContact):
         s = \frac{
             \sqrt{e_p^2 \cdot \omega_z + e_x^2 \cdot v_x + e_y^2 \cdot v_y}}{
             \mu \cdot f_z}
+
     and
 
     .. math::
@@ -358,10 +357,10 @@ class SoftFingerContact(PointContact):
         r"""
 
     We map:
-        - ``vel``: :math:`v^*`
-        - ``admittance``: :math:`Y`
-        - ``dt``: :math:`dt`
-        - ``dforce`` : :math:`\Delta f`
+        - ``vel``: `v^*`
+        - ``admittance``: `Y`
+        - ``dt``: `dt`
+        - ``dforce`` : `\Delta f`
 
 
     Let's define the constraint velocity
@@ -397,7 +396,7 @@ class SoftFingerContact(PointContact):
     .. math::
         \wrench[0]_{0/1} = S^T \; f
 
-    at the :math:`k`-iest iteration of the Gauss-Seidel algorithm, we have
+    at the `k`-iest iteration of the Gauss-Seidel algorithm, we have
 
     .. math::
         f^k(t) &= f^{k-1}(t) + \Delta f \\
@@ -512,7 +511,7 @@ while denoting
         0 \\ 0 \\ 0 \\ -\frac{d(t)}{dt}
         \end{bmatrix} - Y f^{k-1}
 
-Note that :math:`s` is still unknown. However,
+Note that `s` is still unknown. However,
 
     .. math::
         \frac{m_z^2}{e_p^2} + \frac{f_x^2}{e_x^2} + \frac{f_y^2}{e_y^2}
@@ -532,7 +531,7 @@ can be rewritten
         \left( f^{k-1}+\Delta f \right)
         &=0
 
-so that if we can find :math:`s` solution of
+so that if we can find `s` solution of
 
     .. math::
         \alpha^T

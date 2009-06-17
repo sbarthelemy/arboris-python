@@ -6,8 +6,8 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
 
-SVG = img/sphere_sphere_collision.svg
-PNG = img/sphere_sphere_collision.png
+PNG = img/sphere_sphere_collision.png img/body_model.png
+
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4

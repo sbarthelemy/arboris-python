@@ -12,6 +12,7 @@ Contents:
    rigidmotion
    rigidmechanism
    simulation
+   dynamicalmodel
    constraints
    collisions
    modules

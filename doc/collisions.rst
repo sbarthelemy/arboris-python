@@ -3,10 +3,10 @@ Collisions
 ==========
 
 
-:mod:`collisions`
-=======================
+:mod:`arboris.collisions`
+=========================
 
-.. automodule:: collisions
+.. automodule:: arboris.collisions
    :members:
 
 

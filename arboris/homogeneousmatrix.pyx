@@ -54,12 +54,14 @@ cpdef rotzyx(DTYPE_t angle_z, DTYPE_t angle_y, DTYPE_t angle_x) :
     
     In short:  R = Rz * Ry * Rx
 
-    example:
+    Example:
+    
     >>> rotzyx(3.14/6, 3.14/4, 3.14/3)
     array([[ 0.61271008,  0.27992274,  0.73907349,  0.        ],
            [ 0.35353151,  0.73930695, -0.57309746,  0.        ],
            [-0.70682518,  0.61242835,  0.35401931,  0.        ],
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
+    
     """
     cdef DTYPE_t sz = sin(angle_z)
     cdef DTYPE_t cz = cos(angle_z)
@@ -86,12 +88,14 @@ cpdef rotzy(DTYPE_t angle_z, DTYPE_t angle_y):
     
     In short:  R = Rz * Ry
 
-    example:
+    Example:
+    
     >>> rotzy(3.14/6, 3.14/4)
     array([[ 0.61271008, -0.4997701 ,  0.61222235,  0.        ],
            [ 0.35353151,  0.86615809,  0.35325009,  0.        ],
            [-0.70682518,  0.        ,  0.70738827,  0.        ],
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
+    
     """
     cdef DTYPE_t sz = sin(angle_z)
     cdef DTYPE_t cz = cos(angle_z)
@@ -115,7 +119,8 @@ cpdef rotzx(DTYPE_t angle_z, DTYPE_t angle_x):
     
     In short:  R = Rz * Rx
 
-    example:
+    Example:
+    
     >>> rotzx(3.14/6, 3.14/3)
     array([[ 0.86615809, -0.25011479,  0.43268088,  0.        ],
            [ 0.4997701 ,  0.43347721, -0.74988489,  0.        ],
@@ -145,7 +150,8 @@ cpdef rotyx(DTYPE_t angle_y, DTYPE_t angle_x):
     
     In short:  R = Ry * Rx
 
-    example:
+    Example:
+    
     >>> rotyx(3.14/4, 3.14/3)
     array([[ 0.70738827,  0.61194086,  0.35373751,  0.        ],
            [ 0.        ,  0.50045969, -0.86575984,  0.        ],
@@ -174,7 +180,8 @@ cpdef rotx(DTYPE_t angle):
     """
     Homogeneous matrix of a rotation around the x-axis
    
-    example:
+    Example:
+    
     >>> rotx(3.14/6)
     array([[ 1.        ,  0.        ,  0.        ,  0.        ],
            [ 0.        ,  0.86615809, -0.4997701 ,  0.        ],
@@ -208,7 +215,8 @@ cpdef roty(DTYPE_t angle):
     """
     Homogeneous matrix of a rotation around the y-axis
 
-    example:
+    Example:
+    
     >>> roty(3.14/6)
     array([[ 0.86615809,  0.        ,  0.4997701 ,  0.        ],
            [ 0.        ,  1.        ,  0.        ,  0.        ],
@@ -229,8 +237,10 @@ cpdef roty(DTYPE_t angle):
 
 cpdef rotz(DTYPE_t angle):
     """
-    Rotation around the z-axis
-    example:
+    Rotation around the z-axis.
+
+    Example:
+
     >>> rotz(3.14/6)
     array([[ 0.86615809, -0.4997701 ,  0.        ,  0.        ],
            [ 0.4997701 ,  0.86615809,  0.        ,  0.        ],
@@ -252,7 +262,7 @@ cpdef rotz(DTYPE_t angle):
 #must ask about cythoning this one :'cause booleans are not the same in python and c
 def ishomogeneousmatrix(H, tol=tol):
     """
-    Return true if input is an homogeneous matrix
+    Return true if input is an homogeneous matrix.
     """
     return (H.shape == (4,4)) \
         and (numpy.abs(numpy.linalg.det(H[0:3,0:3])-1)<=tol) \
@@ -260,14 +270,17 @@ def ishomogeneousmatrix(H, tol=tol):
 
 def checkishomogeneousmatrix(H, tol=tol):
     """
-    Raise an error if input is not an homogeneous matrix
+    Raise an error if input is not an homogeneous matrix.
     """
     if not ishomogeneousmatrix(H, tol):
         raise ValueError("{H} is not an homogeneous matrix".format(H=H))
 
 cpdef inv(numpy.ndarray H):
     """
-    Inverse an homogeneous matrix
+    Invert an homogeneous matrix.
+
+    Example:
+
     >>> H = array(
     ...     [[ 0.70738827,  0.        , -0.70682518,  3.        ],
     ...      [ 0.61194086,  0.50045969,  0.61242835,  4.        ],
@@ -294,7 +307,14 @@ cpdef inv(numpy.ndarray H):
 
 cpdef adjoint(numpy.ndarray H):
     """
-    Return the adjoint of the homogeneous matrix
+    Adjoint (6x6 matrix) of the homogeneous matrix.
+
+    :param H: homogeneous matrix 
+    :type H: 4x4 ndarray
+    :return: adjoint matrix
+    :rtype: 6x6 ndarray
+
+    Example:
 
     >>> H = array(
     ...     [[ 0.70738827,  0.        , -0.70682518,  3.        ],
@@ -327,7 +347,7 @@ cpdef adjoint(numpy.ndarray H):
 
 cpdef iadjoint(numpy.ndarray H):
     """
-    Return the adjoint of the inverse homogeneous matrix
+    Return the adjoint (6x6 matrix) of the inverse homogeneous matrix.
     """
     return adjoint(inv(H))
 

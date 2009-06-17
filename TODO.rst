@@ -16,8 +16,18 @@ Miscalleneous
 Packaging
 =========
 
-- fix program version in sphinx doc & setup.py
-- compile the doc from setup.py
+- get version/release number from git tags
+
+Documentation
+=============
+
+- replace every \Hg by \H
+
+- draw he class disgram
+
+- make an example showing energy evolution
+
+- make an example showing computational singularity
 
 Programming
 ===========
@@ -25,49 +35,35 @@ Programming
 Small changes
 -------------
 
-- find a way/class to collect states
+- find a way to collect states
 
   - states are positions and (sometimes) velocities.
   - velocities are already grouped in Wordl._gvel
   - positions might be grouped 
 
+- find a safe way to set states/pos/velocity (better than joint.gvel[0] = 2.)
 - create functions to merge bodies/worlds etc.
+
 - implement a true recursive-newton-euler linearized algorithm?
+
+- add visco-elastic joints
 
 Contacts
 --------
 
 - understand why contacts are bumping
+
 - add sliding friction law
 
 Dynamic
 -------
 
-- document dynamics
 - thorougly test dynamical model on a tree-like robot
+  
 - check results against HuMAnS
+
 - support kinematic (stateless) joints
 
-Controller interface
---------------------
-
-Most users will interact with arboris through controllers. Current controller 
-API is quite bad, for several reasons:
-
-- we have to give ``joints`` argument two times::
-
-    c0 = ProportionalDerivativeController(w.joints[0:3], Kp, Kd, gpos_des)
-    w.add_jointcontroller(c0, w.joints[0:3])
-
-- ``joint._dof`` is initialized by  ``w.add_jointcontroller`` and is not 
-  available at the joint ``__init__()``
-- currently, we have too much or too litte encapsulation
-- the controller does not know the world
-
-
-A solution might be to remove the encapsulation: every controller would produce gforces and viscosity for every joint. (controllers would stil need to know w.ndof.) We could additionnaly provide an "encapsulator" controller class which would do the encapsulation.
-
-We could also give to the controller views of the global gforce and viscosity that it would update.
 
 Visu_osg
 --------

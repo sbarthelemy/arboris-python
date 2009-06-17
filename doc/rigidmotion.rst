@@ -22,9 +22,9 @@ An homogeneous matrix `H` is a matrix of the form
     \end{bmatrix}
     \in \Re^{4\times4}
 
-with :math:`R^{-1}=R^T \in \Re^{3\times3}` and :math:`p \in \Re^{3\times1}`.
+with `R^{-1}=R^T \in \Re^{3\times3}` and `p \in \Re^{3\times1}`.
 
-The *pose* (position and orientation, also known as the *configuration*) of a (right-handed) coordinate frame :math:`\Psi_b` regarding to a reference (right-handed) coordinate frame :math:`\Psi_a`: can be described by an homogeneous matrix
+The *pose* (position and orientation, also known as the *configuration*) of a (right-handed) coordinate frame `\Psi_b` regarding to a reference (right-handed) coordinate frame `\Psi_a`: can be described by an homogeneous matrix
 
 .. math::
     \Hg[a]{b} = 
@@ -37,9 +37,9 @@ The *pose* (position and orientation, also known as the *configuration*) of a (r
 
 with:
 
-- :math:`\pre[a]p_b` defined as the :math:`3 \times 1` column vector of coordinates of the origin of :math:`Psi_b` expressed in :math:`\Psi_a`.
+- `\pre[a]p_b` defined as the `3 \times 1` column vector of coordinates of the origin of `Psi_b` expressed in `\Psi_a`.
 
-- :math:`\pre[a]R_b` defined as the :math:`3 \times 3` matrix with the columns equal to the coordinates of the three unit vectors along the frame axes of :math:`\Psi_b` expressed in :math:`\Psi_a`.
+- `\pre[a]R_b` defined as the `3 \times 3` matrix with the columns equal to the coordinates of the three unit vectors along the frame axes of `\Psi_b` expressed in `\Psi_a`.
 
 
 Velocity of a coordinate frame

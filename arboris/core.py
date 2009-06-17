@@ -1,6 +1,5 @@
 # coding=utf-8
 """
-...
 
 A world (instance of the :class:`World` class) consists of bodies (instances of the :class:`Body` class) interlinked by joints (instances of :class:`Joint` subclasses). Joints serve two purposes in arboris: 
     
@@ -12,8 +11,7 @@ joints, so that the state (pose and velocity) of each body can be computed from
 the state of its parent joints (the joints on the path from the body to the root
 of the tree (which is body called "ground")).
 
-One or more frames (instances of the :class:`Frame` class) can be associated to
-bodies and serve as anchor points to the joints
+One or more frames (instances of the :class:`SubFrame` class) can be associated to bodies and serve as anchor points to the joints.
 
 """
 
@@ -117,9 +115,9 @@ class BodyConstraint(Constraint):
 
     @abstractmethod
     def ndol(self):
-        """
-        number of degree of "liaison" (in french: *nombre de degrés de liaison*)
-        This is equal to 6-ndof
+        """Number of degree of "liaison" (in french: *nombre de degrés de liaison*).
+        
+        This is equal to 6-ndof.
         """
         pass
 
@@ -177,8 +175,10 @@ class World(NamedObject):
         self._mass =  array([])# updated by self.update_dynamic()
         self._gforce =  array([])
         self._viscosity = array([]) # updated by self.update_dynamic()
-        self._controller_viscosity = array([]) # updated by self.update_dynamic()
         self._nleffects = array([]) # updated by self.update_dynamic()
+        self._impedance = array([]) # updated by self.update_controller()
+        self._admittance = array([]) # updated by self.update_controller()
+
 
 
     def iterbodies(self):
@@ -307,7 +307,7 @@ class World(NamedObject):
                 the object that will be added. It may be a subframe, a shape,
                 a joint, a body or a controller.
 
-        Examples:
+        Example:
 
         >>> from arboris.robots.simplearm import simplearm
         >>> w = simplearm()
@@ -403,10 +403,16 @@ class World(NamedObject):
         return self._gvel.copy()
 
     def update_geometric(self):
-        """
-        Compute the forward geometric model. 
+        """Compute the forward geometric model. 
         
         This will recursively update each body pose attribute.
+        
+        Example:
+
+        >>> from arboris.robots.simplearm import simplearm
+        >>> w = simplearm()
+        >>> w.update_geometric()
+        
         """
         self.ground.update_geometric(eye(4))
 
@@ -420,14 +426,38 @@ class World(NamedObject):
         self.ground.update_kinematic(eye(4),zeros((6,self._ndof)))
 
     def update_dynamic(self):
-        """
-        Compute the forward geometric, kinematic and dynamic models. 
+        r"""Compute the forward geometric, kinematic and dynamic models. 
         
-        This will recursively update 
+        Recursively update each body pose, jacobian, djacobian, twist 
+        and nleffects attributes (thanks to the
+        :meth:`arboris.Body.update_dynamic` method) and then update
+        the world mass, viscosity and nleffects attributes.
+
+        **Example:**
+
+        >>> from arboris.robots.simplearm import simplearm
+        >>> w = simplearm()
+        >>> w.update_dynamic()
         
-        - each body pose, jacobian, djacobian, twist and nleffects 
-          attributes 
-        - the world mass, viscosity and nleffects attributes
+
+        **Algorithm:**
+
+        The (world) generalized mass, viscosity and nleffect matrices 
+        respectively denoted `M`, `B` and `N` are computed from each body 
+        `b` jacobian `\J[b]_{b/g}`, hessian `\dJ[b]_{b/g}`, mass `M_b`, 
+        viscosity `B_b` and nleffects `N_b` matrices as :
+
+        .. math::
+            M &= \sum_b \J[b]_{b/g}^T \; M_b \; \J[b]_{b/g} \\
+            B &= \sum_b \J[b]_{b/g}^T \; B_b \; \J[b]_{b/g} \\
+            N &= \sum_b \J[b]_{b/g}^T 
+            \left( M_b \; \dJ[b]_{b/g} + N_b \; \J[b]_{b/g}\right)
+
+        If there is no additionnal constraint (such as contacts) nor actuation
+        involved, the resulting (free) model is then:
+
+        .. math::
+            M \dGVel + \left( N + B \right) \GVel = 0
 
         """        
         self.ground.update_dynamic(
@@ -453,50 +483,12 @@ class World(NamedObject):
     def update_controllers(self, dt, t=None):
         r"""
 
-        Let's consider the following discretized 2nd-order model:
-
-        .. math::
-            M(t) \dot\GVel(t+dt) + \left( N(t)+B(t) )\right) \GVel(t+dt) &= 
-            \GForce(t)
-
-        considering
+        :param dt:
+        :type dt: float
+        :param t:
+        :type t: float
         
-        .. math::
-            \dot\GVel(t+dt) = \frac{\GVel(t+dt) - \GVel(t)}{dt}
-        
-        we get
-        
-        .. math::
-            \left( \frac{M(t)}{dt}+N(t)+B(t) \right) \GVel(t+dt) &= 
-            \frac{M(t)}{dt} \GVel(t) + \GForce(t)
-        
-        Here :math:`\GForce(t)` sums up the generalized forces due to 
-        all the active controllers and constraints.
-
-        The generalized force due to a controller has the following form:
-        
-        .. math::
-            \GForce_a(t) &= \GForce_{0a}(t) + Z_a(t) \GVel(t+td)
-
-        where :math:`\GForce_{0a}(t)` is constant during the 
-        :math:`[t, t+dt]` period of time.
-
-        It leads us to
-
-        .. math::
-            \left( \frac{M(t)}{dt}+N(t)+B(t) -\sum_a Z_a(t) \right) 
-            \GVel(t+dt) &= 
-            \frac{M(t)}{dt} \GVel(t) + \sum_a \GForce_{0a}(t)
-
-        One can the define impedance (:math:`Z`) and admittance (:math:`Y`)
-        matrices:
-    
-        .. math::
-            Z(t) &= \frac{M(t)}{dt}+N(t)+B(t)-\sum_a Z_a(t) \\
-            Y(t) &= Z^{-1}(t)
-
-
-        TODO: check the two last tests results!
+        **Example:**
 
         >>> from arboris.robots.simplearm import simplearm
         >>> w = simplearm()
@@ -518,17 +510,64 @@ class World(NamedObject):
         array([[ 0.00732464, -0.02030368,  0.02442014],
                [-0.02030368,  0.07595336, -0.14623345],
                [ 0.02442014, -0.14623345,  0.76905959]])
+        
+        
+        **Algorithm:**
+
+        Let's consider the following discretized 2nd-order model:
+
+        .. math::
+            M(t) \dGVel(t+dt) + \left( N(t)+B(t) )\right) \GVel(t+dt) &= 
+            \GForce(t)
+
+        considering
+        
+        .. math::
+            \dGVel(t+dt) = \frac{\GVel(t+dt) - \GVel(t)}{dt}
+        
+        we get
+        
+        .. math::
+            \left( \frac{M(t)}{dt}+N(t)+B(t) \right) \GVel(t+dt) &= 
+            \frac{M(t)}{dt} \GVel(t) + \GForce(t)
+        
+        Here `\GForce(t)` sums up the generalized forces due to 
+        all the active controllers and constraints.
+
+        The generalized force due to a controller has the following form:
+        
+        .. math::
+            \GForce_a(t) &= \GForce_{0a}(t) + Z_a(t) \GVel(t+td)
+
+        where `\GForce_{0a}(t)` is constant during the 
+        `[t, t+dt]` period of time.
+
+        It leads us to
+
+        .. math::
+            \left( \frac{M(t)}{dt}+N(t)+B(t) -\sum_a Z_a(t) \right) 
+            \GVel(t+dt) &= 
+            \frac{M(t)}{dt} \GVel(t) + \sum_a \GForce_{0a}(t)
+
+        One can the define impedance (`Z`) and admittance (`Y`)
+        matrices:
+    
+        .. math::
+            Z(t) &= \frac{M(t)}{dt}+N(t)+B(t)-\sum_a Z_a(t) \\
+            Y(t) &= Z^{-1}(t)
+
+
+        TODO: check the two last tests results!
+
+
 
         """
-        self._controller_viscosity[:] = 0.
         self._gforce[:] = 0.
+        self._impedance = self._mass/dt + self._viscosity + self._nleffects 
         for a in self._controllers:
-            (gforce, viscosity) = a.update(dt, t)
+            (gforce, impedance) = a.update(dt, t)
             self._gforce += gforce
-            self._controller_viscosity += viscosity
-        
-        self._impedance = self._mass/dt + self._viscosity + \
-            self._nleffects - self._controller_viscosity 
+            self._impedance -= impedance
         self._admittance = numpy.linalg.inv(self._impedance)
 
     def update_constraints(self, dt):
@@ -543,16 +582,16 @@ class World(NamedObject):
 
         where:
 
-        - the admittance matrix  :math:`Y` takes into account a 
+        - the admittance matrix  `Y` takes into account a 
           first order model of the actuators,
 
-        - the actuators generalized forces :math:`\GForce(t)` 
-          are assumed to be constant during the :math:`[t , t+dt ]`
+        - the actuators generalized forces `\GForce(t)` 
+          are assumed to be constant during the `[t , t+dt ]`
           time interval.
         
         This (constraint-free) model must be completed by constraints 
-        forces :math:`\pre[c]f`, which are mapped to generalized forces
-        by the constraint jacobian :math:`\pre[c]J_c^T`:
+        forces `\pre[c]f`, which are mapped to generalized forces
+        by the constraint jacobian `\pre[c]J_c^T`:
 
         .. math::
             \GVel(t+dt) 
@@ -562,7 +601,7 @@ class World(NamedObject):
             \right)
   
         one can also define the constraint velocity  as: 
-        :math:`\pre[c]v = \pre[c]J_c \; \GVel` so that:
+        `\pre[c]v = \pre[c]J_c \; \GVel` so that:
     
         .. math::
             \pre[c]v(t+dt) 
@@ -574,9 +613,9 @@ class World(NamedObject):
             + \sum_d \; \pre[c]J_c(t) \; Y(t) \; \pre[d]J_d^T(t) 
             \; \pre[d]f(t)
         
-        one can define the (global) constraints velocity :math:`v'`, 
-        force :math:`f'`, jacobian matrix :math:`J'` 
-        and admittance matrix :math:`Y'`:
+        one can define the (global) constraints velocity `v'`, 
+        force `f'`, jacobian matrix `J'` 
+        and admittance matrix `Y'`:
 
         .. math::
             J'(t) &=
@@ -607,16 +646,20 @@ class World(NamedObject):
 
         This method computes the constraint forces in three steps:
 
-        - ask each constraint object for its jacobian,
+        - ask each active constraint object for its jacobian,
 
-        - compute :math:`J`, :math:`v`  and :math:`Y`,
+        - compute `J`, `v`  and `Y`,
 
         - iterate over each constraint object in order to compute 
-          :math:`\pre[c]f`. At each iteration the force is 
-          updated by :math:`\Delta\pre[c]f`
-        
-        """
+          `\pre[c]f`. At each iteration the force is 
+          updated by `\Delta\pre[c]f`
 
+        - envetually add each active constraint generalized force to
+          world :attr:`~arboros.core.World._gforce` property.
+        
+        TODO: add an example.
+
+        """
         constraints = []
         ndol = 0
         for c in self._constraints:
@@ -647,14 +690,14 @@ class World(NamedObject):
     def integrate(self, dt):
         r"""
         
-        From the :method:`update_controllers` and 
-        :method:`update_constraints` methods we get the new 
+        From the :meth:`update_controllers` and 
+        :meth:`update_constraints` methods we get the new 
         generalized velocity.
 
         .. math::
             \GVel(t+dt) &= Y(t) \left(
             \frac{M(t)}{dt} \GVel(t) 
-            + \sum_{c=\text{controllers}} \GForce_{0c}(t)
+            + \sum_{c=\text{controllers}} \GForce_{0a}(t)
             + \sum_{c=\text{constraints}} \GForce_{c}(t)
             \right)
 
@@ -869,46 +912,119 @@ class Body(NamedObject, Frame):
             child_pose = dot(H_gp, H_pc)
             j._frames[1].body.update_geometric(child_pose)
         
-    def update_kinematic(self,pose,jac):
-        raise NotImplemented #TODO: remove the method or implement it
-    
-    def update_dynamic(self,pose,jac,djac,twist):
-        """
-        T_ab: velocity of {a} relative to {b} expressed in {a} (body twist)
+    def update_dynamic(self, pose, jac, djac, twist):
+        r"""Sets
 
-        - g: ground body
-        - p: parent body
-        - c: child body
-        - r: reference frame of the joint, rigidly fixed to the parent body
-        - n: new frame of the joint, rigidly fixed to the child body
+        This method (1) sets the body dynamical model (pose, jacobian, 
+        hessian and twist) to the values given as argument, (2) computes 
+        the dynamical model of the children bodies and (3) call the 
+        equivalent method on them.
+
+        As a result, the dynamical model of all the bodies is computed 
+        recursively.
+       
+        :param pose: the body pose relative to the ground: `\Hg[g]_b`
+        :type pose: 4x4 ndarray
+        :param jac: the body jacobian relative to the world (in body frame):
+            `\J[b]_{b/g}`
+        :type jac: 6x(ndof) ndarray
+        :param djac: the derivative of the body jacobian: `\dJ[b]_{b/g}`
+        :param twist: the body twist: `\twist[b]_{b/g}`
+        :type twist: 6 ndarray
+
+        **Algorithm:**
         
-        so H_nc and H_pr are constant.
+        Let's define the following notations:
 
-        H_gc = H_gp * H_pc
-             = H_gp * (H_pr * H_rn * H_nc)
+        - `g`: the ground body,
+        - `p`: the parent body (which is the present :class:`arboris.Body` 
+          instance)
+        - `c`: a child body,
+        - `j`: the joint between the bodies `p` and `c`,
+        - `r`: reference frame of the joint `j`, rigidly fixed to the parent 
+          body
+        - `n`: new frame of the joint `j`, rigidly fixed to the child body
+        
+        .. image:: img/body_model.png
 
-        T_cg = Ad_cp * T_pg + T_cp
-             = Ad_cp * T_pg + Ad_cn * T_nr
-             = Ad_cp * J_pg * dQ + Ad_cn * J_nr * dq
-             = J_cg * dQ
+        One can notice that `\Hg[n]_c` and `\Hg[p]_r` are constant.
+        
+        The child body pose can be computed as
+
+        .. math::
+
+            \Hg[g]_c &= \Hg[g]_p \; \Hg[p]_c \\
+                     &= \Hg[g]_p \; (\Hg[p]_r \; \Hg[r]_n \; \Hg[n]_c)
+
+        where `\Hg[r]_n` depends on the joint generalized configuration and is 
+        given by its :attr:`~arboris.core.Joint.pose` attribute.
+
+        The chil body twist is given as
+
+        .. math::
+
+            \twist[c]_{c/g} &= \Ad[c]_p \; \twist[p]_{p/g} + \twist[c]_{c/p} \\
+            &= \Ad[c]_p \; \twist[p]_{p/g} + \Ad[c]_n \; \twist[n]_{n/r} \\
+            &= \Ad[c]_p \; \J[p]_{p/g} \; \GVel 
+               + \Ad[c]_n \; \J[n]_{n/r} \; \GVel_j \\
+            &= \J[c]_{c/g} \; \GVel
+
+        where  `\twist[n]_{n/r}` isgiven by the joint
+        :attr:`~arboris.core.Joint.twist` attribute. 
+        \GVel_j is the generalized velocity of the joint `j` and is 
+        related to the world generalized velocity by trivial projection
+        
+        .. math::
+            \GVel_j &= 
+                \begin{bmatrix}
+                    0 & \cdots &0 & I & 0 & \cdots & 0
+                \end{bmatrix} \; \GVel
+
+        therefore, the child body jacobian is
+
+        .. math::
+            \J[c]_{c/g} &= \Ad[c]_p \; \J[p]_{p/g} + 
+            \begin{bmatrix}
+            0 & \cdots & 0 & \Ad[c]_n \; \J[n]_{n/r} & 0 & \cdots & 0
+            \end{bmatrix} \\
+
+        where `\J[n]_{n/r}` is given by the joint
+        :attr:`~arboris.core.Joint.jacobian` attribute. Derivating the previous
+        expression leads to the child body acceleration:
+
+        .. math::
+            \dtwist[c]_{c/g} &= \dAd[c]_p \; \J[p]_{p/g} \; \GVel
+            + \Ad[c]_p \; \dJ[p]_{p/g} \; \GVel
+            + \Ad[c]_p \; \J[p]_g \; \dGVel
+            + \Ad[c]_n \; \dJ[n]_{n/r} \; \GVel_j
+            + \Ad[c]_n \; \J[n]_{m/r} \dGVel_j \\
+            &= \J[c]_{c/g} \; \dGVel + \dJ[c]_{c/g} \; \GVel
+
+        the expression of the child body hessian is then obtained by
+        identification:
+
+        .. math::
+            \dJ[c]_{c/g} \; \GVel
+            &= \dAd[c]_p \; \J[p]_{p/g} \; \GVel
+            + \Ad[c]_p \; \dJ[p]_{p/g} \; \GVel
+            + \Ad[c]_n \; \dJ[n]_{n/r} \; \GVel_j \\
+        
+            \dJ[c]_{c/g} 
+            &= \dAd[c]_p \; \J[p]_{p/g} + \Ad[c]_p \; \dJ[p]_{p/g} + 
+            \begin{bmatrix}
+            0 & \cdots & 0 & (\Ad[c]_n \; \dJ[n]_{n/r}) & 0 & \cdots & 0
+            \end{bmatrix}
+
         with 
-        dq = [0...0 I 0...0 ] *  dQ  and
-        J_cg = Ad_cp * J_pg + [ 0...0 (Ad_cn * J_nr) 0...0 ]
 
-        dT_cg = dAd_cp * J_pg * dQ 
-                + Ad_cp * dJ_pg * dQ  
-                + Ad_cp * J_pg * ddQ 
-                + Ad_cn * dJ_nr * dq
-                + Ad_cn * J_nr * ddq
-              = J_cg * ddQ + dJ_cg * dQ 
-        so:
-        dJ_cg * dQ = dAd_cp * J_pg * dQ 
-                     + Ad_cp * dJ_pg * dQ  
-                     + Ad_cn * dJ_nr * dq
-        dJ_cg = dAd_cp * J_pg + Ad_cp * dJ_pg 
-                + [ 0...0 (Ad_cn * dJ_nr) 0...0 ]
-        with dAd_cp = Ad_cn * dAd_nr * Ad_rp
+        .. math::
+            \dAd[c]_p &= \Ad[c]_n \; \dAd[n]_r \; \Ad[r]_p
 
+        and where `\dAd[n]_r` and `\dJ[n]_{n/r}` are respectively given by 
+        the joint :attr:`~arboris.core.Joint.idadjoint` and 
+        :attr:`~arboris.core.Joint.djacobian` attributes.
+
+        T_ab: velocity of {a} relative to {b} expressed in {a} (body twist)
         """
         self._pose = pose
         self._jacobian = jac
@@ -918,7 +1034,7 @@ class Body(NamedObject, Frame):
             [[             0,-self.twist[2], self.twist[1]],
              [ self.twist[2],             0,-self.twist[0]],
              [-self.twist[1], self.twist[0],             0]])
-        if self.mass[3,3]==0:
+        if self.mass[3,3]<=1e-10: #TODO: avoid hardcoded value
             rx = zeros((3,3))
         else:
             rx = self.mass[0:3,3:6]/self.mass[3,3] #TODO: better solution?
@@ -957,15 +1073,22 @@ class Body(NamedObject, Frame):
 
 
 def simulate(world, time):
+    """Run a full simulation, 
 
-    """
+    :param world: the world to be simulated
+    :type world: :class:`arboris.core.World`
+    :param time: a list of distinct times
+    :type time: iterable
+
     Example:
 
     >>> from arboris.robots.simplearm import simplearm
     >>> w = simplearm()
-    >>> simulate(w, numpy.arange(0,0.01,0.001))
-    """
+    >>> dt = 0.001
+    >>> time = numpy.arange(0,0.01,0.001)
+    >>> simulate(w, time)
 
+    """
     previous_t = time[0]
     for t in time[1:]:
         dt = t - previous_t
@@ -973,5 +1096,5 @@ def simulate(world, time):
         world.update_controllers(dt, t)
         world.update_constraints(dt)
         world.integrate(dt)
-        
+        previous_t = t    
 

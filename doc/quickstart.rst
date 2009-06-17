@@ -147,14 +147,15 @@ method.
 Drawing a robot
 ===============
 
-The simplest way to have a graphic representation of a world is to use :class:`DrawableWorld` objects instead of :class:`World` ones. The :class:`DrawableWorld` class inherits form the :class:`World` one, thus everythng we've learnt before  still holds. It adds 3 methods :method:`init_graphic:`, :method:`update_graphic` and :method:`graphic_is_done`.
+The simplest way to have a graphic representation of a world is to use :class:`DrawableWorld` objects instead of :class:`World` ones. The :class:`DrawableWorld` class inherits form the :class:`World` one, thus everything we've learnt before  still holds. It adds 3 methods :meth:`init_graphic:`, :meth:`update_graphic` and :meth:`graphic_is_done`.
 
 
 
 .. doctest::
 
   >>> from robots import simplearm
-  >>> w = simplearm()
+  >>> from visu_osg import DrawableWorld
+  >>> w = simplearm(DrawableWorld())
   >>> joints = w.getjointsdict()
   >>> t = 0
   >>> dt = 1/10

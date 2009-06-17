@@ -7,4 +7,5 @@ src/*.c
 build/
 dist/
 /doc/.build/
-/doc/img/sphere_sphere_collision.png
+/doc/img/*.png
+/doc/img/*.pdf
