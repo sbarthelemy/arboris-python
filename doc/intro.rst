@@ -87,14 +87,10 @@ than the one written in matlab, and I'll try here to explain why.
 There are still areas where arboris-python is behind:
 
 - python as no integrated debugger,
-
-- fewer collisions are handled (it's easy to fix),
-
+- fewer collisions are implemented (it's easy to fix),
+- fewer contact models are implemented (it's not hard to fix),
 - there is no visco-elastic constraint,
-
 - there is no kinematic (or 0-degree) robot,
-
-- the python version has been less tested by real users.
- 
-- the python version has no gui to set the posture
+- the python version has been less tested by real users,
+- the python version has no gui to set the posture.
 

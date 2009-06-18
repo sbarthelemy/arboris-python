@@ -443,214 +443,214 @@ class SoftFingerContact(PointContact):
     def solve(self, vel, admittance, dt):
         r"""
 
-    We map:
+        We map:
         - ``vel``: `v^*`
         - ``admittance``: `Y`
         - ``dt``: `dt`
         - ``dforce`` : `\Delta f`
 
 
-    Let's define the constraint velocity
-
-    .. math::
-        v =  
-        \begin{bmatrix}
-            \omega_z \\ v_x \\ v_y \\ v_z
-        \end{bmatrix}
-        = S \; \twist[0]_{1/0}
-    
-    with
-
-    .. math::
-        S &= 
-        \begin{bmatrix}
-            0 & 0 & 1 & 0 & 0 & 0\\
-            0 & 0 & 0 & 1 & 0 & 0\\
-            0 & 0 & 0 & 0 & 1 & 0\\
-            0 & 0 & 0 & 0 & 0 & 1
-        \end{bmatrix} 
-
-    and the constraint force
-
-    .. math::
-        f = 
-        \begin{bmatrix}
-            m_z \\ f_x \\ f_y \\ f_z
-        \end{bmatrix} 
-
-    so that  
-    
-    .. math::
-        \wrench[0]_{0/1} = S^T \; f
-
-    at the `k`-iest iteration of the Gauss-Seidel algorithm, we have
-
-    .. math::
-        f^k(t) &= f^{k-1}(t) + \Delta f \\
-        v^k(t+dt) &= v^*(t+dt) + Y \; \Delta f \\
-        d^k(t+dt) &= d(t) + dt \cdot
-        \begin{bmatrix}
-            0 & 0 & 0 & 1
-        \end{bmatrix}
-        \left( v^*(t+dt) + Y \; \Delta f \right)
-
-    for static friction we'll need 
-
-    .. math::
-        d^k(t+dt) &= 0
-    
-    and
-    
-    .. math::
+        Let's define the constraint velocity
+ 
+        .. math::
+            v =  
+            \begin{bmatrix}
+                \omega_z \\ v_x \\ v_y \\ v_z
+            \end{bmatrix}
+            = S \; \twist[0]_{1/0}
         
-        \begin{bmatrix}
-            1 & 0 & 0 & 0 \\
-            0 & 1 & 0 & 0 \\
-            0 & 0 & 1 & 0
-        \end{bmatrix}
-        v^k(t+dt)
-        &=
-        \begin{bmatrix}
-            0 \\ 0 \\ 0
-        \end{bmatrix}
-
-    which leads to
-
-    .. math::
-        \Delta f &= -Y^{-1} 
-        \left( 
-        v^*(t+dt) + 
-        \begin{bmatrix}
-            0 \\ 0 \\ 0 \\ \frac{d(t)}{dt}
-        \end{bmatrix}
-        \right)
-
-    for dynamic friction, the condition on sliding velocity and contact
-    persistance lead to
-
-    .. math::
-        v^k(t+dt)
-        &=
-        s 
-        \begin{bmatrix}
-        \frac{1}{e_p^2} & 0 & 0 & 0 \\
-        0 & \frac{1}{e_x^2} & 0 & 0 \\
-        0 & 0 & \frac{1}{e_y^2} & 0 \\
-        0 & 0 & 0 & 0
-        \end{bmatrix} 
-        (f^{k-1}+\Delta f)
-        +
-        \begin{bmatrix}
-        0 \\ 0 \\ 0 \\ -\frac{d(t)}{dt}
-        \end{bmatrix} \\
-        \Leftrightarrow 
-        v^*(t+dt) + Y \Delta f
-        &=
-        s 
-        \begin{bmatrix}
-        \frac{1}{e_p^2} & 0 & 0 & 0 \\
-        0 & \frac{1}{e_x^2} & 0 & 0 \\
-        0 & 0 & \frac{1}{e_y^2} & 0 \\
-        0 & 0 & 0 & 0
-        \end{bmatrix} 
-        \left( f^{k-1}+\Delta f \right)
-        +
-        \begin{bmatrix}
-        0 \\ 0 \\ 0 \\ -\frac{d(t)}{dt}
-        \end{bmatrix}
-
-Finally, we get 
-
-    .. math::
-        0 &=
-        \alpha + \left(
-        Y - s 
-        \begin{bmatrix}
-        \frac{1}{e_p^2} & 0 & 0 & 0 \\
-        0 & \frac{1}{e_x^2} & 0 & 0 \\
-        0 & 0 & \frac{1}{e_y^2} & 0 \\
-        0 & 0 & 0 & 0
-        \end{bmatrix} 
-        \right)
-        \left( f^{k-1}+\Delta f \right)
-
-and 
+        with
+ 
+        .. math::
+            S &= 
+            \begin{bmatrix}
+                0 & 0 & 1 & 0 & 0 & 0\\
+                0 & 0 & 0 & 1 & 0 & 0\\
+                0 & 0 & 0 & 0 & 1 & 0\\
+                0 & 0 & 0 & 0 & 0 & 1
+            \end{bmatrix} 
+ 
+        and the constraint force
+ 
+        .. math::
+            f = 
+            \begin{bmatrix}
+                m_z \\ f_x \\ f_y \\ f_z
+            \end{bmatrix} 
+ 
+        so that  
         
-    .. math::
-        \left( f^{k-1}+\Delta f \right)
-        &=
-        - \left(
-        Y - s 
-        \begin{bmatrix}
-        \frac{1}{e_p^2} & 0 & 0 & 0 \\
-        0 & \frac{1}{e_x^2} & 0 & 0 \\
-        0 & 0 & \frac{1}{e_y^2} & 0 \\
-        0 & 0 & 0 & 0
-        \end{bmatrix} 
-        \right)^{-1} \alpha 
+        .. math::
+            \wrench[0]_{0/1} = S^T \; f
+ 
+        at the `k`-iest iteration of the Gauss-Seidel algorithm, we have
+ 
+        .. math::
+            f^k(t) &= f^{k-1}(t) + \Delta f \\
+            v^k(t+dt) &= v^*(t+dt) + Y \; \Delta f \\
+            d^k(t+dt) &= d(t) + dt \cdot
+            \begin{bmatrix}
+                0 & 0 & 0 & 1
+            \end{bmatrix}
+            \left( v^*(t+dt) + Y \; \Delta f \right)
+ 
+        for static friction we'll need 
+ 
+        .. math::
+            d^k(t+dt) &= 0
+        
+        and
+        
+        .. math::
+            
+            \begin{bmatrix}
+                1 & 0 & 0 & 0 \\
+                0 & 1 & 0 & 0 \\
+                0 & 0 & 1 & 0
+            \end{bmatrix}
+            v^k(t+dt)
+            &=
+            \begin{bmatrix}
+                0 \\ 0 \\ 0
+            \end{bmatrix}
+ 
+        which leads to
+ 
+        .. math::
+            \Delta f &= -Y^{-1} 
+            \left( 
+            v^*(t+dt) + 
+            \begin{bmatrix}
+                0 \\ 0 \\ 0 \\ \frac{d(t)}{dt}
+            \end{bmatrix}
+            \right)
+ 
+        for dynamic friction, the condition on sliding velocity and contact
+        persistance lead to
+ 
+        .. math::
+            v^k(t+dt)
+            &=
+            s 
+            \begin{bmatrix}
+            \frac{1}{e_p^2} & 0 & 0 & 0 \\
+            0 & \frac{1}{e_x^2} & 0 & 0 \\
+            0 & 0 & \frac{1}{e_y^2} & 0 \\
+            0 & 0 & 0 & 0
+            \end{bmatrix} 
+            (f^{k-1}+\Delta f)
+            +
+            \begin{bmatrix}
+            0 \\ 0 \\ 0 \\ -\frac{d(t)}{dt}
+            \end{bmatrix} \\
+            \Leftrightarrow 
+            v^*(t+dt) + Y \Delta f
+            &=
+            s 
+            \begin{bmatrix}
+            \frac{1}{e_p^2} & 0 & 0 & 0 \\
+            0 & \frac{1}{e_x^2} & 0 & 0 \\
+            0 & 0 & \frac{1}{e_y^2} & 0 \\
+            0 & 0 & 0 & 0
+            \end{bmatrix} 
+            \left( f^{k-1}+\Delta f \right)
+            +
+            \begin{bmatrix}
+            0 \\ 0 \\ 0 \\ -\frac{d(t)}{dt}
+            \end{bmatrix}
 
-while denoting
+        Finally, we get 
 
-    .. math::
-        \alpha &=
-        v^*(t+dt) - 
-        \begin{bmatrix}
-        0 \\ 0 \\ 0 \\ -\frac{d(t)}{dt}
-        \end{bmatrix} - Y f^{k-1}
+        .. math::
+            0 &=
+            \alpha + \left(
+            Y - s 
+            \begin{bmatrix}
+            \frac{1}{e_p^2} & 0 & 0 & 0 \\
+            0 & \frac{1}{e_x^2} & 0 & 0 \\
+            0 & 0 & \frac{1}{e_y^2} & 0 \\
+            0 & 0 & 0 & 0
+            \end{bmatrix} 
+            \right)
+            \left( f^{k-1}+\Delta f \right)
 
-Note that `s` is still unknown. However,
+        and 
+            
+        .. math::
+            \left( f^{k-1}+\Delta f \right)
+            &=
+            - \left(
+            Y - s 
+            \begin{bmatrix}
+            \frac{1}{e_p^2} & 0 & 0 & 0 \\
+            0 & \frac{1}{e_x^2} & 0 & 0 \\
+            0 & 0 & \frac{1}{e_y^2} & 0 \\
+            0 & 0 & 0 & 0
+            \end{bmatrix} 
+            \right)^{-1} \alpha 
+ 
+        while denoting
+ 
+        .. math::
+            \alpha &=
+            v^*(t+dt) - 
+            \begin{bmatrix}
+            0 \\ 0 \\ 0 \\ -\frac{d(t)}{dt}
+            \end{bmatrix} - Y f^{k-1}
+ 
+        Note that `s` is still unknown. However,
+ 
+        .. math::
+            \frac{m_z^2}{e_p^2} + \frac{f_x^2}{e_x^2} + \frac{f_y^2}{e_y^2}
+            &= \mu^2 \cdot f_z^2
+ 
+        can be rewritten
+ 
+        .. math::
+ 
+            \left( f^{k-1}+\Delta f \right)^T
+            \begin{bmatrix}
+            \frac{1}{e_p^2} & 0 & 0 & 0 \\
+            0 & \frac{1}{e_x^2} & 0 & 0 \\
+            0 & 0 & \frac{1}{e_y^2} & 0 \\
+            0 & 0 & 0 & -\mu^2
+            \end{bmatrix} 
+            \left( f^{k-1}+\Delta f \right)
+            &=0
+ 
+        so that if we can find `s` solution of
+ 
+        .. math::
+            \alpha^T
+            \left(
+            Y - s 
+            \begin{bmatrix}
+            \frac{1}{e_p^2} & 0 & 0 & 0 \\
+            0 & \frac{1}{e_x^2} & 0 & 0 \\
+            0 & 0 & \frac{1}{e_y^2} & 0 \\
+            0 & 0 & 0 & 0
+            \end{bmatrix} 
+            \right)^{-T}
+            \begin{bmatrix}
+            \frac{1}{e_p^2} & 0 & 0 & 0 \\
+            0 & \frac{1}{e_x^2} & 0 & 0 \\
+            0 & 0 & \frac{1}{e_y^2} & 0 \\
+            0 & 0 & 0 & -\mu^2
+            \end{bmatrix} 
+            \left(
+            Y - s 
+            \begin{bmatrix}
+            \frac{1}{e_p^2} & 0 & 0 & 0 \\
+            0 & \frac{1}{e_x^2} & 0 & 0 \\
+            0 & 0 & \frac{1}{e_y^2} & 0 \\
+            0 & 0 & 0 & 0
+            \end{bmatrix} 
+            \right)^{-1} \alpha 
+            &=0 \text{,}
+ 
+        then we're done.
 
-    .. math::
-        \frac{m_z^2}{e_p^2} + \frac{f_x^2}{e_x^2} + \frac{f_y^2}{e_y^2}
-        &= \mu^2 \cdot f_z^2
-
-can be rewritten
-
-    .. math::
-
-        \left( f^{k-1}+\Delta f \right)^T
-        \begin{bmatrix}
-        \frac{1}{e_p^2} & 0 & 0 & 0 \\
-        0 & \frac{1}{e_x^2} & 0 & 0 \\
-        0 & 0 & \frac{1}{e_y^2} & 0 \\
-        0 & 0 & 0 & -\mu^2
-        \end{bmatrix} 
-        \left( f^{k-1}+\Delta f \right)
-        &=0
-
-so that if we can find `s` solution of
-
-    .. math::
-        \alpha^T
-        \left(
-        Y - s 
-        \begin{bmatrix}
-        \frac{1}{e_p^2} & 0 & 0 & 0 \\
-        0 & \frac{1}{e_x^2} & 0 & 0 \\
-        0 & 0 & \frac{1}{e_y^2} & 0 \\
-        0 & 0 & 0 & 0
-        \end{bmatrix} 
-        \right)^{-T}
-        \begin{bmatrix}
-        \frac{1}{e_p^2} & 0 & 0 & 0 \\
-        0 & \frac{1}{e_x^2} & 0 & 0 \\
-        0 & 0 & \frac{1}{e_y^2} & 0 \\
-        0 & 0 & 0 & -\mu^2
-        \end{bmatrix} 
-        \left(
-        Y - s 
-        \begin{bmatrix}
-        \frac{1}{e_p^2} & 0 & 0 & 0 \\
-        0 & \frac{1}{e_x^2} & 0 & 0 \\
-        0 & 0 & \frac{1}{e_y^2} & 0 \\
-        0 & 0 & 0 & 0
-        \end{bmatrix} 
-        \right)^{-1} \alpha 
-        &=0 \text{,}
-
-then we're done.
-
-TODO: how do we find s ?
+        TODO: how do we find s ?
 
 """
         if self._sdist + dt*vel[3]>0:
