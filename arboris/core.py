@@ -90,34 +90,28 @@ class Joint(RigidMotion, NamedObject):
 
 
 class Constraint(NamedObject):
+    __metaclass__ = ABCMeta
 
     def __init__(self, frames, name=None):
         NamedObject.__init__(self, name)
 
     @abstractmethod
-    def gforce(self):
+    def initjointspace(self, ndof):
         pass
-
-
-class BodyConstraint(Constraint):
-    __metaclass__ = ABCMeta
-
-    def __init__(self, frames):
-        self._frames = frames
 
     @property
     def gforce(self):
-        return dot(self.jacobian().T, self._force)
+        return dot(self.jacobian.T, self._force)
 
-    @abstractmethod
+    @abstractproperty
     def jacobian(self):
         pass
 
-    @abstractmethod
+    @abstractproperty
     def ndol(self):
-        """Number of degree of "liaison" (in french: *nombre de degrés de liaison*).
+        """Number of degree of "liaison" 
         
-        This is equal to 6-ndof.
+        In french: *nombre de degrés de liaison*. This is equal to 6-ndof.
         """
         pass
 
@@ -130,8 +124,10 @@ class BodyConstraint(Constraint):
         pass
 
     @abstractmethod
-    def solve(self, dforce, dvel, admittance, dt):
+    def solve(self, vel, admittance, dt):
         pass
+
+
 
 
 class Shape(object):
@@ -146,6 +142,10 @@ class Controller(NamedObject):
 
     def __init__(self, name=None):
         NamedObject.__init__(self, name)
+
+    @abstractmethod
+    def initjointspace(self, ndof):
+        pass
 
     @abstractmethod
     def update(self, dt, t):
@@ -313,11 +313,12 @@ class World(NamedObject):
         >>> w = simplearm()
         >>> from arboris.controllers import ProportionalDerivativeController
         >>> joints = w.getjointslist()
-        >>> c0 = ProportionalDerivativeController(w.ndof, joints[1:3], 
+        >>> c0 = ProportionalDerivativeController(joints[1:3], 
         ...     name = 'my controller')
         >>> w.register(c0)
-        >>> c1 = ProportionalDerivativeController(w.ndof, joints[0:1])
+        >>> c1 = ProportionalDerivativeController(joints[0:1])
         >>> w.register(c1)
+        >>> w.initjointspace()
 
         """
         if isinstance(obj, Body):
@@ -339,9 +340,6 @@ class World(NamedObject):
         elif isinstance(obj, Constraint):
             if not obj in self._constraints:
                 self._constraints.append(obj)
-            if isinstance(obj, BodyConstraint):
-                self.register(obj._frames[0])
-                self.register(obj._frames[1])
 
         elif isinstance(obj, Controller):
             if not obj in self._controllers:
@@ -381,6 +379,12 @@ class World(NamedObject):
         for j in self.iterjoints():
             self._gvel[j._dof] = j.gvel[:]
             j.gvel = self._gvel[j._dof]
+
+        for c in self._constraints:
+            c.initjointspace(self._ndof)
+        
+        for a in self._controllers:
+            a.initjointspace(self._ndof)
 
     @property
     def mass(self):
@@ -494,8 +498,9 @@ class World(NamedObject):
         >>> w = simplearm()
         >>> from arboris.controllers import ProportionalDerivativeController
         >>> joints = w.getjointslist()
-        >>> a0 = ProportionalDerivativeController(w.ndof, joints[1:2], 2.)
+        >>> a0 = ProportionalDerivativeController(joints[1:2], 2.)
         >>> w.register(a0)
+        >>> w.initjointspace()
         >>> w.update_dynamic()
         >>> w.update_controllers(0.001)
         >>> w._controller_viscosity
@@ -665,14 +670,14 @@ class World(NamedObject):
         for c in self._constraints:
             c.update()
             if c.is_active():
-                c._dol = slice(ndol, ndol+c.ndol())
-                ndol = ndol + c.ndol()
+                c._dol = slice(ndol, ndol+c.ndol)
+                ndol = ndol + c.ndol
                 constraints.append(c)
 
         jac = zeros((ndol, self._ndof))
         admittance = zeros((ndol, ndol))
         for c in constraints:
-            jac[c._dol,:] = c.jacobian()
+            jac[c._dol,:] = c.jacobian
         vel = dot(jac, dot(self._admittance, 
                            dot(self._mass, self._gvel/dt) + self._gforce))
         admittance = dot(jac, dot(self._admittance, jac.T))
@@ -685,7 +690,7 @@ class World(NamedObject):
                 dforce = c.solve(vel[c._dol], admittance[c._dol,c._dol], dt)
                 vel += dot(admittance[:,c._dol], dforce)
         for c in constraints:
-            self._gforce += c.gforce()
+            self._gforce += c.gforce
 
     def integrate(self, dt):
         r"""
@@ -713,8 +718,9 @@ class World(NamedObject):
         >> joints = w.getjointsdict()
         >> joints['Shoulder'].gpos[:] = -1.
         >> from arboris.controllers import ProportionalDerivativeController
-        >> c0 = ProportionalDerivativeController(w.ndof, w.joints[1:2], 1.)
+        >> c0 = ProportionalDerivativeController(w.joints[1:2], 1.)
         >> w.register(c0)
+        >> w.initjointspace()
         >> w.update_dynamic()
         >> dt = 0.001
         >> w.update_controllers(dt)
@@ -1089,6 +1095,7 @@ def simulate(world, time):
     >>> simulate(w, time)
 
     """
+    world.initjointspace()
     previous_t = time[0]
     for t in time[1:]:
         dt = t - previous_t

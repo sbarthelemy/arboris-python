@@ -14,20 +14,23 @@ class WeightController(Controller):
     >>> joints['Shoulder'].gpos[0] = 3.14/4
     >>> joints['Elbow'].gpos[0] = 3.14/4
     >>> joints['Wrist'].gpos[0] = 3.14/4
-    >>> c = WeightController(w)
+    >>> c = WeightController(w.ground)
     >>> w.register(c)
+    >>> w.initjointspace()
     >>> w.update_dynamic() #TODO change for update_kinematic
     >>> (gforce, impedance) = c.update()
 
     """
-    def __init__(self, world, gravity=None, name=None):
-        self.ground = world.ground
-        self._wndof = world.ndof
+    def __init__(self, ground, gravity=None, name=None):
+        self.ground = ground
         if gravity is None:
             self._gravity = array([0., 0., 0., 0., -9.81, 0.])
         else:
             self._gravity = array(gravity)
         Controller.__init__(self, name=name)
+
+    def initjointspace(self, ndof):
+        self._wndof = ndof
 
     def update(self, dt=None, t=None):
         gforce = zeros(self._wndof)
@@ -42,7 +45,7 @@ class WeightController(Controller):
 
 class ProportionalDerivativeController(Controller):
 
-    def __init__(self, wndof, joints, kp=None, kd=None, gpos_des=None, 
+    def __init__(self, joints, kp=None, kd=None, gpos_des=None, 
                  gvel_des=None, name=None):
         Controller.__init__(self, name=name)
         self._cndof = 0
@@ -55,7 +58,6 @@ class ProportionalDerivativeController(Controller):
                 dof_map.extend(range(j.dof.start, j.dof.stop))
         self._dof_map = array(dof_map)
         self.joints = joints
-        self._wndof = wndof
 
         if kp is None:
             self.kp = zeros((self._cndof, self._cndof))
@@ -76,6 +78,13 @@ class ProportionalDerivativeController(Controller):
             self.gvel_des = zeros(self._cndof)
         else:
             self.gvel_des = array(gvel_des).reshape(self._cndof)
+    
+    def initjointspace(self, ndof):
+        self._wndof = ndof
+        dof_map = []
+        for j in self.joints:
+                dof_map.extend(range(j.dof.start, j.dof.stop))
+        self._dof_map = array(dof_map)
 
     def update(self, dt, t):
         """

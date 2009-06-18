@@ -69,7 +69,7 @@ class RigidMotion(object):
 
     @property
     def dadjoint(self):
-        return dot(asarray(self.adjoint), self.adjacency)
+        return dot(self.adjoint, self.adjacency)
     
     @property
     def idadjoint(self):

@@ -15,10 +15,91 @@ from numpy import array, zeros, eye, dot, hstack
 from numpy.linalg import solve
 import homogeneousmatrix as Hg
 from misc import NamedObject
-from core import SubFrame, Constraint, BodyConstraint
+from core import SubFrame, Constraint
 
+point_contact_proximity = 0.02
+joint_limits_proximity = 0.01
 
-class BallAndSocketConstraint(BodyConstraint):
+class JointLimits(Constraint):
+    r"""This class describes and solves joint limits constraints.
+
+    Let's denote `q` and `\GVel` the joint generalized position and velocity,
+    `m` and `M` the joint limits. This class purpose is to enforce the 
+    following constraint on `q`
+
+    .. math::
+        m \leq q \leq M
+
+    through a generalized force `\GForce`, while ensuring the Signorini
+    conditions holds
+
+    .. math::
+        0 \leq q- m \perp \GForce \geq 0  \\
+        0 \geq q - M \perp \GForce \leq 0
+
+    
+    """
+
+    def __init__(self, joint, min, max, proximity=None, 
+                 name=None):
+        from arboris.joints import LinearConfigurationSpaceJoint
+        if not isinstance(joint, LinearConfigurationSpaceJoint):
+            raise ValueError()
+        self._joint = joint
+        NamedObject.__init__(self, name)
+        self._min = array(min).reshape((joint.ndof,))
+        self._max = array(max).reshape((joint.ndof,))
+        if proximity is None:
+            #TODO: choose a proper default for tol according to the joint type
+            self._proximity = zeros((joint.ndof,))
+            self._proximity[:] = joint_limits_proximity
+        else:
+            self._prox = array(proximity).reshape((joint.ndof,))
+        self._pos0 = None
+        self._jacobian = None
+        self._force = zeros((joint.ndof,))
+
+    def initjointspace(self, ndof):
+        self._jacobian = zeros((1, ndof))
+        self._jacobian[0,self._joint._dof] = 1
+
+    @property
+    def jacobian(self):
+        return self._jacobian
+    
+    @property
+    def ndol(self):
+        return 1
+
+    def update(self):
+        self._pos0 = self._joint.gpos
+    
+    def is_active(self):
+        return (self._pos0-self._min<self._proximity) or \
+                (self._max-self._pos0<self._proximity)    
+
+    def solve(self, vel, admittance, dt):
+        pred = self._pos0 + dt*vel
+        # pos = self._pos0 + dt*(vel + admittance*dforce)
+        if (pred <= self._min):
+            # the min limit is violated, we want pos == min
+            dforce = solve(admittance, (self._min - pred)/dt)
+            self._force += dforce
+
+        elif (self._max <= pred):
+            #the max limit is violated, we want pos == max
+            dforce = solve(admittance, (self._max - pred)/dt)
+            self._force += dforce
+
+        else:
+            # the joint is within its limits, we ensure the 
+            # generalized force is zero
+            dforce = -self._force
+            self._force[:] = 0.
+
+        return dforce
+
+class BallAndSocketConstraint(Constraint):
     r"""
     This class describes and solves a ball and socket kinematic constraint
     between two frames which are rigidly fixed to two distinct bodies.
@@ -54,7 +135,8 @@ class BallAndSocketConstraint(BodyConstraint):
         0 & 0 & 0 & 0 & 0 & 1
         \end{bmatrix} 
 
-   The constraint jacobian is then given by `( \Ad[0]_1 \; \pre[1]J_{1/g} - \pre[0]J_{0/g} )`
+   The constraint jacobian is then given by 
+   `( \Ad[0]_1 \; \pre[1]J_{1/g} - \pre[0]J_{0/g} )`
 
    In order to solve the constraint, an adjustement `\Delta f` of the
    constraint force is computed by the ``solve`` method. 
@@ -76,11 +158,16 @@ class BallAndSocketConstraint(BodyConstraint):
 
     """
    
-    def __init__(self, name=None):
+    def __init__(self, frames, name=None):
         self._force = zeros(3)
         self._pos0 = None
         NamedObject.__init__(self, name)
+        self._frames = frames
 
+    def initjointspace(self, ndof):
+        pass
+
+    @property
     def ndol(self):
         return 3
 
@@ -107,6 +194,7 @@ class BallAndSocketConstraint(BodyConstraint):
     def is_active(self):
         return True
 
+    @property
     def jacobian(self):
         H_01 = dot(Hg.inv(self._frames[0].pose), self._frames[1].pose)
         return (dot(Hg.adjoint(H_01)[3:6,:], self._frames[1].jacobian)
@@ -139,7 +227,7 @@ class BallAndSocketConstraint(BodyConstraint):
 
         Tests:
 
-        >>> c = BallAndSocketConstraint()
+        >>> c = BallAndSocketConstraint(frames=(None, None))
         >>> c._pos0 = array([0.1, 0.2, 0.3])
         >>> c._force = array([-0.1, -0.2, -0.3])
         >>> vel = zeros((3))
@@ -158,13 +246,8 @@ class BallAndSocketConstraint(BodyConstraint):
         self._force += dforce
         return dforce
 
-    def gforce(self):
-        return dot(self.jacobian().T, self._force)
 
-
-proximity = 0.01
-
-class PointContact(BodyConstraint):
+class PointContact(Constraint):
     r"""Parent class for all point contacts.
     
     Solving a contact constraint involves two steps:
@@ -182,7 +265,7 @@ class PointContact(BodyConstraint):
 
     """
 
-    def __init__(self, shapes, collision_solver):
+    def __init__(self, shapes, collision_solver, proximity):
         r"""
         .. todo:
             find the good ``collision_solver`` automatically according
@@ -192,7 +275,10 @@ class PointContact(BodyConstraint):
         self._frames = (SubFrame(shapes[0].frame.body),
                         SubFrame(shapes[1].frame.body))
         self._collision_solver = collision_solver
+        self._proximity = proximity
 
+    def initjointspace(self, ndof):
+        pass
 
     def update(self):
         r"""
@@ -208,9 +294,8 @@ class PointContact(BodyConstraint):
         H_b1g = Hg.inv(self._shapes[1].frame.body.pose)
         self._frames[0]._bpose = dot(H_b0g, H_gc0) #TODO: use a set method?
         self._frames[1]._bpose = dot(H_b1g, H_gc1)
-        self._is_active = (sdist < proximity)
+        self._is_active = (sdist < self._prox)
         self._sdist = sdist
-
 
     def is_active(self):
         return self._is_active
@@ -337,16 +422,18 @@ class SoftFingerContact(PointContact):
 
     """
     def __init__(self, shapes, friction_coeff, collision_solver,
-                 name=None):
+                 proximity=0.02, name=None):
         self._mu = friction_coeff
-        PointContact.__init__(self, shapes, collision_solver)
+        PointContact.__init__(self, shapes, collision_solver, proximity)
         NamedObject.__init__(self, name)
         self._force = zeros(4)
         self._eps = array((1., 1., 1.))
 
+    @property
     def ndol(self):
         return 4
 
+    @property
     def jacobian(self):
         H_01 = dot(Hg.inv(self._frames[0].pose), self._frames[1].pose)
         return (dot(Hg.adjoint(H_01)[2:6,:], self._frames[1].jacobian)

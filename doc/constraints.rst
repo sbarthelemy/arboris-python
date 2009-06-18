@@ -20,6 +20,10 @@ Kinematic Constraints
 .. autoclass:: BallAndSocketConstraint
    :members: update, solve
 
+Joint limits
+------------
+
+.. autoclass:: LinearSpaceJointLimits
 
 Contacts
 --------
