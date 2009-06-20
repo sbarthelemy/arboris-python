@@ -25,7 +25,6 @@ Documentation
 =============
 
 - replace every \Hg by \H
-- migrate to sphinx 0.6, to benefit from graphviz class diagrams
 - make an example showing energy evolution
 - make an example showing computational singularity
 
@@ -47,6 +46,31 @@ Small changes
 - implement a true recursive-newton-euler linearized algorithm?
 - add visco-elastic joints
 - clean the cython mess (remove all or at least provide a .py equivalent)
+
+Save simulations
+----------------
+
+we could use a "logger" class, whose responsability would be to save 
+wathever seems interesting. 
+
+The drawer could be a logger too.
+
+Joints offset
+-------------
+
+we currently assume that Rz(0) == eye(4). Therefore, a SubFrame is often needed. 
+It is possible to add an "offset" transform to the joints, in order to avoid this frame. 
+For instance we could have an ``H0RzJoint`` instead of ``RzJoint``.
+
+This would
+- remove the need of some subframes
+- allow to follow more directly de DH convention
+- complicate the skeleton view
+
+initjointspace()
+----------------
+
+rename into init()?
 
 Joints Limits
 -------------
@@ -72,6 +96,12 @@ Contacts
 - add sliding friction law
 - improve the stop condition of the Gauss-Seidel algorithm
 
+Collisions
+----------
+
+- more collisions
+- autodetect collision solver according to shapes
+
 Dynamic
 -------
 
@@ -83,6 +113,7 @@ Visu_osg
 --------
 
 - add more colors for bodies
+- add mass ellipsoids
 
 
 Done (and kept for reference)

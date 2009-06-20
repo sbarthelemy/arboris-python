@@ -11,8 +11,8 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 """
 
 from abc import ABCMeta, abstractmethod
-from numpy import array, zeros, eye, dot, hstack
-from numpy.linalg import solve
+from numpy import array, zeros, eye, dot, hstack, diag
+from numpy.linalg import solve, eigvals
 import homogeneousmatrix as Hg
 from misc import NamedObject
 from core import SubFrame, Constraint
@@ -54,7 +54,7 @@ class JointLimits(Constraint):
             self._proximity = zeros((joint.ndof,))
             self._proximity[:] = joint_limits_proximity
         else:
-            self._prox = array(proximity).reshape((joint.ndof,))
+            self._proximity = array(proximity).reshape((joint.ndof,))
         self._pos0 = None
         self._jacobian = None
         self._force = zeros((joint.ndof,))
@@ -294,7 +294,7 @@ class PointContact(Constraint):
         H_b1g = Hg.inv(self._shapes[1].frame.body.pose)
         self._frames[0]._bpose = dot(H_b0g, H_gc0) #TODO: use a set method?
         self._frames[1]._bpose = dot(H_b1g, H_gc1)
-        self._is_active = (sdist < self._prox)
+        self._is_active = (sdist < self._proximity)
         self._sdist = sdist
 
     def is_active(self):
@@ -650,9 +650,137 @@ class SoftFingerContact(PointContact):
  
         then we're done.
 
-        TODO: how do we find s ?
+        Let's decompose `Y`, using numpy notations, noticing that it is
+        symmetric:
 
-"""
+        .. math::
+            Y &= 
+            \begin{bmatrix}
+            Y_{0:3,0:3} & Y_{0:3,3} \\
+            Y_{3,0:3}   & Y_{3,3}
+            \end{bmatrix}
+            = 
+            \begin{bmatrix}
+            Y_t   & Y_c \\
+            Y_c^T & y_n
+            \end{bmatrix}
+
+        It can then be block-diagonalized:
+
+        .. math::
+            \left(
+            Y - s 
+            \begin{bmatrix}
+            \frac{1}{e_p^2} & 0 & 0 & 0 \\
+            0 & \frac{1}{e_x^2} & 0 & 0 \\
+            0 & 0 & \frac{1}{e_y^2} & 0 \\
+            0 & 0 & 0 & 0
+            \end{bmatrix}
+            \right)
+            &=
+            \begin{bmatrix}
+            Y_t - s
+                \begin{bmatrix}
+                \frac{1}{e_p^2} & 0 & 0 \\
+                0 & \frac{1}{e_x^2} & 0 \\
+                0 & 0 & \frac{1}{e_y^2}
+                \end{bmatrix} 
+            & Y_c \\
+            Y_c^T & y_n
+            \end{bmatrix}
+            \\ 
+            &=
+            \begin{bmatrix}
+            I_{3 \times 3} & Y_c/y_n \\
+            0_{1 \times 3} & 1
+            \end{bmatrix}
+            \begin{bmatrix}
+            Y_t - Y_c\;Y_c^T/y_n - s
+                \begin{bmatrix}
+                \frac{1}{e_p^2} & 0 & 0 \\
+                0 & \frac{1}{e_x^2} & 0 \\
+                0 & 0 & \frac{1}{e_y^2}
+                \end{bmatrix} 
+                           & 0_{3 \times 1} \\
+            0_{1 \times 3} & y_n
+            \end{bmatrix}
+            \begin{bmatrix}
+            I_{3 \times 3} &  0_{3 \times 1} \\
+            Y_c^T/y_n      & 1
+            \end{bmatrix}
+            
+        and its inverse
+
+        .. math::
+            \left(
+            Y - s 
+            \begin{bmatrix}
+            \frac{1}{e_p^2} & 0 & 0 & 0 \\
+            0 & \frac{1}{e_x^2} & 0 & 0 \\
+            0 & 0 & \frac{1}{e_y^2} & 0 \\
+            0 & 0 & 0 & 0
+            \end{bmatrix}
+            \right)^{-1}
+            &=
+            \begin{bmatrix}
+            I_{3 \times 3}  &  0_{3 \times 1} \\
+            -Y_c^T/y_n      & 1
+            \end{bmatrix}
+            \begin{bmatrix}
+            \left(Y_t - Y_c\;Y_c^T/y_n - s
+                \begin{bmatrix}
+                \frac{1}{e_p^2} & 0 & 0 \\
+                0 & \frac{1}{e_x^2} & 0 \\
+                0 & 0 & \frac{1}{e_y^2}
+                \end{bmatrix}\right)^{-1}
+                           & 0_{3 \times 1} \\
+            0_{1 \times 3} & 1
+            \end{bmatrix}
+            \begin{bmatrix}
+            I_{3 \times 3} & -Y_c/y_n \\
+            0_{1 \times 3} & y_n
+            \end{bmatrix}
+        
+        injecting this last expression into, it can be shown that `s` is
+        an eigen value of the `B` matrix
+
+        .. math::
+            B &=
+            \begin{bmatrix}
+                e_p^2 & 0 & 0 & 0 & 0 & 0 \\
+                0 & e_x^2 & 0 & 0 & 0 & 0 \\
+                0 & 0 & e_y^2 & 0 & 0 & 0 \\
+                0 & 0 & 0 & e_p^2 & 0 & 0 \\
+                0 & 0 & 0 & 0 & e_x^2 & 0 \\
+                0 & 0 & 0 & 0 & 0 & e_y^2
+            \end{bmatrix}
+            \begin{bmatrix}
+                Y_t - Y_c\;Y_c^T/y_n + 2 \frac{\beta b^T}{a}
+                    & -\frac{\beta \beta^T}{a^2} \\
+                b b^T -
+                \begin{bmatrix}
+                    \frac{1}{e_p^2} & 0 & 0 \\
+                    0 & \frac{1}{e_x^2} & 0 \\
+                    0 & 0 & \frac{1}{e_y^2}
+                \end{bmatrix}
+                    & Y_t - Y_c\;Y_c^T/y_n
+            \end{bmatrix}
+
+        where the following values has been introduced
+
+        .. math::
+            \beta &= 
+            \begin{bmatrix}
+                I_{3 \times 3} & -Y_c/y_n \\
+                \end{bmatrix} \alpha \\
+            a &= \mu y_n \alpha_3 \\
+            b &= \frac{\mu}{y_n} Y_c
+
+        .. note::
+            the full math is available as a pdf, within this document, `\beta`
+            is denoted `\hat{\alpha}`.
+
+        """
         if self._sdist + dt*vel[3]>0:
             # if there is no contact, the contact force should be 0
             dforce = -self._force
@@ -678,12 +806,39 @@ class SoftFingerContact(PointContact):
             else:
                 # the elliptic dry friction law is not respected.
                 # We have to look for a solution with sliding
-
-                #alpha = -Y*c.Gamma;
+                #
                 #E2 = c.misc.E*c.misc.E;
                 #F = E2 - diag([0,0,c.misc.mu^2,0]);
                 #k = solve_sliding(alpha,Y,F);
                 #c.Gamma=-(Y+k*E2)\alpha;
-                self._force = force
+
+                alpha = vel - dot(admittance, self._force)
+                alpha[3] += self._sdist/dt
+                Y_c = admittance[0:3,3]
+                y_n = admittance[3,3]
+                Y_t = admittance[0:3,0:3] - dot(Y_c, Y_c.T)/y_n
+                beta = alpha[0:3] - alpha[3]/y_n*Y_c
+                a = self._mu * y_n * alpha[3]
+                b = self._mu/y_n * Y_c
+                B = zeros((6,6))
+                E = diag(self._eps**2)
+                B[3:6,3:6] = dot(E, Y_t - dot(Y_c, Y_c.T)/y_n)
+                B[0:3,0:3] = dot(E, B[3:6,3:6] + 2/a*dot(beta,b.T))
+                B[0:3,3:6] = dot(E ,dot(beta,beta.T)/(a**2))
+                B[3:6,0:3] = dot(b,b.T)- dot(E, diag(self._eps**-2))
+
+                # s is the real part of the eigenvalue with the smallest 
+                # imaginary par within those with a positive real part
+                S = eigvals(B)
+                S = S[S.real >= 0]
+                ind = S.imag.argsort()
+                s = S[ind[0]].real
+                s = min(s, 1e10) #TODO: throw exception when s>=1e10
+
+                prev_force = self._force.copy()
+                A = admittance.copy()
+                A[0:3,0:3] -= s*diag(self._eps**-2)
+                self._force = solve(A,-alpha)
+                dforce = self._force - prev_force
                 return dforce
         

@@ -19,8 +19,8 @@ def sphere_sphere_collision(shapes):
     
 
     """    
-    return _sphere_sphere_collision(shapes[0].frame.pose, 
-                                    shapes[1].frame.pose,
+    return _sphere_sphere_collision(shapes[0].frame.pose[0:3,3], 
+                                    shapes[1].frame.pose[0:3,3],
                                     shapes[0].radius, 
                                     shapes[1].radius)
 

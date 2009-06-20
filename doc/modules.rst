@@ -5,6 +5,8 @@ Modules
 :mod:`core` -- Dead parrot access
 ====================================
 
+.. inheritance-diagram:: arboris.core
+
 .. automodule:: arboris.core
    :members:
 

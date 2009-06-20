@@ -41,11 +41,10 @@ def ball(world=None, radius=1., mass=1., name=None):
     ball = Body(
         name=name,
         mass=mass_parallelepiped(mass, (radius,radius,radius)))
-    freejoint = FreeJoint()
-    freejoint.attach(w.ground, ball)
-    w.register(ball)
+    freejoint = FreeJoint(frames=(w.ground, ball))
     s = Sphere(ball, radius)
     w.register(freejoint)
+    w.register(s)
     w.initjointspace()
     return w
  

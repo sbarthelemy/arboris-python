@@ -11,6 +11,8 @@ Gauss-Seidel algorithm
 Constraints
 ===========
 
+.. inheritance-diagram:: arboris.constraints
+
 .. currentmodule:: arboris.constraints
 
 
@@ -23,7 +25,7 @@ Kinematic Constraints
 Joint limits
 ------------
 
-.. autoclass:: LinearSpaceJointLimits
+.. autoclass:: JointLimits
 
 Contacts
 --------
