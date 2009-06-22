@@ -46,6 +46,7 @@ Small changes
 - implement a true recursive-newton-euler linearized algorithm?
 - add visco-elastic joints
 - clean the cython mess (remove all or at least provide a .py equivalent)
+- rename ``initjointspace`` into ``init``
 
 Save simulations
 ----------------

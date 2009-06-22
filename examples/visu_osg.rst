@@ -6,13 +6,12 @@ Display a human
 ... with a drawer
 -----------------
 
-    >>> from arboris.visu_osg import NodeFactory, WorldDrawer
+    >>> from arboris.visu_osg import WorldDrawer, init_viewer
     >>> from arboris.robots.human36 import human36
     >>> w = human36()
     >>> w.update_geometric()
-    >>> nf = NodeFactory(scale=.1)
-    >>> d = WorldDrawer(w, nf)
-    >>> viewer = d.init_viewer()
+    >>> d = WorldDrawer(w)
+    >>> viewer = init_viewer(d.root)
     >>> viewer.realize()
     >>> joints = w.getjointslist()
     >>> t = 0.
@@ -29,9 +28,9 @@ Display a human
 ... with a drawable world
 -------------------------
 
-    >>> from arboris.visu_osg import NodeFactory, DrawableWorld
+    >>> from arboris.visu_osg import DrawableWorld
     >>> from arboris.robots.human36 import human36
-    >>> w = DrawableWorld(factory=NodeFactory(scale=.1))
+    >>> w = DrawableWorld()
     >>> foo = human36(world=w)
     >>> w.update_geometric()
     >>> w.init_graphic()
@@ -53,7 +52,7 @@ Display a human
 >>> from arboris.robots.human36 import human36
 >>> from arboris.core import simulate
 >>> from numpy import arange
->>> plugin = DrawerPlugin(factory=NodeFactory(scale=.1))
+>>> plugin = DrawerPlugin()
 >>> world = human36()
 >>> time = arange(0, 1, 1e-3)
 >>> simulate(world, time, (plugin,))
