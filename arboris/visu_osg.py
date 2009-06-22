@@ -155,8 +155,9 @@ def draw_line(start, end, scale=1., color=None):
 
     **Example:**
 
-    >>> draw_line(array((1.,2.,3.)), array((4.,5.,6.)), .5)
-    
+    >>> draw_line(array((1.,2.,3.)), array((4.,5.,6.)), .5) #doctest: +ELLIPSIS
+    <OpenSceneGraph.osg.PositionAttitudeTransform; proxy of <Swig Object of type 'osg::PositionAttitudeTransform *' at 0x...> >
+
     TODO: raise an exception when start==end?
 
     """
@@ -199,8 +200,9 @@ def draw_text(label, scale=1.):
 
     **Example:**
 
-    >>> draw_text('le texte a afficher', .2)
-
+    >>> draw_text('le texte a afficher', .2) #doctest: +ELLIPSIS
+    <OpenSceneGraph.osg.Geode; proxy of <Swig Object of type 'osg::Geode *' at 0x...> >
+    
     """
     text = osgText.Text()
     text.setCharacterSize(scale)
