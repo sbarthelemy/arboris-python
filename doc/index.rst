@@ -13,6 +13,7 @@ Contents:
    rigidmechanism
    simulation
    dynamicalmodel
+   controllers
    constraints
    collisions
    modules
