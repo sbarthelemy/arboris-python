@@ -135,14 +135,14 @@ class BallAndSocketConstraint(Constraint):
         0 & 0 & 0 & 0 & 0 & 1
         \end{bmatrix} 
 
-   The constraint jacobian is then given by 
-   `( \Ad[0]_1 \; \pre[1]J_{1/g} - \pre[0]J_{0/g} )`
-
-   In order to solve the constraint, an adjustement `\Delta f` of the
-   constraint force is computed by the ``solve`` method. 
-   This method is given as argument the current estimation of constraint
-   velocity, which corresponds to `\Delta f = 0` and takes into account
-   the coupling between the contraints.
+    The constraint jacobian is then given by 
+    `( \Ad[0]_1 \; \pre[1]J_{1/g} - \pre[0]J_{0/g} )`
+ 
+    In order to solve the constraint, an adjustement `\Delta f` of the
+    constraint force is computed by the ``solve`` method. 
+    This method is given as argument the current estimation of constraint
+    velocity, which corresponds to `\Delta f = 0` and takes into account
+    the coupling between the contraints.
 
     .. math::
         f^k(t) 
