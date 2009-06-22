@@ -550,5 +550,24 @@ class KeyboardHandler(osgGA.GUIEventHandler):
                 self._logger.info('action %d', action)
             _update_action(action, self._drawer)
         return False
-        
-        
+
+
+class DrawerPlugin(core.Plugin):
+
+    def __init__(self, factory):
+
+        if factory is None:
+            self._factory = NodeFactory()
+        else:
+            self._factory = factory
+
+    def init(self, world, time):
+        world.update_geometric()
+        self._drawer = WorldDrawer(world, self._factory)
+        self._viewer = self._drawer.init_viewer()
+        self._viewer.realize()
+
+    def update(self, t ,dt):
+        self._drawer.update()
+        self._viewer.frame()
+

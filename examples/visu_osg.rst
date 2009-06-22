@@ -45,3 +45,16 @@ Display a human
     ...     w.update_graphic()
     ...     t += 1./180
 
+
+... as a plugin
+---------------
+
+>>> from arboris.visu_osg import DrawerPlugin
+>>> from arboris.robots.human36 import human36
+>>> from arboris.core import simulate
+>>> from numpy import arange
+>>> plugin = DrawerPlugin(factory=NodeFactory(scale=.1))
+>>> world = human36()
+>>> time = arange(0, 1, 1e-3)
+>>> simulate(world, time, (plugin,))
+

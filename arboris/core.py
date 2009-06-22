@@ -1078,7 +1078,18 @@ class Body(NamedObject, Frame):
                                      child_twist)
 
 
-def simulate(world, time):
+class Plugin(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def init(self, world, time):
+        pass
+
+    @abstractmethod
+    def update(self, t, dt):
+        pass
+
+def simulate(world, time, plugins=()):
     """Run a full simulation, 
 
     :param world: the world to be simulated
@@ -1096,12 +1107,16 @@ def simulate(world, time):
 
     """
     world.initjointspace()
+    for plugin in plugins:
+        plugin.init(world, time)
     previous_t = time[0]
     for t in time[1:]:
         dt = t - previous_t
         world.update_dynamic()
         world.update_controllers(dt, t)
         world.update_constraints(dt)
+        for plugin in plugins:
+            plugin.update(t, dt)
         world.integrate(dt)
         previous_t = t    
 
