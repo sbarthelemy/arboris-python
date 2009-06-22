@@ -80,6 +80,8 @@ than the one written in matlab, and I'll try here to explain why.
 
   - the arboris-python version has a much better documentation.
 
+  - there is no more ``error('coucou')`` messages
+
   - the arboris-python version has automated unit tests.
 
 
@@ -93,4 +95,5 @@ There are still areas where arboris-python is behind:
 - there is no kinematic (or 0-degree) robot,
 - the python version has been less tested by real users,
 - the python version has no gui to set the posture.
+- there is no more ``error('coucou')`` messages
 
