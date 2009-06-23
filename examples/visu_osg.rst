@@ -11,7 +11,7 @@ Display a human
     >>> w = human36()
     >>> w.update_geometric()
     >>> d = WorldDrawer(w)
-    >>> viewer = init_viewer(d.root)
+    >>> viewer = init_viewer(d)
     >>> viewer.realize()
     >>> joints = w.getjointslist()
     >>> t = 0.

@@ -215,6 +215,14 @@ def draw_text(label, size=1.):
 
 
 def graphic_options(scale=1.):
+    """Default dictionnary of graphic options.
+    
+    :param scale: the scaling factor
+    :type scale: float
+    :return: scaled graphic options
+    :rtype: dict
+
+    """
     body_palette = [
         (1,0,0),
         (0,1,0),
@@ -232,7 +240,26 @@ def graphic_options(scale=1.):
 
 
 class WorldDrawer(object):
-    """
+    """Draw the world, creating OSG nodes.
+
+    **Attributes:**
+    - :attr:`root`: the root node of the OSG scene,
+    - :attr:`transforms`: a dictionnary of tranform nodes corresponding to and
+      indexed by :class:`core.Frame` objects,
+    - :attr:`switches`: a dictionnary indexed by arboris objects, whose values
+      are dictionnaries too. These latter dictionaries values are OSG switches
+      (which switch on/off the display of their children), while their keys 
+      are strings, explaining what is displayed (``name``, 
+      ``inertia ellipsoid``...).
+
+    **Methods:**
+    - :meth:`__init__` creates ``root`` OSG node, get the graphic options
+      (colors, sizes...) and do house keeping. If the ``world`` parameter is
+      given, it we be converted to OSG nodes (it calls :meth:`init`). 
+    - :meth:`init` converts the ``world`` to osg nodes 
+      (it calls :meth:`register`).
+    - :meth:`register` converts a single arboris object ``obj`` to zero or more
+      OSG nodes. It populates :attr:`transforms`:
     
     """
 
@@ -257,9 +284,9 @@ class WorldDrawer(object):
         self.is_displayed = {
             'frame': True,
             'link': True,
-            'name': True,
+            'name': False,
             'shape': True,
-            'inertia ellipsoid': True}
+            'inertia ellipsoid': False}
         if world is not None:
             self.init(world)
 
@@ -312,8 +339,6 @@ class WorldDrawer(object):
           simulation for contact detection
         - ``geometry``
         - ``cog``
-        - ``mass``
-        - 
 
         """
         # create a transform for the frames (instances of 
@@ -361,7 +386,7 @@ class WorldDrawer(object):
                     #
                     [bHg, Mg] = com_position(Mb)
                     shape = osg.ShapeDrawable(
-                        osg.Sphere(osg.Vec3(0.,0.,0.), 1))
+                        osg.Sphere(osg.Vec3(0.,0.,0.), 1.))
                     shape.setColor(osg.Vec4(1,1,1,0.5))
                     shape_geo = osg.Geode()
                     shape_geo.addDrawable(shape)
@@ -416,11 +441,10 @@ class WorldDrawer(object):
             if isinstance(obj, core.Frame):
                 switches['frame'] = osg.Switch()
                 switches['frame'].addChild(self._generic_frame)
-
             if len(switches) != 0:
+                self.switches[obj] = {}
                 for key, val in switches.items():
                     parent.addChild(val)
-                    self.switches[obj] = {}
                     self.switches[obj][key] = val
 
     def update(self):
@@ -446,11 +470,11 @@ class WorldDrawer(object):
         pass
 
 
-def init_viewer(root, fullscreen=False, window=(0,0,800,600), 
+def init_viewer(drawer, fullscreen=False, window=(0,0,800,600), 
                 coi=(0,0,0), camera=(3,3,3), up=(0,1,0)):
         # create the osg viewer:
         viewer = osgViewer.Viewer()
-        viewer.setSceneData(root)
+        viewer.setSceneData(drawer.root)
         #fill the osgViewer:
         manipulator = osgGA.TrackballManipulator()
         viewer.setCameraManipulator(manipulator)
@@ -467,8 +491,8 @@ def init_viewer(root, fullscreen=False, window=(0,0,800,600),
                 viewer.setUpViewInWindow(window[0], window[1], 
                                         window[2], window[3])
         viewer.home()
-        #kbh = KeyboardHandler(self)
-        #viewer.addEventHandler(kbh.__disown__())
+        kbh = KeyboardHandler(drawer)
+        viewer.addEventHandler(kbh.__disown__())
         return viewer     
 
 
@@ -527,7 +551,7 @@ class DrawableWorld(core.World):
 
     def init_graphic(self, *positional_args, **keyword_args):
         self._viewer = init_viewer(
-            self._drawer.root, *positional_args, **keyword_args)
+            self._drawer, *positional_args, **keyword_args)
         self._viewer.realize()
 
     def update_graphic(self):
@@ -546,10 +570,10 @@ class DrawerPlugin(core.Plugin):
     def init(self, world, time):
         world.update_geometric()
         self._drawer.init(world)
-        self._viewer = init_viewer(self._drawer.root)
+        self._viewer = init_viewer(self._drawer)
         self._viewer.realize()
 
-    def update(self, t ,dt):
+    def update(self, t, dt):
         self._drawer.update()
         self._viewer.frame()
 
