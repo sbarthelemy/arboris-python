@@ -172,14 +172,8 @@ latex_documents = [
 #latex_use_parts = False
 
 # Additional stuff for the LaTeX preamble.
-latex_preamble = ''
-# Documents to append as an appendix to all manuals.
-#latex_appendices = []
-
-# If false, no module index is generated.
-#latex_use_modindex = True
-
-pngmath_latex_preamble = r"""\providecommand{\SO}{\text{SO}}
+#latex_preamble = ''
+latex_preamble = r"""\providecommand{\SO}{\text{SO}}
 \providecommand{\pre}[2][{}]{\vphantom{#2}^{#1}\!#2}
 \providecommand{\twist}[1][{}]{\vphantom{V}^{#1}\!V}
 \providecommand{\dtwist}[1][{}]{\vphantom{V}^{#1}\!\dot{V}}
@@ -198,6 +192,14 @@ pngmath_latex_preamble = r"""\providecommand{\SO}{\text{SO}}
 \providecommand{\GAcc}{\dot{\nu}}
 \providecommand{\GForce}{\tau}
 """
+
+# Documents to append as an appendix to all manuals.
+#latex_appendices = []
+
+# If false, no module index is generated.
+#latex_use_modindex = True
+
+pngmath_latex_preamble = latex_preamble
 
 #Misc
 #====
