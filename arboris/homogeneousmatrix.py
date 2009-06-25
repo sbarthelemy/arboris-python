@@ -4,17 +4,13 @@ Functions for working with homogeneous matrices.
 
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
-
-from misc_c cimport asym, sin, cos
+from numpy import array, zeros, sin, cos, dot, hstack, vstack
 import numpy
-from numpy import array, zeros, empty, dot
 
-DTYPE = numpy.float
-cdef DTYPE_t tol = 1e-12
+tol=1e-12
 
-cpdef transl(DTYPE_t t_x, DTYPE_t t_y, DTYPE_t t_z):
-    """
-    Homogeneous matrix of a translation.
+def transl(t_x, t_y, t_z):
+    """Homogeneous matrix of a translation.
 
     INPUT: ``t_x, t_y, t_z`` - coordinates of the translation vector in 3d space
 
@@ -29,27 +25,14 @@ cpdef transl(DTYPE_t t_x, DTYPE_t t_y, DTYPE_t t_z):
            [ 0.,  0.,  0.,  1.]])
 
     """
-    cdef numpy.ndarray[DTYPE_t, ndim=2] H = empty((4,4), dtype=DTYPE)
-    H[0,0] = 1.
-    H[0,1] = 0.
-    H[0,2] = 0.
-    H[0,3] = t_x
-    H[1,0] = 0.
-    H[1,1] = 1
-    H[1,2] = 0.
-    H[1,3] = t_y
-    H[2,0] = 0.
-    H[2,1] = 0.
-    H[2,2] = 1
-    H[2,3] = t_z
-    H[3,0] = 0.
-    H[3,1] = 0.
-    H[3,2] = 0.
-    H[3,3] = 1
-    return H
+    return array(
+        [[ 1. , 0., 0., t_x],
+         [ 0. , 1., 0., t_y],
+         [ 0. , 0., 1., t_z],
+         [ 0.,  0., 0., 1.]])
 
 
-cpdef rotzyx(DTYPE_t angle_z, DTYPE_t angle_y, DTYPE_t angle_x) :
+def rotzyx(angle_z, angle_y, angle_x):
     """homogeneous transformation matrix from pitch-roll-yaw angles)
     
     In short:  R = Rz * Ry * Rx
@@ -63,64 +46,52 @@ cpdef rotzyx(DTYPE_t angle_z, DTYPE_t angle_y, DTYPE_t angle_x) :
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
     """
-    cdef DTYPE_t sz = sin(angle_z)
-    cdef DTYPE_t cz = cos(angle_z)
-    cdef DTYPE_t sy = sin(angle_y)
-    cdef DTYPE_t cy = cos(angle_y)
-    cdef DTYPE_t sx = sin(angle_x)
-    cdef DTYPE_t cx = cos(angle_x)
-    cdef numpy.ndarray[DTYPE_t, ndim=2] H = zeros((4,4), dtype=DTYPE)
-    H[0,0] = cz*cy
-    H[0,1] = cz*sy*sx-sz*cx
-    H[0,2] = cz*sy*cx+sz*sx
-    H[1,0] = sz*cy
-    H[1,1] = sz*sy*sx+cz*cx
-    H[1,2] = sz*sy*cx-cz*sx
-    H[2,0] = -sy
-    H[2,1] = cy*sx
-    H[2,2] = cy*cx
-    H[3,3] = 1
-    return H
-
-
-cpdef rotzy(DTYPE_t angle_z, DTYPE_t angle_y):
+    
+    sz = sin(angle_z)
+    cz = cos(angle_z)
+    sy = sin(angle_y)
+    cy = cos(angle_y)
+    sx = sin(angle_x)
+    cx = cos(angle_x)
+    return array(
+        [[ cz*cy, cz*sy*sx-sz*cx, cz*sy*cx+sz*sx, 0.],
+         [ sz*cy, sz*sy*sx+cz*cx, sz*sy*cx-cz*sx, 0.],
+         [-sy   , cy*sx         , cy*cx         , 0.],
+         [ 0.   , 0.            , 0.            , 1.]])
+         
+         
+def rotzy(angle_z, angle_y):
     """homogeneous transformation matrix from pitch-roll-yaw angles)
     
     In short:  R = Rz * Ry
 
     Example:
-    
+
     >>> rotzy(3.14/6, 3.14/4)
     array([[ 0.61271008, -0.4997701 ,  0.61222235,  0.        ],
            [ 0.35353151,  0.86615809,  0.35325009,  0.        ],
            [-0.70682518,  0.        ,  0.70738827,  0.        ],
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
-    
+
     """
-    cdef DTYPE_t sz = sin(angle_z)
-    cdef DTYPE_t cz = cos(angle_z)
-    cdef DTYPE_t sy = sin(angle_y)
-    cdef DTYPE_t cy = cos(angle_y)
-    cdef numpy.ndarray[DTYPE_t, ndim=2] H = zeros((4,4), dtype=DTYPE)
-    H[0,0] = cz*cy
-    H[0,1] = -sz
-    H[0,2] = cz*sy
-    H[1,0] = sz*cy
-    H[1,1] = cz
-    H[1,2] = sz*sy
-    H[2,0] = -sy
-    H[2,2] = cy
-    H[3,3] = 1
-    return H 
+    sz = sin(angle_z)
+    cz = cos(angle_z)
+    sy = sin(angle_y)
+    cy = cos(angle_y)
+    return array(
+        [[ cz*cy,-sz, cz*sy, 0.],
+         [ sz*cy, cz, sz*sy, 0.],
+         [-sy   , 0., cy   , 0.],
+         [ 0.   , 0., 0.   , 1.]])
 
 
-cpdef rotzx(DTYPE_t angle_z, DTYPE_t angle_x):
+def rotzx(angle_z, angle_x):
     """homogeneous transformation matrix from pitch-roll-yaw angles)
     
     In short:  R = Rz * Rx
 
     Example:
-    
+
     >>> rotzx(3.14/6, 3.14/3)
     array([[ 0.86615809, -0.25011479,  0.43268088,  0.        ],
            [ 0.4997701 ,  0.43347721, -0.74988489,  0.        ],
@@ -128,30 +99,24 @@ cpdef rotzx(DTYPE_t angle_z, DTYPE_t angle_x):
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
     """
-    cdef DTYPE_t sz = sin(angle_z)
-    cdef DTYPE_t cz = cos(angle_z)
-    cdef DTYPE_t sx = sin(angle_x)
-    cdef DTYPE_t cx = cos(angle_x)
-    cdef numpy.ndarray[DTYPE_t, ndim=2] H = zeros((4,4), dtype=DTYPE)
-    H[0,0] = cz
-    H[0,1] = -sz*cx
-    H[0,2] = sz*sx
-    H[1,0] = sz
-    H[1,1] = cz*cx
-    H[1,2] = -cz*sx
-    H[2,1] = sx
-    H[2,2] = cx
-    H[3,3] = 1
-    return H
-
-
-cpdef rotyx(DTYPE_t angle_y, DTYPE_t angle_x):
+    sz = sin(angle_z)
+    cz = cos(angle_z)
+    sx = sin(angle_x)
+    cx = cos(angle_x)
+    return array(
+        [[ cz,-sz*cx, sz*sx, 0.],
+         [ sz, cz*cx,-cz*sx, 0.],
+         [ 0., sx   , cx   , 0.],
+         [ 0., 0.   , 0.   , 1.]])
+         
+         
+def rotyx(angle_y, angle_x):
     """homogeneous transformation matrix from pitch-roll-yaw angles)
     
     In short:  R = Ry * Rx
 
     Example:
-    
+
     >>> rotyx(3.14/4, 3.14/3)
     array([[ 0.70738827,  0.61194086,  0.35373751,  0.        ],
            [ 0.        ,  0.50045969, -0.86575984,  0.        ],
@@ -159,29 +124,22 @@ cpdef rotyx(DTYPE_t angle_y, DTYPE_t angle_x):
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
     """
-    cdef DTYPE_t sy = sin(angle_y)
-    cdef DTYPE_t cy = cos(angle_y)
-    cdef DTYPE_t sx = sin(angle_x)
-    cdef DTYPE_t cx = cos(angle_x)
-    cdef numpy.ndarray[DTYPE_t, ndim=2] H = zeros((4,4), dtype=DTYPE)
-    H[0,0] = cy
-    H[0,1] = sy*sx
-    H[0,2] = sy*cx
-    H[1,1] = cx
-    H[1,2] = -sx
-    H[2,0] = -sy
-    H[2,1] = cy*sx
-    H[2,2] = cy*cx
-    H[3,3] = 1
-    return H
+    sy = sin(angle_y)
+    cy = cos(angle_y)
+    sx = sin(angle_x)
+    cx = cos(angle_x)
+    return array(
+        [[ cy, sy*sx, sy*cx, 0.],
+         [ 0., cx   ,-sx   , 0.],
+         [-sy, cy*sx, cy*cx, 0.],
+         [ 0., 0.   , 0.   , 1.]])
 
-
-cpdef rotx(DTYPE_t angle):
+def rotx(angle):
     """
     Homogeneous matrix of a rotation around the x-axis
    
     Example:
-    
+
     >>> rotx(3.14/6)
     array([[ 1.        ,  0.        ,  0.        ,  0.        ],
            [ 0.        ,  0.86615809, -0.4997701 ,  0.        ],
@@ -189,34 +147,21 @@ cpdef rotx(DTYPE_t angle):
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
     """
-    cdef DTYPE_t cx = cos(angle)
-    cdef DTYPE_t sx = sin(angle)
-    cdef numpy.ndarray[DTYPE_t, ndim=2] H = empty((4,4), dtype=DTYPE)
-    H[0,0] = 1.
-    H[0,1] = 0.
-    H[0,2] = 0.
-    H[0,3] = 0.
-    H[1,0] = 0.
-    H[1,1] = cx
-    H[1,2] = -sx
-    H[1,3] = 0.
-    H[2,0] = 0.
-    H[2,1] = sx
-    H[2,2] = cx
-    H[2,3] = 0.
-    H[3,0] = 0.
-    H[3,1] = 0.
-    H[3,2] = 0.
-    H[3,3] = 1.
+    ca = cos(angle)
+    sa = sin(angle)
+    H = array(
+        [[1,  0,   0,  0],
+         [0, ca, -sa,  0],
+         [0, sa,  ca,  0],
+         [0,  0,   0,  1]])
     return H
 
-
-cpdef roty(DTYPE_t angle):
+def roty(angle):
     """
     Homogeneous matrix of a rotation around the y-axis
 
     Example:
-    
+
     >>> roty(3.14/6)
     array([[ 0.86615809,  0.        ,  0.4997701 ,  0.        ],
            [ 0.        ,  1.        ,  0.        ,  0.        ],
@@ -224,22 +169,19 @@ cpdef roty(DTYPE_t angle):
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
     """
-    cdef DTYPE_t ca = cos(angle)
-    cdef DTYPE_t sa = sin(angle)
-    cdef numpy.ndarray[DTYPE_t, ndim=2] H = zeros((4,4), dtype=DTYPE)
-    H[0,0] = ca
-    H[0,2] = sa
-    H[1,1] = 1.
-    H[2,0] = -sa
-    H[2,2] = ca
-    H[3,3] = 1.
+    ca = cos(angle)
+    sa = sin(angle)
+    H = array(
+        [[ ca,  0,  sa,  0],
+         [  0,  1,   0,  0],
+         [-sa,  0,  ca,  0],
+         [  0,  0,   0,  1]])
     return H
 
-cpdef rotz(DTYPE_t angle):
+def rotz(angle):
     """
-    Rotation around the z-axis.
-
-    Example:
+    Rotation around the z-axis
+    example:
 
     >>> rotz(3.14/6)
     array([[ 0.86615809, -0.4997701 ,  0.        ,  0.        ],
@@ -248,21 +190,18 @@ cpdef rotz(DTYPE_t angle):
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
     """
-    cdef DTYPE_t ca = cos(angle)
-    cdef DTYPE_t sa = sin(angle)
-    cdef numpy.ndarray[DTYPE_t, ndim=2] H = zeros((4,4), dtype=DTYPE)
-    H[0,0] = ca
-    H[0,1] = -sa
-    H[1,0] = sa
-    H[1,1] = ca
-    H[2,2] = 1.
-    H[3,3] = 1.
-
+    ca = cos(angle)
+    sa = sin(angle)
+    H = array(
+        [[ca, -sa, 0, 0],
+         [sa,  ca, 0, 0],
+         [ 0,   0, 1, 0],
+         [ 0,   0, 0, 1]])
     return H
-#must ask about cythoning this one :'cause booleans are not the same in python and c
+
 def ishomogeneousmatrix(H, tol=tol):
     """
-    Return true if input is an homogeneous matrix.
+    Return true if input is an homogeneous matrix
     """
     return (H.shape == (4,4)) \
         and (numpy.abs(numpy.linalg.det(H[0:3,0:3])-1)<=tol) \
@@ -270,12 +209,12 @@ def ishomogeneousmatrix(H, tol=tol):
 
 def checkishomogeneousmatrix(H, tol=tol):
     """
-    Raise an error if input is not an homogeneous matrix.
+    Raise an error if input is not an homogeneous matrix
     """
     if not ishomogeneousmatrix(H, tol):
         raise ValueError("{H} is not an homogeneous matrix".format(H=H))
 
-cpdef inv(numpy.ndarray H):
+def inv(H):
     """
     Invert an homogeneous matrix.
 
@@ -293,19 +232,11 @@ cpdef inv(numpy.ndarray H):
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
     """
-    cdef int i,j
-    cdef numpy.ndarray[DTYPE_t, ndim=2] iH = empty((4,4), dtype=DTYPE)
-    
-    for i from 0 <= i < 3:
-        for j from 0 <= j < 3:
-            iH[i,j] = H[j,i]
-    iH[0:3, 3] = -dot(iH[0:3, 0:3], H[0:3, 3])
-    iH[3,0:3] = 0.
-    iH[3,3] = 1.
-    return iH
+    R = H[0:3,0:3]
+    p = H[0:3,3:4]
+    return vstack( (hstack((R.T,-dot(R.T,p))), [0,0,0,1]))
 
-
-cpdef adjoint(numpy.ndarray H):
+def adjoint(H):
     """
     Adjoint (6x6 matrix) of the homogeneous matrix.
 
@@ -336,16 +267,19 @@ cpdef adjoint(numpy.ndarray H):
              0.35401931]])
 
     """
-    cdef int i,j
-    cdef numpy.ndarray[DTYPE_t, ndim=2] Ad = zeros((6,6), dtype=DTYPE)
-    Ad[0:3,0:3] = H[0:3,0:3]
-    Ad[0:3,3:6] = 0.
-    Ad[3:6,0:3] = dot(asym(H[0,3],H[1,3],H[2,3]), H[0:3,0:3])
-    Ad[3:6,3:6] = H[0:3,0:3]
-    return Ad
+    R = H[0:3,0:3]
+    p = H[0:3,3:4]
+    pxR = dot(
+        array(
+            [[    0, -p[2],  p[1]],
+             [ p[2],     0, -p[0]],
+             [-p[1],  p[0],     0]]),
+        R)
+    return vstack((
+        hstack((R  , zeros((3,3)))),
+        hstack((pxR, R))))
 
-
-cpdef iadjoint(numpy.ndarray H):
+def iadjoint(H):
     """
     Return the adjoint (6x6 matrix) of the inverse homogeneous matrix.
     """

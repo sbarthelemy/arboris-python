@@ -83,7 +83,7 @@ class TestCommand(Command):
                 package = '.'.join(root.split(sep))
                 if file.endswith('.py') and file != '__init__.py':
                     pymods.append('.'.join([package, splitext(file)[0]]))
-                elif file.endswith('.pyx'):
+                elif file.endswith('.so'):
                     pyxmods.append('.'.join([package, splitext(file)[0]]))
 
         for mod in pymods:
