@@ -111,6 +111,6 @@ def simplearm(world=None, name=None, lengths=(0.5 ,0.4 , 0.2),
     # create a frame at the end of the hand
     f = SubFrame(hand, Hg.transl(0,hand_length,0), 'EndEffector')
     w.register(f)
-    w.initjointspace()
+    w.init()
     return w
 

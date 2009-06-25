@@ -45,7 +45,7 @@ def ball(world=None, radius=1., mass=1., name=None):
     s = Sphere(ball, radius)
     w.register(freejoint)
     w.register(s)
-    w.initjointspace()
+    w.init()
     return w
  
 
@@ -77,7 +77,7 @@ def box(world=None, lengths=(1.,1.,1.), mass=1., name='Box'):
     w.register(box)
     s = Box(box, lengths)
     w.register(freejoint)
-    w.initjointspace()
+    w.init()
     return w
 
 
@@ -108,6 +108,6 @@ def cylinder(world=None, radius=1., length=1., mass=1., name='Cylinder'):
     w.register(cylinder)
     s = Cylinder(cylinder, length, radius)
     w.register(s)
-    w.initjointspace()
+    w.init()
     return w
     

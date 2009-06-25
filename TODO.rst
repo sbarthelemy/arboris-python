@@ -45,20 +45,6 @@ Small changes
 - create functions to merge bodies/worlds etc.
 - implement a true recursive-newton-euler linearized algorithm?
 - add visco-elastic joints
-- rename ``initjointspace`` into ``init``
-
-Save simulations
-----------------
-
-we could use a "logger" class, whose responsability would be to save 
-wathever seems interesting. 
-
-The drawer could be a logger too.
-
-initjointspace()
-----------------
-
-rename into init()?
 
 Joints Limits
 -------------
@@ -81,7 +67,6 @@ Contacts
 --------
 
 - understand why contacts are bumping
-- add sliding friction law
 - improve the stop condition of the Gauss-Seidel algorithm
 
 Collisions

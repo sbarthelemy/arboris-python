@@ -16,7 +16,7 @@ class WeightController(Controller):
     >>> joints['Wrist'].gpos[0] = 3.14/4
     >>> c = WeightController(w.ground)
     >>> w.register(c)
-    >>> w.initjointspace()
+    >>> w.init()
     >>> w.update_dynamic() #TODO change for update_kinematic
     >>> (gforce, impedance) = c.update()
 
@@ -29,8 +29,8 @@ class WeightController(Controller):
             self._gravity = array(gravity)
         Controller.__init__(self, name=name)
 
-    def initjointspace(self, ndof):
-        self._wndof = ndof
+    def init(self, world):
+        self._wndof = world.ndof
 
     def update(self, dt=None, t=None):
         gforce = zeros(self._wndof)
@@ -112,8 +112,8 @@ class ProportionalDerivativeController(Controller):
         else:
             self.gvel_des = array(gvel_des).reshape(self._cndof)
     
-    def initjointspace(self, ndof):
-        self._wndof = ndof
+    def init(self, world):
+        self._wndof = world.ndof
         dof_map = []
         for j in self.joints:
                 dof_map.extend(range(j.dof.start, j.dof.stop))

@@ -20,12 +20,12 @@ Non sliding, free
 >>> collision_solver = sphere_sphere_collision
 >>> c = SoftFingerContact(w._shapes, 0.1, collision_solver)
 >>> w.register(c)
->>> w.initjointspace()
+>>> w.init()
 >>> w.update_geometric()
 >>> w.init_graphic()
 >>> time = arange(0,1,1e-3)
 >>> world = w
->>> world.initjointspace()
+>>> world.init()
 >>> previous_t = time[0]
 >>> for t in time[1:]:
 ...     dt = t - previous_t
@@ -56,12 +56,12 @@ Non-sliding, blocked
 >>> collision_solver = sphere_sphere_collision
 >>> c = SoftFingerContact(w._shapes, 0.1, collision_solver)
 >>> w.register(c)
->>> w.initjointspace()
+>>> w.init()
 >>> w.update_geometric()
 >>> w.init_graphic()
 >>> time = arange(0,1,1e-3)
 >>> world = w
->>> world.initjointspace()
+>>> world.init()
 >>> previous_t = time[0]
 >>> for t in time[1:]:
 ...     dt = t - previous_t
@@ -93,12 +93,12 @@ Sliding, blocked
 >>> collision_solver = sphere_sphere_collision
 >>> c = SoftFingerContact(w._shapes, 0.1, collision_solver)
 >>> w.register(c)
->>> w.initjointspace()
+>>> w.init()
 >>> w.update_geometric()
 >>> w.init_graphic()
 >>> time = arange(0,1.5,1e-3)
 >>> world = w
->>> world.initjointspace()
+>>> world.init()
 >>> previous_t = time[0]
 >>> for t in time[1:]:
 ...     dt = t - previous_t

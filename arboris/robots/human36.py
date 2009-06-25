@@ -731,7 +731,7 @@ def _human36(height=1.741, mass=73, name='', world=None):
    
     for t in tags.itervalues():
         w.register(t)
-    w.initjointspace()
+    w.init()
     return (w, bodies, tags)
 
 def human36(height=1.741, mass=73, name='', world=None):

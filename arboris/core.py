@@ -37,7 +37,7 @@ class Joint(RigidMotion, NamedObject):
             self.attach(frames[0], frames[1])
         else:
             self._frames = (None, None)
-        self._dof = None # will be set by World.initjoinspace()
+        self._dof = None # will be set by World.init()
 
     @property
     def dof(self):
@@ -96,7 +96,7 @@ class Constraint(NamedObject):
         NamedObject.__init__(self, name)
 
     @abstractmethod
-    def initjointspace(self, ndof):
+    def init(self, world):
         pass
 
     @property
@@ -144,7 +144,7 @@ class Controller(NamedObject):
         NamedObject.__init__(self, name)
 
     @abstractmethod
-    def initjointspace(self, ndof):
+    def init(self, world):
         pass
 
     @abstractmethod
@@ -318,7 +318,7 @@ class World(NamedObject):
         >>> w.register(c0)
         >>> c1 = ProportionalDerivativeController(joints[0:1])
         >>> w.register(c1)
-        >>> w.initjointspace()
+        >>> w.init()
 
         """
         if isinstance(obj, Body):
@@ -349,7 +349,7 @@ class World(NamedObject):
             raise ValueError(
                 'I do not know how to register objects of type {0}'.format(type(obj)))
 
-    def initjointspace(self):
+    def init(self):
         """ Init the joins-space model of the world.
         """
         self._ndof = 0
@@ -381,10 +381,10 @@ class World(NamedObject):
             j.gvel = self._gvel[j._dof]
 
         for c in self._constraints:
-            c.initjointspace(self._ndof)
+            c.init(self)
         
         for a in self._controllers:
-            a.initjointspace(self._ndof)
+            a.init(self)
 
     @property
     def mass(self):
@@ -500,7 +500,7 @@ class World(NamedObject):
         >>> joints = w.getjointslist()
         >>> a0 = ProportionalDerivativeController(joints[1:2], 2.)
         >>> w.register(a0)
-        >>> w.initjointspace()
+        >>> w.init()
         >>> w.update_dynamic()
         >>> w.update_controllers(0.001)
         >>> w._impedance
@@ -715,7 +715,7 @@ class World(NamedObject):
         >> from arboris.controllers import ProportionalDerivativeController
         >> c0 = ProportionalDerivativeController(w.joints[1:2], 1.)
         >> w.register(c0)
-        >> w.initjointspace()
+        >> w.init()
         >> w.update_dynamic()
         >> dt = 0.001
         >> w.update_controllers(dt)
@@ -1101,7 +1101,7 @@ def simulate(world, time, plugins=()):
     >>> simulate(w, time)
 
     """
-    world.initjointspace()
+    world.init()
     for plugin in plugins:
         plugin.init(world, time)
     previous_t = time[0]

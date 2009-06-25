@@ -39,14 +39,14 @@ Test ball and socket constraint
 >>> j1 = FreeJoint()
 >>> j1.attach(b0, b1)
 >>> w.register(j1)
->>> w.initjointspace()
+>>> w.init()
 >>> from arboris.controllers import WeightController
 >>> ctrl =  WeightController(w.ground)
 >>> w.register(ctrl)
 >>> from arboris.constraints import BallAndSocketConstraint 
 >>> c0 = BallAndSocketConstraint(frames=(w.ground, b0))
 >>> w.register(c0)
->>> w.initjointspace()
+>>> w.init()
 >>> w.update_dynamic()
 >>> dt = 0.001
 >>> w.update_controllers(dt)

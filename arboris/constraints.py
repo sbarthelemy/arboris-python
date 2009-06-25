@@ -59,8 +59,8 @@ class JointLimits(Constraint):
         self._jacobian = None
         self._force = zeros((joint.ndof,))
 
-    def initjointspace(self, ndof):
-        self._jacobian = zeros((1, ndof))
+    def init(self, world):
+        self._jacobian = zeros((1, world.ndof))
         self._jacobian[0,self._joint._dof] = 1
 
     @property
@@ -164,7 +164,7 @@ class BallAndSocketConstraint(Constraint):
         NamedObject.__init__(self, name)
         self._frames = frames
 
-    def initjointspace(self, ndof):
+    def init(self, world):
         pass
 
     @property
@@ -277,7 +277,7 @@ class PointContact(Constraint):
         self._collision_solver = collision_solver
         self._proximity = proximity
 
-    def initjointspace(self, ndof):
+    def init(self, world):
         pass
 
     def update(self):

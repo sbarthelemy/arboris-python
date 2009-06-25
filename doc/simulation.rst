@@ -9,7 +9,7 @@ A simulation can be ran using the :func:`arboris.core.simulate` function,
 which is indeed very simple::
 
     def simulate(world, time):
-        world.initjointspace()
+        world.init()
         previous_t = time[0]
         for t in time[1:]:
             dt = t - previous_t
