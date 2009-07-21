@@ -36,7 +36,11 @@ multiple display systems.
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
               "Joseph SALINI <joseph.salini@gmail.com>")
 
-from OpenSceneGraph import osg, osgDB, osgGA, osgViewer, osgText
+import os
+if os.name is 'nt':
+    import osg, osgDB, osgGA, osgViewer, osgText
+else:
+    from OpenSceneGraph import osg, osgDB, osgGA, osgViewer, osgText
 from numpy import pi, arctan2, array, dot, cross, sqrt, eye, cos, sin
 import shapes
 import core
@@ -441,7 +445,7 @@ class WorldDrawer(object):
             if isinstance(obj, core.Frame):
                 switches['frame'] = osg.Switch()
                 switches['frame'].addChild(self._generic_frame)
-            if len(switches) != 0:
+            if (parent is not None) and (len(switches) != 0):
                 self.switches[obj] = {}
                 for key, val in switches.items():
                     parent.addChild(val)
@@ -556,7 +560,10 @@ class DrawableWorld(core.World):
 
     def update_graphic(self):
         self._drawer.update()
-        self._viewer.frame()
+        try:
+            self._viewer.frame()
+        except AttributeError:
+            raise Error('You should call ``init_graphic()`` once at first')
 
     def graphic_is_done(self):
         return self._viewer.done()
