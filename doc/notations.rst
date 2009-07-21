@@ -8,7 +8,7 @@ A notation conversion table
 =======================  =======================  =======================  =======================  ============
 arboris-python           stramigioli icra2001     duindam 2006             li & sastry
 =======================  =======================  =======================  =======================  ============
-`\Hg[i]_j`               `H^i_j`                  `H^i_j`                  `g_{ij}`
+`\H[i]_j`                `H^i_j`                  `H^i_j`                  `g_{ij}`
 `\twist[k]_{j/i}`        `T^{k,i}_j` (p24)                                                          twist of `j` with respect to `i` expressed in `k`
 `\twist[j]_{j/i}`        `T^{j,i}_j`                                                                body twist
 `\twist[i]_{j/i}`        `T^{i,i}_j`                                                                "world" twist
@@ -17,7 +17,7 @@ arboris-python           stramigioli icra2001     duindam 2006             li & 
 =======================  =======================  ==========================
 documentation            latex                    sourcecode
 =======================  =======================  ==========================
-`\Hg[i]_j`               ``\Hg[i]_j``             ``H_ij``
+`\H[i]_j`                ``\H[i]_j``             ``H_ij``
 `\Ad[i]_j`               ``\Ad[i]_j``             ``Ad_ij``
 `\twist[j]_{j/i}`        ``\twist[j]_{j/i}``      ``T_ji``
 `\J[j]_{j/i}`            ``\J[j]_{j/i}``          ``J_ji``
@@ -29,6 +29,6 @@ Some formulas
 
 .. math::
 
-  \Hg[i]_j(t) &= \exp(t \twist[j]_{j/i}) \; \Hg[i]_j(0) \\
-              &= \Hg[i]_j(0) \exp(t \twist[i]_{j/i})
+  \H[i]_j(t) &= \exp(t \twist[j]_{j/i}) \; \H[i]_j(0) \\
+             &= \H[i]_j(0) \exp(t \twist[i]_{j/i})
  

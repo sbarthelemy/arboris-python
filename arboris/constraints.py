@@ -110,7 +110,7 @@ class BallAndSocketConstraint(Constraint):
 
     .. math::
         
-        \Hg[0]_1 = 
+        \H[0]_1 = 
         \begin{bmatrix}
             \pre[0]R_1 & 0\\
             0          & 1
@@ -149,9 +149,9 @@ class BallAndSocketConstraint(Constraint):
         &= f^{k-1}(t) + \Delta f\\
         v^k(t+dt)
         &= v^*(t+dt) + Y(t) \Delta f  \\
-        \Hg[0]_{1/0}^k(t+dt)
+        \H[0]_{1/0}^k(t+dt)
         &= \exp( dt \; S^T \; ( v^*(t+dt) + Y(t) \; \Delta f ) ) \;
-        \Hg[0]_{1/0}(t)
+        \H[0]_{1/0}(t)
         \\
         \pre[0]p_1^k(t+dt)
         &= \pre[0]p_1(t) + dt \; (v^*(t+dt) +  Y(t) \; \Delta f) 
@@ -178,9 +178,9 @@ class BallAndSocketConstraint(Constraint):
 
         .. math::
 
-            \Hg[0]_1(t) 
-            &= \left(\Hg[g]_0(t)\right)^{-1} \; \Hg[g]_1(t) \\
-            \Hg[0]_1(t) 
+            \H[0]_1(t) 
+            &= \left(\H[g]_0(t)\right)^{-1} \; \H[g]_1(t) \\
+            \H[0]_1(t) 
             &=
             \begin{bmatrix}
             \pre[0]R_1(t) & \pre[0]p_1(t) \\
@@ -316,7 +316,7 @@ class SoftFingerContact(PointContact):
     
     .. math::
 
-        \Hg[0]_1 &=
+        \H[0]_1 &=
         \begin{bmatrix}
         1 & 0 & 0 & 0 \\
         0 & 1 & 0 & 0 \\

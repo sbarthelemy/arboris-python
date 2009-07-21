@@ -24,7 +24,6 @@ Packaging
 Documentation
 =============
 
-- replace every \Hg by \H
 - make an example showing energy evolution
 - make an example showing computational singularity
 

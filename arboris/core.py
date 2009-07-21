@@ -924,7 +924,7 @@ class Body(NamedObject, Frame):
         As a result, the dynamical model of all the bodies is computed 
         recursively.
        
-        :param pose: the body pose relative to the ground: `\Hg[g]_b`
+        :param pose: the body pose relative to the ground: `\H[g]_b`
         :type pose: 4x4 ndarray
         :param jac: the body jacobian relative to the world (in body frame):
             `\J[b]_{b/g}`
@@ -948,16 +948,16 @@ class Body(NamedObject, Frame):
         
         .. image:: img/body_model.png
 
-        One can notice that `\Hg[n]_c` and `\Hg[p]_r` are constant.
+        One can notice that `\H[n]_c` and `\H[p]_r` are constant.
         
         The child body pose can be computed as
 
         .. math::
 
-            \Hg[g]_c &= \Hg[g]_p \; \Hg[p]_c \\
-                     &= \Hg[g]_p \; (\Hg[p]_r \; \Hg[r]_n \; \Hg[n]_c)
+            \H[g]_c &= \H[g]_p \; \H[p]_c \\
+                     &= \H[g]_p \; (\H[p]_r \; \H[r]_n \; \H[n]_c)
 
-        where `\Hg[r]_n` depends on the joint generalized configuration and is 
+        where `\H[r]_n` depends on the joint generalized configuration and is 
         given by its :attr:`~arboris.core.Joint.pose` attribute.
 
         The chil body twist is given as
