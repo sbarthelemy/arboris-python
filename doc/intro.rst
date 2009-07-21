@@ -20,6 +20,17 @@ History
 Comparison to other tools
 =========================
 
+- Simbody www.simtk.org
+- SIMM http://www.musculographics.com/products/simm.html
+- KDL
+- HuMAnS
+- ODE
+- Yobotics
+- Adams
+- OpenHRP
+- roboop
+- openRAVE http://openrave.programmingvision.coms
+- SAI (initially based ARACHI, now on TAO)
 
 Comparison to arboris-matlab
 ============================

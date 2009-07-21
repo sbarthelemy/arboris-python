@@ -18,7 +18,7 @@ That world has 3 degrees of freedom.
 
 .. doctest::
 
-  >>> from robots import simplearm
+  >>> from arboris.robots.simplearm import simplearm
   >>> w = simplearm()
   >>> w.ndof
   3
@@ -112,7 +112,7 @@ method.
 
 .. doctest::
 
-  >>> from robots import simplearm
+  >>> from arboris.robots.simplearm import simplearm
   >>> from numpy import dot, pi
   >>> w = simplearm(lengths=(1., 1., 0.2))
   >>> joints = w.getjointsdict()
@@ -153,12 +153,13 @@ The simplest way to have a graphic representation of a world is to use :class:`D
 
 .. doctest::
 
-  >>> from robots import simplearm
-  >>> from visu_osg import DrawableWorld
+  >>> from arboris.robots.simplearm import simplearm
+  >>> from arboris.visu_osg import DrawableWorld
   >>> w = simplearm(DrawableWorld())
   >>> joints = w.getjointsdict()
-  >>> t = 0
-  >>> dt = 1/10
+  >>> t = 0.
+  >>> dt = 1./100.
+  >>> w.init_graphic()
   >>> while(not(w.graphic_is_done())):
   >>>     t += dt
   >>>     joints['Shoulder'].gpos[0] = t

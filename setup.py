@@ -3,10 +3,6 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
 from distutils.core import setup, Command
 from distutils.extension import Extension
-from Cython.Distutils import build_ext
-from sphinx.setup_command import BuildDoc
-
-
 from glob import glob
 import os
 from os.path import splitext, basename, join as pjoin, walk, sep
@@ -100,20 +96,40 @@ class TestCommand(Command):
 
 version = '0.1.0pre2'
 
+cmdclass = {'test': TestCommand, 
+            'sphinx': SphinxCommand}
+ext_modules = []
+
+
+try: 
+    from Cython.Distutils import build_ext
+    do_use_cython = True
+except ImportError:
+    do_use_cython = False
+
+if do_use_cython:
+    cmdclass['build_ext'] = build_ext
+    ext_modules.extend([
+       Extension("arboris.misc_c",
+                 ["arboris/misc_c.pyx"]),
+       Extension("arboris.homogeneousmatrix",
+                 ["arboris/homogeneousmatrix.pyx"]),
+       Extension("arboris.twistvector",
+                 ["arboris/twistvector.pyx"])])
+try:
+    from sphinx.setup_command import BuildDoc
+    cmdclass['build_sphinx'] = BuildDoc
+except ImportError:
+    pass
+
 setup(
     name='arboris',
-    author = 'Sébastien BARTHÉLEMY',
-    version = version,
+    author='Sébastien BARTHÉLEMY',
+    version=version,
     packages=['arboris',
               'arboris.robots'],
-    cmdclass = {'build_ext': build_ext, 'test': TestCommand, 
-                'sphinx': SphinxCommand, 'build_sphinx': BuildDoc},
-    ext_modules = [Extension("arboris.misc_c",
-                             ["arboris/misc_c.pyx"]),
-                  Extension("arboris.homogeneousmatrix",
-                             ["arboris/homogeneousmatrix.pyx"]),
-                   Extension("arboris.twistvector",
-                             ["arboris/twistvector.pyx"])
-                  ]
+    cmdclass=cmdclass,
+    ext_modules=ext_modules,
+    package_data = {'arboris':['doc/']}
 )
 
