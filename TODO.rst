@@ -52,8 +52,8 @@ merge constraints.JointLimits with joints.LinearConfigurationSpaceJoint ?
 
 pro:
 
-- easier for user
-- no more need for initjointspace()
+- easier for user (however a factory could also handle this)
+- no more need for init()
 - fewer names for the user
 - in real world, joints work that way
 

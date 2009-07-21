@@ -2,17 +2,26 @@
 """
 Visualization of a simulation
 
-This module is based on openscenegraph (osg) 2.6 python wrappers.
+This module is based on the openscenegraph (osg) 2.6 python wrappers.
 
-A scene graph is a data structure that arranges the logical and spatial
-representation of a graphical scene. It consists of a collection of *nodes* in 
-a tree or graph structure. In principle node may have many children but only a single
-parent, with the effect of a parent apparent to all its child nodes. For
-instance, a geometrical transformation matrix node would move
-all its children.
+Scene graph basics
+------------------
 
-In osg, a single node may be shared between several parents, for instance when
-the same geometry is displayed several times simulatneously (this saves memory).
+A scene graph is a data structure that arranges the logical and 
+spatial representation of a graphical scene. It consists of a 
+collection of *nodes* in a tree or graph structure. In general a node
+may have many children but only a single parent, with the effect of a 
+parent apparent to all its child nodes. For instance, a geometrical 
+transformation matrix node would move all its children.
+
+In some cases, a single (child) node may be shared between several 
+parents, for instance when the same geometry is displayed several times
+simultaneously (this saves memory).
+
+OSG in 20"
+----------
+
+TODO: finish
 
 Classes:
     - Node
@@ -29,8 +38,26 @@ A geode can contain:
 The Viewer class can manage multiple synchronized cameras to
 render a single view spanning multiple monitors. Viewer creates its own
 window(s) and graphics context(s) based on the underlying graphics system
-capabilities, so a single Viewer-based application executable runs on single or
-multiple display systems.
+capabilities, so a single Viewer-based application executable runs on 
+single or multiple display systems.
+
+Internals
+---------
+
+The :class:`WorldDrawer` class creates a graphic representation of an
+arboris world as an OSG graph. Several properties of the world are 
+represented (shapes, inertia ellispoids,...), and the graphics can be 
+tuned with a dict of options, whose default values are given by the 
+:func:`graphic_option` function. The object stores a ref to the arboris
+world in order to update the representation when the bodies move.
+
+The :func:`init_viewer` function creates an OSG Viewer and an OSG
+KeayboardHandler. It is the place where window size, camera position
+and keyboard shortcuts are set.
+
+The end user can draw a world through, at choice, a :class:`DrawerPlugin`
+object, or superseding the "raw" :class:`core.World` object by a 
+:class:`visuosg.DrawableWorld` one.
 
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
@@ -55,6 +82,7 @@ def com_position(Mb):
     """Principal frame of inertia.
 
     (Origin is the center of mass, and basis vectors are along principal axis).
+
     TODO: move this function to somewhere else
 
     """
@@ -78,15 +106,16 @@ def com_position(Mb):
     else:
         return [eye(4), zeros((6,6))]
 
-
-
 def draw_frame(length=1., radius=0.05, alpha=1.):
     """
     create a pointer to an osg node that represents a frame
     this pointer with be used to draw every frame
+
+    **Example:**
+
     >>> generic_frame = draw_frame(.5, .8)
+    
     """
-    # WARN: we create the leaves and go towards the trunk of the osg tree
     # create the x cylinder
     cyl_x = osg.ShapeDrawable(osg.Cylinder(
         osg.Vec3(0.,0.,length/2.), radius, length))
@@ -95,7 +124,7 @@ def draw_frame(length=1., radius=0.05, alpha=1.):
     cyl_x.setColor(osg.Vec4(1.,0.,0.,alpha))
     cyl_y.setColor(osg.Vec4(0.,1.,0.,alpha))
     cyl_z.setColor(osg.Vec4(0.,0.,1.,alpha))
-    # create the geo node for each cylinder
+    # create the geode for each cylinder
     geo_x = osg.Geode()
     geo_x.addDrawable( cyl_x )
     geo_y = osg.Geode()
@@ -140,7 +169,6 @@ def pose2mat(pose):
           pose[0,3], pose[1,3], pose[2,3], pose[3,3],
           )
     return m
-
 
 def draw_line(start, end, radius=0.04, color=None):
     """Draw a line between two points.
@@ -304,6 +332,8 @@ class WorldDrawer(object):
             self.register(obj)
 
     def _choose_color(self, body, alpha=1.):
+        """Select a colour in the palette for the body.
+        """
         if body in self._body_colors:
             color = self._body_colors[body]
         else:
@@ -563,7 +593,7 @@ class DrawableWorld(core.World):
         try:
             self._viewer.frame()
         except AttributeError:
-            raise Error('You should call ``init_graphic()`` once at first')
+            raise Error('You should call ``init_graphic()`` once before calling ``update_graphic``')
 
     def graphic_is_done(self):
         return self._viewer.done()
