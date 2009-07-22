@@ -9,7 +9,7 @@ Ideal Joints
 
 An ideal joint is a kinematic restriction of the allowed relative twist of two rigid bodies `i` and `j` to a linear subspace of dimension `k`, where the relative motion of the bodies is described by two sets of states, namely 
 
-- a matrix `\GPos`, parameterizing the relative configuration as `\H[i]_j = \H[i]_j(\GPos)`,
+- a matrix `\GPos`, parameterizing the relative configuration as `\Hg[i]_j = \Hg[i]_j(\GPos)`,
 - a vector `\GVel \in \Re^k`, parameterizing the relative twist as `\twist[i]_{i/j} = X(\GPos) \GVel`
 
 where `X(\GPos)` depends smoothly on `\GPos` and `\nu = V_\GPos(\dot{\GPos})` with `V_\GPos` invertible and linear in `\dot{\GPos}`. Furthermore, there exists a mapping `F_\GPos : \Re^k \rightarrow \GPosSet`.
@@ -37,11 +37,11 @@ Let's take the example of an hinge joint, it has 1 dof, and may be parametrized 
   >>> j.gpos
   >>> j.gvel
 
-The relative configuration corresponding to this joint is defined by the homogeneous `\H[r]_n` is given by ``pose()``
+The relative configuration corresponding to this joint is defined by the homogeneous `\Hg[r]_n` is given by ``pose()``
 
 .. math::
 
-  \H[r]_n =
+  \Hg[r]_n =
   \begin{bmatrix}
   cos(q) & -sin(q) & 0 & 0\\
   sin(q) &  cos(q) & 0 & 0\\
@@ -57,7 +57,7 @@ The relative configuration corresponding to this joint is defined by the homogen
          [ 0.        ,  0.        ,  1.        ,  0.        ],
          [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
-Its inverse, `\H[n]_r = \H[r]_n^{-1}` is given by ``ipose()``
+Its inverse, `\Hg[n]_r = \Hg[r]_n^{-1}` is given by ``ipose()``
 
 .. doctest::
 

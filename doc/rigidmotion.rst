@@ -27,7 +27,7 @@ with `R^{-1}=R^T \in \Re^{3\times3}` and `p \in \Re^{3\times1}`.
 The *pose* (position and orientation, also known as the *configuration*) of a (right-handed) coordinate frame `\Psi_b` regarding to a reference (right-handed) coordinate frame `\Psi_a`: can be described by an homogeneous matrix
 
 .. math::
-    \H[a]{b} = 
+    \Hg[a]{b} = 
     \begin{bmatrix}
         \pre[a]R_b & \pre[a]p_b \\
         \begin{smallmatrix}

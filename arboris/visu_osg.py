@@ -369,12 +369,13 @@ class WorldDrawer(object):
         - ``name`` for any instance of the :class:`arboris.misc.NamedObject` class
         - ``frame`` for objects of the :class:`arboris.core.Frame` class
         - ``link`` lines for skeletton-like view
-        - ``shapes`` the basic shapes (:class:`arboris.core.Shape`) used in the 
-          simulation for contact detection
+        - ``shapes`` the basic shapes (:class:`arboris.core.Shape`) 
+          used in the simulation for contact detection
         - ``geometry``
         - ``cog``
 
         """
+
         # create a transform for the frames (instances of 
         # the Body and Subframe classes)
         if isinstance(obj, core.Frame):
@@ -480,6 +481,10 @@ class WorldDrawer(object):
                 for key, val in switches.items():
                     parent.addChild(val)
                     self.switches[obj][key] = val
+                    if self.is_displayed[key]:
+                        val.setAllChildrenOn()
+                    else:
+                        val.setAllChildrenOff()
 
     def update(self):
         for obj in self.world.itersubframes():

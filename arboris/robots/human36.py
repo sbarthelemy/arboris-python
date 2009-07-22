@@ -6,25 +6,27 @@ This module serve as a factory for anthropometric humanoid models.
 The model is based on the ``human36`` anatomical model from the `HuMAnS
 toolbox`_ software developed at the INRIA in Grenoble. 
 
+To the end-user, only the :func:`human36` should be useful.
 
-TODO: report doc/code discrepancy to HuMAnS devs
 TODO: decide if we support or no the ArborisName field in tags
 TODO: fix errors in matlab-arboris
 
 Finding the anatomical parameters in the HuMAnS toolbox source code
 ===================================================================
 
-HuMAnS (at version 1.0.7) uses Maple-generated C-code for computing the
-lagrangian model matrices and performs the integration and contact resolution in
-scilab. More precisely, some maple code in the
+HuMAnS (at version 1.0.7) uses Maple-generated C-code for computing 
+the lagrangian model matrices and performs the integration and contact 
+resolution in scilab. More precisely, some maple code in the
 ``HuMAnS/LagrangianModel/Model/Human36/MapleCodeGeneration``  directory
 describes
 
 - the lagrangian dynamics,
 - the contact kinematics,
-- and the "tags" kinematics (in the HuMAnS vocable, Tags are caracteristic points such as the anatomical landmarks used for human motion capture).
+- and the "tags" kinematics (in the HuMAnS vocable, Tags are 
+  caracteristic points such as the anatomical landmarks used for human 
+  motion reconstruction).
 
-These files generate the C file that are then called from scilab. The functions
+These files generate the C files that are then called from scilab. The functions
 take as parameters the human state (generalized positions and velocities) and
 anatomical parameters which are divided in 
 
@@ -36,9 +38,8 @@ anatomical parameters which are divided in
   ``HuMAnS/LagrangianModel/Human36/MapleCodeGeneration/AdditionnalData.maple``).
 
 The two arrays of parameters are computed from the human's total height in the
-function ``SetModelSize`` from the file
+function ``SetModelSize`` from the file 
 ``HuMAnS/LagrangianModel/Human36/human36.c``.
-
 
 .. _`HuMAnS toolbox`:
     http://bipop.inrialpes.fr/software/humans/
@@ -52,8 +53,18 @@ import arboris.homogeneousmatrix as Hg
 from arboris.homogeneousmatrix import adjoint
 from arboris.joints import *
 
-def anatomical_lengths(human_height):
-    """
+def anatomical_lengths(height):
+    """Returns a dict of anatomical lengths as defined in HuMAnS.
+    
+    :param height: the human height
+    :type height: float
+    :return: anatomical lengths, scaled according to ``height``
+    :rtype: dict
+
+    This function simply calls :func:`_humans_anatomical_lengths`
+    and removes the useless stuff from it result.
+
+    **Examples:**
 
     >>> L = anatomical_lengths(1.741)
     >>> L['ysternoclavL']
@@ -63,62 +74,65 @@ def anatomical_lengths(human_height):
     0.19600000000000001
 
     """
-    lengths_list = _humans_anatomical_lengths(human_height)
+    lengths_list = _humans_anatomical_lengths(height)
     lengths_dict = {}
     for length in lengths_list:
         lengths_dict[length["HumansName"]] = length["Value"]
     return lengths_dict
 
-def _humans_anatomical_lengths(human_height):
-    """
-    based on HuMAnS' ``LagrangianModel/Human36/Human36.c``
+def _humans_anatomical_lengths(height):
+    """Returns data about anatomical lengths as defined in HuMAnS.
 
-    Errors in matlab-arboris ?
+    :param height: the human height
+    :type height: float
+    :return: anatomical lengths date, scaled according to ``height``. 
+    The keys are:
+        - "HumansName": the name used in HuMAnS to denote a parameter,
+        - "HumansId": the number used in HuMAnS doc to denote a parameter,
+        - "Value": the length value in meters,
+        - "Description": a short descriptive text.
+    :rtype: list of dicts
+
+    the data come from HuMAnS' ``LagrangianModel/Human36/Human36.c`` 
+    file.
+
+    **Errors in matlab-arboris ?**
 
     In this implementation, the "zshoulder", "zhip" and "xfoot" lengths are 
     computed as in HuMAnS, which is different from the way they were
     computed in matlab-arboris.
 
-    Errors in HuMAnS ? 
-
-    - 'xsternoclavR/L' (L(9) an L(19)) are documented as constant 
-      (= 0,1817) but are implemented as size-dependant 
-      (= 0.1052 *  human_height)
-    - 'xvT10', 'xshoulderR/L' (L(2), L(12) an L(22)) are documented as 
-      constant (= 0.09085) but are implemented as size-dependant 
-      (= 0.0526 *  human_height)
-
     """
 
-    yfoot =  0.0222 * human_height
-    ytibia = 0.2493 * human_height
-    yfemur = 0.2425 * human_height 
-    ysternoclav = 0.0980 * human_height
+    yfoot =  0.0222 * height
+    ytibia = 0.2493 * height
+    yfemur = 0.2425 * height 
+    ysternoclav = 0.0980 * height
     zsternoclav = 0.5 * 0.0254 # zsternoclav  = 0.5 inch 
-    xsternoclav = 0.1052 *  human_height
-    yshoulder = 0.0104 * human_height
-    zshoulder = 0.1295 * human_height - zsternoclav
-    xshoulder = 0.0526 *  human_height
-    yhumerus = 0.1618 * human_height
-    yforearm = 0.1544 * human_height
-    yhand = 0.1091 * human_height	
-    xfoot = 0.1482 * human_height
+    xsternoclav = 0.1052 *  height
+    yshoulder = 0.0104 * height
+    zshoulder = 0.1295 * height - zsternoclav
+    xshoulder = 0.0526 *  height
+    yhumerus = 0.1618 * height
+    yforearm = 0.1544 * height
+    yhand = 0.1091 * height	
+    xfoot = 0.1482 * height
 
     lengths = []
     lengths.append({
         "HumansName": "yvT10", 
         'HumansId': 1,
-        "Value": 0.2075*human_height,
+        "Value": 0.2075*height,
         "Description": "hip joint centers/T10 vertebra"})
     lengths.append({
         "HumansName": "xvT10", 
         'HumansId': 2,
-        "Value": 0.0526 *  human_height,
+        "Value": 0.0526 *  height,
         "Description": "hip joint center middle point/T10 vertebra"})
     lengths.append({
         "HumansName": "zhip", 
         'HumansId': 3,
-        "Value": 0.1002 * human_height,
+        "Value": 0.1002 * height,
         "Description": "left hip joint center/right hip joint center"})
     lengths.append({
         "HumansName": "yfootR", 
@@ -161,7 +175,7 @@ def _humans_anatomical_lengths(human_height):
         "Value": zshoulder,
         "Description": "suprasternale/right shoulder joint center"})
     lengths.append({
-        "HumansName": "xshoulderR", 
+        "HumansName": "xshoulderR",
         'HumansId': 12,
         "Value": xshoulder,
         "Description": "suprasternale/right shoulder joint center"})
@@ -233,7 +247,7 @@ def _humans_anatomical_lengths(human_height):
     lengths.append({
         "HumansName": "yvC7", 
         'HumansId': 26,
-        "Value": 0.139*human_height,
+        "Value": 0.139*height,
         "Description": "T10 vertebra/C7 vertebra"})
     lengths.append({
         "HumansName": "yhandR", 
@@ -248,7 +262,7 @@ def _humans_anatomical_lengths(human_height):
     lengths.append({
         "HumansName": "yhead", 
         'HumansId': 29,
-        "Value": 0.1395*human_height,
+        "Value": 0.1395*height,
         "Description": "C7 vertebra/Vertex"})
     lengths.append({
         "HumansName": "xfootR", 
@@ -263,8 +277,12 @@ def _humans_anatomical_lengths(human_height):
     return lengths
 
 def height(lengths):
-    """
-    Examples:
+    """Computes a human height according to its anatomical lenghts.
+
+    An exception is thrown if the human is asymetric (one leg longuer than the
+    other...).
+
+    **Examples:**
 
     >>> height(anatomical_lengths(1.741))
     1.7410000000000001
@@ -278,15 +296,27 @@ def height(lengths):
         raise ValueError("The legs have different lengths")
     return left_leg + lengths['yvT10'] + lengths['yvC7'] + lengths['yhead']
 
-def _humans_tags(human_height):
-    """
-    
+def _humans_tags(height):
+    """Returns data about anatomical landmarks as defined in HuMAnS.
+
+    :param height: the human height
+    :type height: float
+    :return: anatomical landmarks data, scaled according to ``height``. 
+    The keys are:
+        - "ArborisName": the name used in arboris-matlab to denote the landmark,
+        - "HumansName": the name used in HuMAnS to denote the landmark,
+        - "HumansId": the number used in HuMAnS doc to denote the landmark,
+        - "HumansBodyId": the number used in HuMAnS to denote the body the
+          landmark is attached to,
+        - "Position": the length value in meters.
+    :rtype: list of dicts
+
     - ``HumansName`` and ``HumansId`` come from 
       ``AdditionnalData.maple``. 
-    - ``Position`` refer to ``AddL`` and come from ``Humans36.c``
+    - ``Position`` refers to ``AddL`` and come from ``Humans36.c``
     
     """
-    h = human_height
+    h = height
     L = anatomical_lengths(h)
     tags= []
     tags.append({
@@ -464,12 +494,12 @@ def _humans_tags(human_height):
     return tags
 
 
-def tags(human_height):
+def tags(height):
     """
     TODO: add body name
     """
     tdict = {}
-    for t in _humans_tags(human_height):
+    for t in _humans_tags(height):
         tdict[t['HumansName']] = {
             'Position': t['Position'],
         }
@@ -605,14 +635,13 @@ def _humans_bodies(height, mass):
          "GyrationRadius": array([0.303, 0.261, 0.315])*L['yhead']})
     return bodies
 
-def _human36(height=1.741, mass=73, name='', world=None): 
+def _human36(height=1.741, mass=73, name='', world=None):
     """
 
     TODO: HuMAnS' doc about inertia is erroneous (the real math is in the IOMatrix proc in DynamicData.maple)
 
     """
-    lengths = anatomical_lengths(height)
-    L = lengths
+    L = anatomical_lengths(height)
     
     bodies = {}
     humansbodyid_to_humansbodyname_map = {}
@@ -621,9 +650,9 @@ def _human36(height=1.741, mass=73, name='', world=None):
         #mass matrix at com
         mass_g = b['Mass'] * diag(
             hstack((b['GyrationRadius']**2, (1,1,1))))
-        H_gf = eye(4)
-        H_gf[0:3,3] = b['CenterOfMass']
-        
+        H_fg = eye(4)
+        H_fg[0:3,3] = b['CenterOfMass']
+        H_gf = Hg.inv(H_fg)
         #mass matrix at body's frame origin:
         mass_o = dot(adjoint(H_gf).T, dot(mass_g, adjoint(H_gf)))
         
@@ -632,15 +661,6 @@ def _human36(height=1.741, mass=73, name='', world=None):
             mass=mass_o)
         
         humansbodyid_to_humansbodyname_map[b['HumansId']] = b['HumansName']
-    
-
-    tags = {}
-    for t in _humans_tags(height):
-        bodyname = humansbodyid_to_humansbodyname_map[t['HumansBodyId']]
-        tags[t['HumansName']] = SubFrame(
-            bodies[bodyname],
-            Hg.transl(t['Position'][0], t['Position'][1], t['Position'][2]),
-            t['HumansName'])
 
     # Create a world
     if world is None:
@@ -665,7 +685,6 @@ def _human36(height=1.741, mass=73, name='', world=None):
     j = RzJoint()
     j.attach(rf, bodies['ShankR'])
     w.register(j)
-
     
     rf = SubFrame(bodies['ShankR'], Hg.transl(0, -L['ytibiaR'], 0))
     j = RzRxJoint()
@@ -728,11 +747,21 @@ def _human36(height=1.741, mass=73, name='', world=None):
     
     rf = SubFrame(bodies['UPT'], Hg.transl(L['xvT10'], L['yvC7'], 0))
     w.register(RzRyRxJoint(frames=(rf, bodies['Head'])))
-   
-    for t in tags.itervalues():
-        w.register(t)
+
+    tags = {}
+    for t in _humans_tags(height):
+        bodyname = humansbodyid_to_humansbodyname_map[t['HumansBodyId']]
+        tag = SubFrame(
+            bodies[bodyname],
+            Hg.transl(t['Position'][0], t['Position'][1], t['Position'][2]),
+            t['HumansName'])
+        tags[t['HumansName']] = tag
+        w.register(tag)
+
     w.init()
     return (w, bodies, tags)
 
 def human36(height=1.741, mass=73, name='', world=None):
     return _human36(height=height, mass=mass, name=name, world=world)[0]
+    
+

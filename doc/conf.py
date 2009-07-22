@@ -182,7 +182,6 @@ latex_preamble = r"""\providecommand{\SO}{\text{SO}}
 \providecommand{\wrench}[1][{}]{\vphantom{W}^{#1}\!W}
 \providecommand{\vect}[2]{\vphantom{#2}^{#1}#2}
 \providecommand{\Hg}[1][{}]{\vphantom{H}^{#1}H}
-\providecommand{\H}[1][{}]{\vphantom{H}^{#1}H}
 \providecommand{\Ad}[1][{}]{\,\vphantom{Ad}^{#1}\!\!Ad}
 \providecommand{\dAd}[1][{}]{\,\vphantom{Ad}^{#1}\!\!\dot{Ad}}
 \providecommand{\GPos}{Q}
