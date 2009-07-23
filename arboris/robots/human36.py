@@ -756,7 +756,7 @@ def _human36(height=1.741, mass=73, name='', world=None):
              'Right foot phalange 5', 'Right foot Phalange 1',
              'Left foot toe tip','Left foot heel',
               'Left foot phalange 5','Left foot phalange 1'):
-        shape = Point(tags[k])
+        shape = Point(tags[k], name=k)
         w.register(shape)
 
     w.init()

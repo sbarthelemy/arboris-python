@@ -5,7 +5,6 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 from numpy import array, zeros, eye, dot, sin, cos, dot
 from abc import ABCMeta, abstractmethod
 import homogeneousmatrix
-from misc import NamedObject
 from core import Joint
 
 class LinearConfigurationSpaceJoint(Joint):
@@ -15,7 +14,6 @@ class LinearConfigurationSpaceJoint(Joint):
 
     def integrate(self, dt):
         self.gpos += dt * self.gvel
-
 
 
 class FreeJoint(Joint):

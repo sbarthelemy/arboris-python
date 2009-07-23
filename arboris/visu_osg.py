@@ -71,7 +71,6 @@ else:
 from numpy import pi, arctan2, array, dot, cross, sqrt, eye, cos, sin
 import shapes
 import core
-from misc import NamedObject
 import homogeneousmatrix as Hg
 
 import commands
@@ -367,7 +366,7 @@ class WorldDrawer(object):
               |                 |                  |
             nodes['name']     nodes['frame']     nodes['link']
 
-        - ``name`` for any instance of the :class:`arboris.misc.NamedObject` class
+        - ``name`` for any instance of the :class:`arboris.core.NamedObject` class
         - ``frame`` for objects of the :class:`arboris.core.Frame` class
         - ``link`` lines for skeletton-like view
         - ``shapes`` the basic shapes (:class:`arboris.core.Shape`) 
@@ -476,7 +475,7 @@ class WorldDrawer(object):
             else:
                 raise NotImplemented(obj)
 
-            if isinstance(obj, NamedObject) and (obj.name is not None):
+            if isinstance(obj, core.NamedObject) and (obj.name is not None):
                 switches['name'] = osg.Switch()
                 switches['name'].addChild(
                     draw_text(obj.name, opts['text size']))

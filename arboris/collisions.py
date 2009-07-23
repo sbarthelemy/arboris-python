@@ -10,7 +10,53 @@ from numpy.linalg import norm
 from numpy import zeros, eye, dot, absolute, argsort, cross, argmin,\
     hstack
 import homogeneousmatrix as Hg
+from core import Shape
 from shapes import *
+
+def choose_solver(shape0, shape1):
+    """Choose a suitable solver for the two shapes.
+
+    """
+    assert isinstance(shape0, Shape)
+    assert isinstance(shape1, Shape)
+
+    if isinstance(shape0, Sphere):
+        if isinstance(shape1, Sphere):
+            shapes = (shape0, shape1)
+            solver = sphere_sphere_collision
+        elif isinstance(shape1, Point):
+            shapes = (shape0, shape1)
+            solver = sphere_point_collision
+        elif isinstance(shape1, Box):
+            shapes = (shape1, shape0)
+            solver = box_sphere_collision
+        else:
+            raise NotImplemented()
+    elif isinstance(shape0, Point):
+        if isinstance(shape1, Sphere):
+            shapes = (shape1, shape0)
+            solver = sphere_point_collision
+        elif isinstance(shape1, Box):
+            shapes = (shape1, shape0)
+            solver = box_point_collision
+        else:
+            raise NotImplemented()
+    elif isinstance(shape0, Box):
+        if isinstance(shape1, Sphere):
+            shapes = (shape0, shape1)
+            solver = box_sphere_collision
+        elif isinstance(shape1, Point):
+            shapes = (shape0, shape1)
+            solver = box_point_collision
+        else:
+            raise NotImplemented()
+    else:
+        raise NotImplemented()
+    return (shapes, solver)
+
+def all_collisions(world):
+    """
+    """
 
 def _normal_to_frame(vec):
     """Builds a direct frame whose z-axis is vec.

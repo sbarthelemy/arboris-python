@@ -22,9 +22,18 @@ import numpy
 import twistvector as T
 import homogeneousmatrix as Hg
 from abc import ABCMeta, abstractmethod, abstractproperty
-from misc import NamedObject
 from rigidmotion import RigidMotion
 
+class NamedObject(object):
+    """
+    A class for anything named to depend from.
+    """
+
+    def __init__(self, name=None):
+        self.name = name
+
+class DuplicateNameError(Exception):
+    pass
 
 class Joint(RigidMotion, NamedObject):
     """A generic class for ideal joints.
@@ -130,12 +139,12 @@ class Constraint(NamedObject):
 
 
 
-class Shape(object):
+class Shape(NamedObject):
     """A generic class for geometrical shapes used in collision detection
     """
-    def __init__(self, frame):
+    def __init__(self, frame, name=None):
         self.frame = frame
-
+        NamedObject.__init__(self, name)
 
 class Controller(NamedObject):
     __metaclass__ = ABCMeta
@@ -155,12 +164,6 @@ class Controller(NamedObject):
 class World(NamedObject):
     """
 
-    Example:
-
-    >>> from arboris.robots.simplearm import simplearm
-    >>> w = simplearm()
-    >>> w.update_geometric()
-    >>> w.update_dynamic()
     """
 
     def __init__(self, name=None):
@@ -215,7 +218,7 @@ class World(NamedObject):
         as name will be ignored. Duplicate names will raise a 
         ``DuplicateName`` exception.
 
-        Example:
+        **Example:**
             >>> from arboris.joints import FreeJoint
             >>> w = World()
             >>> #stone = Body('stone')
@@ -241,7 +244,7 @@ class World(NamedObject):
         as name will be ignored. Duplicate names will raise a 
         ``DuplicateName`` exception.
 
-        Example:
+        **Example:**
             >>> w = World()
             >>> w.register(SubFrame(w.ground, name="ground again"))
             >>> d = w.getframesdict()
@@ -257,6 +260,23 @@ class World(NamedObject):
                 else:
                     raise DuplicateNameError()
         return frames_dict
+
+    def getshapesdict(self):
+        """Returns a dictionary whose values are references to the
+        shapes and keys are the shapes names. Frames with ``None``
+        as name will be ignored. Duplicate names will raise a 
+        ``DuplicateName`` exception.
+
+        **Example:**
+            >>> w = World()
+            >>> from shapes import Sphere
+            >>> w.register(Sphere(w.ground, name="my ball"))
+            >>> d = w.getshapesdict()
+            >>> d.keys()
+            ['my ball']
+
+        """
+
 
     def getjointsdict(self):
         """Returns a dictionary whose values are references to the 

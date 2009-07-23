@@ -14,8 +14,7 @@ from abc import ABCMeta, abstractmethod
 from numpy import array, zeros, eye, dot, hstack, diag
 from numpy.linalg import solve, eigvals
 import homogeneousmatrix as Hg
-from misc import NamedObject
-from core import SubFrame, Constraint
+from core import SubFrame, Constraint, Shape, NamedObject
 
 point_contact_proximity = 0.02
 joint_limits_proximity = 0.01
@@ -271,6 +270,12 @@ class PointContact(Constraint):
             find the good ``collision_solver`` automatically according
             to the ``shapes`` pair
         """
+        assert isinstance(shapes[0], Shape)
+        assert isinstance(shapes[1], Shape)
+        if collision_solver is None:
+            # automatically find the collision solver
+            from collisions import choose_solver
+            (shapes, collision_solver) = choose_solver(shapes[0], shapes[1])
         self._shapes = shapes
         self._frames = (SubFrame(shapes[0].frame.body),
                         SubFrame(shapes[1].frame.body))
@@ -421,7 +426,7 @@ class SoftFingerContact(PointContact):
         December, 2001
 
     """
-    def __init__(self, shapes, friction_coeff, collision_solver,
+    def __init__(self, shapes, friction_coeff, collision_solver=None,
                  proximity=0.02, name=None):
         self._mu = friction_coeff
         PointContact.__init__(self, shapes, collision_solver, proximity)
