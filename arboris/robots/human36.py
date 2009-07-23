@@ -52,6 +52,7 @@ from numpy import array, diag, dot, hstack
 import arboris.homogeneousmatrix as Hg
 from arboris.homogeneousmatrix import adjoint
 from arboris.joints import *
+from arboris.shapes import Point
 
 def anatomical_lengths(height):
     """Returns a dict of anatomical lengths as defined in HuMAnS.
@@ -496,25 +497,16 @@ def _humans_tags(height):
 
 def tags(height):
     """
-    TODO: add body name
+    
     """
     tdict = {}
     for t in _humans_tags(height):
-        tdict[t['HumansName']] = {
-            'Position': t['Position'],
-        }
+        tdict[t['HumansName']] =  t['Position']
     return tdict
-
 
 
 def _humans_bodies(height, mass):
     """
-
-    HuMAnS error ?
-
-    - UPT center of mass depends on L["ysternoclavR"] but not on
-    L["ysternoclavR"], we changed this behaviour
-
 
     Example:
 
@@ -546,7 +538,7 @@ def _humans_bodies(height, mass):
          'HumansId': 4,
          "Mass": 0.0137 * mass,
          "CenterOfMass": [
-            0.4415*L['xfootR'] + T['Right foot heel']['Position'][0],
+            0.4415*L['xfootR'] + T['Right foot heel'][0],
             -L['yfootR']/2.,
             0.],
          "GyrationRadius": array([0.124, 0.257, 0.245])*L['xfootR']})
@@ -567,7 +559,7 @@ def _humans_bodies(height, mass):
          'HumansId': 7,
          "Mass": 0.0137 * mass,
          "CenterOfMass": 
-             [0.4415*L['xfootL'] + T['Left foot heel']['Position'][0],
+             [0.4415*L['xfootL'] + T['Left foot heel'][0],
              -L["yfootL"]/2,
              0.],
          "GyrationRadius": array([0.124, 0.257, 0.245])*L['xfootL']})
@@ -748,6 +740,7 @@ def _human36(height=1.741, mass=73, name='', world=None):
     rf = SubFrame(bodies['UPT'], Hg.transl(L['xvT10'], L['yvC7'], 0))
     w.register(RzRyRxJoint(frames=(rf, bodies['Head'])))
 
+    # add tags
     tags = {}
     for t in _humans_tags(height):
         bodyname = humansbodyid_to_humansbodyname_map[t['HumansBodyId']]
@@ -757,6 +750,14 @@ def _human36(height=1.741, mass=73, name='', world=None):
             t['HumansName'])
         tags[t['HumansName']] = tag
         w.register(tag)
+
+    # Add point shapes to the feet
+    for k in ('Right foot toe tip', 'Right foot heel',
+             'Right foot phalange 5', 'Right foot Phalange 1',
+             'Left foot toe tip','Left foot heel',
+              'Left foot phalange 5','Left foot phalange 1'):
+        shape = Point(tags[k])
+        w.register(shape)
 
     w.init()
     return (w, bodies, tags)

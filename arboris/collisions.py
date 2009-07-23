@@ -7,32 +7,101 @@ Collision solvers...
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
 from numpy.linalg import norm
-from numpy import zeros, eye, dot, absolute, argsort, cross
-proximity = 0.01
+from numpy import zeros, eye, dot, absolute, argsort, cross, argmin,\
+    hstack
+import homogeneousmatrix as Hg
+from shapes import *
+
+def _normal_to_frame(vec):
+    """Builds a direct frame whose z-axis is vec.
+
+    :param vec: input 
+    :type vec: (3,) array
+    :return: homogeneous matrix of the frame
+    :rtype: (4,4) array
+
+    **Examples:**
+    >>> from numpy import array
+    >>> _normal_to_frame(array([1.,0.,0.]))
+    array([[-0.,  0.,  1.,  0.],
+           [ 0., -1.,  0.,  0.],
+           [ 1.,  0.,  0.,  0.],
+           [ 0.,  0.,  0.,  1.]])
+
+    """
+    assert abs(norm(vec)-1) < 1e-9
+    H = eye(4)
+    x = H[0:3,0]
+    y = H[0:3,1]
+    z = H[0:3,2]
+    # z-axis, normal to the tangeant plane:
+    z[:] = vec
+    idx = argsort(absolute(z))
+    # x axis, normal to z-axis
+    x[idx[0]] = 0
+    x[idx[1]] = z[idx[2]]
+    x[idx[2]] = -z[idx[1]]
+    x /= norm(x)
+    y[:] = cross(z, x)
+    return H
+
 
 def sphere_sphere_collision(shapes):
     """
 
-    svg:
-
-    .. image:: img/sphere_sphere_collision.png
-    
-
-    """    
+    """
+    assert isinstance(shapes[0], Sphere)
+    assert isinstance(shapes[1], Sphere)
     return _sphere_sphere_collision(shapes[0].frame.pose[0:3,3], 
+                                    shapes[0].radius,
                                     shapes[1].frame.pose[0:3,3],
-                                    shapes[0].radius, 
                                     shapes[1].radius)
 
-
-def _sphere_sphere_collision(p_g0, p_g1, radius0, radius1):
+def sphere_point_collision(shapes):
     """
-    Tests:
+
+    """
+    assert isinstance(shapes[0], Sphere)
+    assert isinstance(shapes[1], Point)
+    return _sphere_sphere_collision(shapes[0].frame.pose[0:3,3], 
+                                    shapes[0].radius,
+                                    shapes[1].frame.pose[0:3,3],
+                                    0.)
+
+def box_sphere_collision(shapes):
+    """
+
+
+    """
+    assert isinstance(shapes[0], Box)
+    assert isinstance(shapes[1], Sphere)
+    return _box_sphere_collision(shapes[0].frame.pose, 
+                                    shapes[0].lengths,
+                                    shapes[1].frame.pose[0:3,3],
+                                    shapes[1].radius)
+
+def box_point_collision(shapes):
+    """
+
+    """
+    assert isinstance(shapes[0], Box)
+    assert isinstance(shapes[1], Point)
+    return _box_sphere_collision(shapes[0].frame.pose[0:3,3], 
+                                    shapes[0].lengths,
+                                    shapes[1].frame.pose[0:3,3],
+                                    0.)
+
+def _sphere_sphere_collision(p_g0, radius0, p_g1, radius1):
+    """
+
+    .. image:: img/sphere_sphere_collision.png
+
+    **Tests:**
 
     >>> from numpy import array, zeros
     >>> p_g0 = zeros((3))
     >>> p_g1 = array( (2.,2.,1.) )
-    >>> (sdist, H_gc0, H_gc1) = _sphere_sphere_collision(p_g0, p_g1, 1.1, 1.2)
+    >>> (sdist, H_gc0, H_gc1) = _sphere_sphere_collision(p_g0, 1.1, p_g1, 1.2)
     >>> print(sdist)
     0.7
     >>> print(H_gc0)
@@ -45,7 +114,7 @@ def _sphere_sphere_collision(p_g0, p_g1, radius0, radius1):
      [-0.70710678  0.23570226  0.66666667  1.2       ]
      [ 0.         -0.94280904  0.33333333  0.6       ]
      [ 0.          0.          0.          1.        ]]
-    >>> (sdist, H_gc0, H_gc1) = _sphere_sphere_collision(p_g0, p_g1, 1.5, 1.6)
+    >>> (sdist, H_gc0, H_gc1) = _sphere_sphere_collision(p_g0, 1.5, p_g1, 1.6)
     >>> print(sdist)
     -0.1
     >>> print(H_gc0)
@@ -62,25 +131,111 @@ def _sphere_sphere_collision(p_g0, p_g1, radius0, radius1):
     """
     vec = p_g1 - p_g0
     sdist = norm(vec) - radius0 - radius1
-    H_gc0 = eye(4)
-    x = H_gc0[0:3,0]
-    y = H_gc0[0:3,1]
+    normal = vec/norm(vec)
+    H_gc0 = _normal_to_frame(normal)
     z = H_gc0[0:3,2]
-    p = H_gc0[0:3,3]
-    # z-axis, normal to the tangeant plane:
-    z[:] = vec/norm(vec)
-    idx = argsort(absolute(z))
-    # x axis, normal to z-axis
-    x[idx[0]] = 0
-    x[idx[1]] = z[idx[2]]
-    x[idx[2]] = -z[idx[1]]
-    x /= norm(x)
-    y[:] = cross(z, x)
-    p[:] = p_g0 + radius0*z
+    H_gc0[0:3,3] = p_g0 + radius0*z
     H_gc1 = H_gc0.copy()
     H_gc1[0:3,3] += sdist*z
     return (sdist, H_gc0, H_gc1)
 
-def point_box_collision():
-    pass
+
+
+def _box_sphere_collision(H_g0, lengths0, p_g1, radius1):
+    """
+    :param H_g0: pose of the box `\Hg[g]_1`
+    :type H_g0: (4,4) array
+    :param lengths0: lengths of the box
+    :type lengths0: (3,) array
+    :param p_g1: center of the sphere
+    :type p_g1: (3,) array 
+    :param radius1: radius of the sphere
+    :type radius1: float
+
+    .. image:: img/box_sphere_collision.png
+
+    **Tests:**
+    
+    >>> from numpy import array, eye
+    >>> H_g0 = eye(4)
+    >>> lengths0 = array([1., 2., 3.])
+    >>> r1 = 0.1
+    >>> p_g1 = array([0., 3., 1.])
+    >>> (sdist, H_gc0, H_gc1) = _box_sphere_collision(H_g0, lengths0, p_g1, r1)
+    >>> print(sdist)
+    1.9
+    >>> print(H_gc0)
+    [[ 0.  1.  0.  0.]
+     [-0.  0.  1.  1.]
+     [ 1. -0.  0.  1.]
+     [ 0.  0.  0.  1.]]
+    >>> print(H_gc1)
+    [[ 0.   1.   0.   0. ]
+     [-0.   0.   1.   2.9]
+     [ 1.  -0.   0.   1. ]
+     [ 0.   0.   0.   1. ]]
+    >>> p_g1 = array([0.55, 0., 0.])
+    >>> (sdist, H_gc0, H_gc1) = _box_sphere_collision(H_g0, lengths0, p_g1, r1)
+    >>> print(sdist)
+    -0.05
+    >>> print(H_gc0)
+    [[-0.   0.   1.   0.5]
+     [ 0.  -1.   0.   0. ]
+     [ 1.   0.   0.   0. ]
+     [ 0.   0.   0.   1. ]]
+    >>> print(H_gc1)
+    [[-0.    0.    1.    0.45]
+     [ 0.   -1.    0.    0.  ]
+     [ 1.    0.    0.    0.  ]
+     [ 0.    0.    0.    1.  ]]
+    >>> p_g1 = array([0.45, 0., 0.])
+    >>> (sdist, H_gc0, H_gc1) = _box_sphere_collision(H_g0, lengths0, p_g1, r1)
+    >>> print(sdist)
+    -0.15
+    >>> print(H_gc0)
+    [[-0.   0.   1.   0.5]
+     [ 0.  -1.   0.   0. ]
+     [ 1.   0.   0.   0. ]
+     [ 0.   0.   0.   1. ]]
+    >>> print(H_gc1)
+    [[-0.    0.    1.    0.35]
+     [ 0.   -1.    0.    0.  ]
+     [ 1.    0.    0.    0.  ]
+     [ 0.    0.    0.    1.  ]]
+
+    """
+    assert Hg.ishomogeneousmatrix(H_g0)
+    p_01 = Hg.pdot(Hg.inv(H_g0), p_g1)
+    if (-lengths0[0]/2. <= p_01[0] and p_01[0] <= lengths0[0]/2.) and\
+       (-lengths0[1]/2. <= p_01[1] and p_01[1] <= lengths0[1]/2.) and\
+       (-lengths0[2]/2. <= p_01[2] and p_01[2] <= lengths0[2]/2.):
+        # p_01 is inside the box, we need to find the nearest face
+        i = argmin(hstack((lengths0 - p_01, lengths0 + p_01)))
+        f_0 = p_01.copy()
+        normal = zeros(3)
+        if i < 3:
+            f_0[i] = lengths0[i]/2.
+            normal[i] = 1
+        else:
+            f_0[i-3] = -lengths0[i-3]/2.
+            normal[i] = -1
+        f_g = Hg.pdot(H_g0, f_0)
+        sdist = -norm(f_g - p_g1)-radius1
+    else:
+        # find the point x inside the box that is the nearest to 
+        # the sphere center:
+        f_0 = zeros(3)
+        for i in range(3):
+            f_0[i] = max(min(lengths0[i]/2., p_01[i]), -lengths0[i]/2.)
+        f_g = Hg.pdot(H_g0, f_0)
+        vec = p_g1 - f_g
+        normal = vec/norm(vec)
+        sdist = norm(vec) - radius1
+    H_gc0 = _normal_to_frame(normal)
+    H_gc1 = H_gc0.copy()
+    H_gc0[0:3,3] = f_g
+    H_gc1[0:3,3] = p_g1 - radius1*normal
+    return (sdist, H_gc0, H_gc1)
+
+
 

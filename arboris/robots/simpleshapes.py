@@ -14,7 +14,7 @@ def mass_parallelepiped(m,lengths):
     """The mass matrix of an homogeneous parallelepiped."""
     (a, b, c) = lengths
     return numpy.diag((
-        m/12.*(b**2+c**2 ), 
+        m/12.*(b**2+c**2), 
         m/12.*(a**2+c**2), 
         m/12.*(a**2+b**2),
         m, m, m))

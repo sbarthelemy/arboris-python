@@ -240,7 +240,7 @@ def draw_text(label, size=1.):
     text.setText(str(label))
     text.setDrawMode(osgText.Text.TEXT | osgText.Text.BOUNDINGBOX)
     text.setAlignment(osgText.Text.CENTER_TOP)
-    #text.setAxisAlignment(osgText.Text.SCREEN)   # un-comment for HUD version
+    #text.setAxisAlignment(osgText.Text.SCREEN) # un-comment for HUD version
     geode = osg.Geode()
     geode.addDrawable(text)
     return geode
@@ -255,17 +255,17 @@ def graphic_options(scale=1.):
     :rtype: dict
 
     """
-    body_palette = [
-        (1,0,0),
-        (0,1,0),
-        (0,0,1),
-        (1,1,0),
-        (0,1,1)]
+    body_palette = []
+    ncolor = 20
+    for k in range(ncolor):
+        h = 360./ncolor * k
+        body_palette.append(hsv_to_rgb((h, 0.9 , 0.9)))
     options = {
         'frame length': 0.08 * scale,
         'frame radius': 0.005 * scale,
         'frame alpha': 1.,
         'link radius': 0.004 * scale,
+        'point radius': 0.008 * scale,
         'text size': 0.1 * scale,
         'body palette': body_palette}
     return options
@@ -340,6 +340,7 @@ class WorldDrawer(object):
             try:
                 c = self._options['body palette'].pop()
                 color = osg.Vec4(c[0], c[1], c[2], alpha)
+                self._body_colors[body] = color
             except IndexError:
                 color = osg.Vec4(1., 1., 1., alpha)
         return color
@@ -407,6 +408,7 @@ class WorldDrawer(object):
                 switches['link'].addChild(nl)
             elif isinstance(obj, core.Body):
                 parent = self.transforms[obj]
+                color = self._choose_color(obj)
                 Mb = obj.mass
                 if Mb[5,5] != 0:
                     # MatrixTransform() # position
@@ -422,7 +424,7 @@ class WorldDrawer(object):
                     [bHg, Mg] = com_position(Mb)
                     shape = osg.ShapeDrawable(
                         osg.Sphere(osg.Vec3(0.,0.,0.), 1.))
-                    shape.setColor(osg.Vec4(1,1,1,0.5))
+                    shape.setColor(color)
                     shape_geo = osg.Geode()
                     shape_geo.addDrawable(shape)
                     scale_node = osg.PositionAttitudeTransform()
@@ -437,10 +439,14 @@ class WorldDrawer(object):
                     switches['inertia ellipsoid'].addChild(pos_node)
             elif isinstance(obj, core.Shape):
                 parent = self.transforms[obj.frame]
-                color = self.choose_color(obj.frame.body)
+                color = self._choose_color(obj.frame.body)
                 if isinstance(obj, shapes.Sphere):
                     shape = osg.ShapeDrawable(
                         osg.Sphere(osg.Vec3(0.,0.,0.), obj.radius))
+                elif isinstance(obj, shapes.Point):
+                    shape = osg.ShapeDrawable(
+                        osg.Sphere(osg.Vec3(0.,0.,0.), 
+                                   self._options['point radius']))
                 elif isinstance(obj, shapes.Box):
                     shape = osg.ShapeDrawable(
                         osg.Box(osg.Vec3(0.,0.,0.), obj.lengths[0], 
@@ -453,8 +459,9 @@ class WorldDrawer(object):
                     raise NotImplemented("Cannot draw this shape")
                 shape.setColor(color)
                 switches['shape'] = osg.Switch()
-                switches['shape'].addChild(
-                    osg.Geode().addDrawable(shape))
+                geode =  osg.Geode()
+                geode.addDrawable(shape)
+                switches['shape'].addChild(geode)
             #elif isinstance(obj, str):
                 # TODO handle exceptions here
                 #parent = self.transforms[obj]
@@ -618,4 +625,54 @@ class DrawerPlugin(core.Plugin):
     def update(self, t, dt):
         self._drawer.update()
         self._viewer.frame()
+
+
+def hsv_to_rgb(hsv):
+    """Convert color from hsv to rgb.
+
+    :param hsv: hsv values (with h in [0..360], s and v in [0..1])
+    :type hsv: 3-tuple of floats (h, s, v)
+    :return rgb: rgb values (with r, g and b in [0..1])
+    :rtype rgb: 3-tuple of floats (r, g, b)
+
+    The algorithm is taken from:
+    http://en.wikipedia.org/wiki/HSL_and_HSV
+
+    **Examples:**
+
+    >>> hsv_to_rgb((360,1.,1.)) # red
+    (1.0, 0.0, 0.0)
+    >>> hsv_to_rgb((360,0.5,1.)) # faded red
+    (1.0, 0.5, 0.5)
+    >>> hsv_to_rgb((360,1.,0.5)) # dark red
+    (0.5, 0.0, 0.0)
+    >>> hsv_to_rgb((120,1.,1)) # green
+    (0.0, 1, 0.0)
+    >>> hsv_to_rgb((240,1.,1)) # blue
+    (0.0, 0.0, 1)
+
+    """
+    from math import floor
+    (h, s, v) = hsv
+    hi = floor(h/60) % 6
+    f = h/60. - floor(h/60)
+    p = v * (1 - s)
+    q = v * (1 - f*s)
+    t = v * (1 - (1-f)*s)
+    if hi == 0:
+        rgb = (v, t, p)
+    elif hi == 1:
+        rgb = (q, v, p)
+    elif hi == 2:
+        rgb = (p, v, t)
+    elif hi == 3:
+        rgb = (p, q, v)
+    elif hi == 4:
+        rgb = (t, p, v)
+    elif hi == 5:
+        rgb = (v, p, q)
+    return rgb
+
+
+
 

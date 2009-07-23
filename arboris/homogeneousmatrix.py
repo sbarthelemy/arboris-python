@@ -7,7 +7,7 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 from numpy import array, zeros, sin, cos, dot, hstack, vstack
 import numpy
 
-tol=1e-12
+tol=1e-9
 
 def transl(t_x, t_y, t_z):
     """Homogeneous matrix of a translation.
@@ -214,11 +214,23 @@ def checkishomogeneousmatrix(H, tol=tol):
     if not ishomogeneousmatrix(H, tol):
         raise ValueError("{H} is not an homogeneous matrix".format(H=H))
 
+def pdot(H, point):
+    """Frame change for a point.
+    """
+    assert ishomogeneousmatrix(H)
+    return dot(H[0:3,0:3], point) + H[3,0:3]
+
+def vdot(H, vec):
+    """Frame change for a vector.
+    """
+    assert ishomogeneousmatrix(H)
+    return dot(H[0:3,0:3], vec)
+
 def inv(H):
     """
     Invert an homogeneous matrix.
 
-    Example:
+    **Example:**
 
     >>> H = array(
     ...     [[ 0.70738827,  0.        , -0.70682518,  3.        ],
@@ -232,6 +244,7 @@ def inv(H):
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
     """
+    assert ishomogeneousmatrix(H)
     R = H[0:3,0:3]
     p = H[0:3,3:4]
     return vstack( (hstack((R.T,-dot(R.T,p))), [0,0,0,1]))
@@ -267,6 +280,7 @@ def adjoint(H):
              0.35401931]])
 
     """
+    assert ishomogeneousmatrix(H), H
     R = H[0:3,0:3]
     p = H[0:3,3:4]
     pxR = dot(

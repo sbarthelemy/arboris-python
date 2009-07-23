@@ -6,7 +6,7 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
 
-PNG = img/sphere_sphere_collision.png img/body_model.png
+PNG = img/sphere_sphere_collision.png img/box_sphere_collision.png img/body_model.png
 
 
 # Internal variables.

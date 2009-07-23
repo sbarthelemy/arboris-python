@@ -5,13 +5,13 @@ Test contact
 Non sliding, free
 -----------------
 
->>> from arboris.visu_osg import NodeFactory, DrawableWorld
+>>> from arboris.visu_osg import DrawableWorld
 >>> from arboris.robots.simpleshapes import ball
 >>> from arboris.collisions import sphere_sphere_collision
 >>> from arboris.constraints import SoftFingerContact
 >>> from arboris.core import simulate
 >>> from numpy import arange
->>> w = DrawableWorld(factory=NodeFactory(scale=.1))
+>>> w = DrawableWorld(scale=.1)
 >>> foo = ball(world=w, name='ball0')
 >>> foo = ball(world=w, name='ball1')
 >>> bodies = w.getbodiesdict()
@@ -40,14 +40,14 @@ Non sliding, free
 Non-sliding, blocked
 --------------------
 
->>> from arboris.visu_osg import NodeFactory, DrawableWorld
+>>> from arboris.visu_osg import DrawableWorld
 >>> from arboris.shapes import Sphere
 >>> from arboris.robots.simpleshapes import ball
 >>> from arboris.collisions import sphere_sphere_collision
 >>> from arboris.constraints import SoftFingerContact
 >>> from arboris.core import simulate
 >>> from numpy import arange
->>> w = DrawableWorld(factory=NodeFactory(scale=.1))
+>>> w = DrawableWorld(scale=.1)
 >>> foo = ball(world=w, name='ball0')
 >>> w.register(Sphere(w.ground))
 >>> bodies = w.getbodiesdict()
@@ -76,14 +76,14 @@ Non-sliding, blocked
 Sliding, blocked
 ----------------
 
->>> from arboris.visu_osg import NodeFactory, DrawableWorld
+>>> from arboris.visu_osg import DrawableWorld
 >>> from arboris.shapes import Sphere
 >>> from arboris.robots.simpleshapes import ball
 >>> from arboris.collisions import sphere_sphere_collision
 >>> from arboris.constraints import SoftFingerContact
 >>> from arboris.core import simulate
 >>> from numpy import arange
->>> w = DrawableWorld(factory=NodeFactory(scale=.1))
+>>> w = DrawableWorld(scale=.1)
 >>> foo = ball(world=w, name='ball0')
 >>> w.register(Sphere(w.ground))
 >>> bodies = w.getbodiesdict()
