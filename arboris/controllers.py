@@ -121,7 +121,6 @@ class ProportionalDerivativeController(Controller):
 
     def update(self, dt, t):
         """
-        TODO: return non-zero impedance
         """
         gforce = zeros(self._wndof)
         impedance = zeros((self._wndof, self._wndof))
@@ -131,8 +130,8 @@ class ProportionalDerivativeController(Controller):
         for j in self.joints:
             gpos.append(j.gpos)
             gvel.append(j.gvel)
-        gpos = array(gpos)
-        gvel = array(gvel)
+        gpos = array(gpos).reshape(self._cndof)
+        gvel = array(gvel).reshape(self._cndof)
         gforce[ix_(self._dof_map)] = \
                 dot(self.kp, self.gpos_des - gpos) + \
                 dot(self.kd, self.gvel_des)

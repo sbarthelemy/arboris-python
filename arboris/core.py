@@ -741,6 +741,10 @@ class Frame(object):
         pass
 
     @abstractproperty
+    def djacobian(self):
+        pass
+
+    @abstractproperty
     def twist(self):
         pass
 
@@ -800,6 +804,11 @@ class SubFrame(NamedObject, Frame):
     @property
     def jacobian(self):
         return dot(Hg.iadjoint(self._bpose), self._body._jacobian)
+
+    @abstractproperty
+    def djacobian(self):
+        # we assume self._bpose is constant
+        return dot(Hg.iadjoint(self._bpose), self._body._djacobian)
 
     @property
     def body(self):
