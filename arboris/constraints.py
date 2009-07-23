@@ -4,10 +4,6 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
 """
 
-.. todo:
-    merge Constraint and BodyConstraint classes? This will depend on the joint
-    stops constraints implementation
-
 """
 
 from abc import ABCMeta, abstractmethod
