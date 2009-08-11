@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
-from core import Controller
+from core import NamedObject, Controller
 from numpy import array, zeros, dot, ix_
-from misc import NamedObject
 import homogeneousmatrix
 from joints import LinearConfigurationSpaceJoint
 

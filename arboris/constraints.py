@@ -808,11 +808,6 @@ class SoftFingerContact(PointContact):
                 # the elliptic dry friction law is not respected.
                 # We have to look for a solution with sliding
                 #
-                #E2 = c.misc.E*c.misc.E;
-                #F = E2 - diag([0,0,c.misc.mu^2,0]);
-                #k = solve_sliding(alpha,Y,F);
-                #c.Gamma=-(Y+k*E2)\alpha;
-
                 alpha = vel - dot(admittance, self._force)
                 alpha[3] += self._sdist/dt
                 Y_c = admittance[0:3,3]

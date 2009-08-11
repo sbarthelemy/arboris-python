@@ -276,6 +276,14 @@ class World(NamedObject):
             ['my ball']
 
         """
+        shapes_dict = {}
+        for s in self._shapes:
+            if s.name is not None :
+                if s.name not in shapes_dict:
+                    shapes_dict[s.name] = s
+                else:
+                    raise DuplicateNameError()
+        return shapes_dict
 
 
     def getjointsdict(self):
