@@ -94,7 +94,7 @@ class TestCommand(Command):
         for rst in glob(pjoin('tests', '*.rst')):
             doctest.testfile(rst)
 
-version = '0.1.0pre2'
+version = '0.1.0pre3'
 
 cmdclass = {'test': TestCommand, 
             'sphinx': SphinxCommand}
