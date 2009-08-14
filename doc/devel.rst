@@ -38,7 +38,7 @@ command line. To generate the uml diagrams, graphviz is needed too.
 ...for the visualization
 ------------------------
 
-We use `OpenSceneGraph <http://www.openscenegraph.org>`_ version 2.6, 
+We use `OpenSceneGraph <http://www.openscenegraph.org>`_ version 2.9.5, 
 through the `osgswig <http://code.google.com/p/osgswig>`_ bindings.
 
 Installing arboris
@@ -62,23 +62,22 @@ Install the packaged stuff::
 
   sudo aptitude install python2.6-doc python-numpy ipython
 
-Install OpenSceneGraph 2.6 from source::
+Install OpenSceneGraph 2.9.5 from source::
 
   sudo aptitude install wx-common libwxgtk2.8-dev #TODO: not sure this is useful
-  svn export http://www.openscenegraph.org/svn/osg/OpenSceneGraph/tags/OpenSceneGraph-2.6.1
-  cd OpenSceneGraph-2.6.1
+  svn export http://www.openscenegraph.org/svn/osg/OpenSceneGraph/tags/OpenSceneGraph-2.9.5
+  cd OpenSceneGraph-2.9.5
   mkdir build
   cd build
   ccmake ..
 
-Then check the option to compile the wrappers (``BUILD_OSG_WRAPPERS``)
-then::
+Then check the option to compile the wrappers (``BUILD_OSG_WRAPPERS``), compile and install (warning, the compilation takes lots of memory and time)::
 
   make
   sudo make install
   TODO: how to check everything was fine?
 
-Install OpenSceneGraph python bindings from souces (inspired by `this wiki page <http://code.google.com/p/osgswig/wiki/BuildInstructions>`_)::
+Install OpenSceneGraph python bindings from sources (inspired by `this wiki page <http://code.google.com/p/osgswig/wiki/BuildInstructions>`_)::
 
   sudo aptitude install swig
   svn checkout http://osgswig.googlecode.com/svn/trunk/ osgswig
@@ -87,8 +86,7 @@ Install OpenSceneGraph python bindings from souces (inspired by `this wiki page 
   cd build
   ccmake .. -DCMAKE_BUILD_TYPE=Release
   make
-  cp -r lib/python/ ~/.local/lib/python2.6/site-packages/OpenSceneGraph
-  touch ~/.local/lib/python2.6/site-packages/OpenSceneGraph/__init__.py
+  cp -r lib/python/osgswig-0.9.1/* /home/seb/.local/lib/python2.6/site-packages/
 
 Don't worry about the hundreds of warnings during the compilation.
 

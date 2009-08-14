@@ -63,17 +63,12 @@ object, or superseding the "raw" :class:`core.World` object by a
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
               "Joseph SALINI <joseph.salini@gmail.com>")
 
-import os
-if os.name is 'nt':
-    import osg, osgDB, osgGA, osgViewer, osgText
-else:
-    from OpenSceneGraph import osg, osgDB, osgGA, osgViewer, osgText
+import osg, osgDB, osgGA, osgViewer, osgText
 from numpy import pi, arctan2, array, dot, cross, sqrt, eye, cos, sin
 import shapes
 import core
 import homogeneousmatrix as Hg
 
-import commands
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -187,7 +182,7 @@ def draw_line(start, end, radius=0.04, color=None):
     **Example:**
 
     >>> draw_line(array((1.,2.,3.)), array((4.,5.,6.)), radius=.5) #doctest: +ELLIPSIS
-    <OpenSceneGraph.osg.PositionAttitudeTransform; proxy of <Swig Object of type 'osg::PositionAttitudeTransform *' at 0x...> >
+    <osg.PositionAttitudeTransform; proxy of <Swig Object of type 'osg::PositionAttitudeTransform *' at 0x...> >
 
     TODO: raise an exception when start==end?
 
@@ -231,8 +226,7 @@ def draw_text(label, size=1.):
     **Example:**
 
     >>> draw_text('le texte a afficher', .2) #doctest: +ELLIPSIS
-    <OpenSceneGraph.osg.Geode; proxy of <Swig Object of type 'osg::Geode *' at 0x...> >
-    
+    <osg.Geode; proxy of <Swig Object of type 'osg::Geode *' at 0x...> >
     """
     text = osgText.Text()
     text.setCharacterSize(size)
