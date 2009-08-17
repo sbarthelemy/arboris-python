@@ -2,7 +2,20 @@
 """
 Visualization of a simulation
 
-This module is based on the openscenegraph (osg) 2.6 python wrappers.
+This module is based on the openscenegraph (osg) python wrappers.
+
+It can be used in four ways:
+
+    - *offline*: during the simulation, graphics are saved by an 
+      :class:`OsgSavePlugin` plugin and played later (offline), 
+      (TODO: not available yet)
+    
+    - *during simulation*: graphics are drawn and updated from the main
+      simulation loop by a the :class:`DrawerPlugin` plugin,
+    
+    - *interactive GUI*: TODO
+
+    - *interactive CLI*: using :class:`DrawableWorld`.
 
 Scene graph basics
 ------------------
