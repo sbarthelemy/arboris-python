@@ -65,7 +65,7 @@ tuned with a dict of options, whose default values are given by the
 world in order to update the representation when the bodies move.
 
 The :func:`init_viewer` function creates an OSG Viewer and an OSG
-KeayboardHandler. It is the place where window size, camera position
+GUIEventHandler. It is the place where window size, camera position
 and keyboard shortcuts are set.
 
 The end user can draw a world through, at choice, a :class:`DrawerPlugin`
@@ -76,7 +76,7 @@ object, or superseding the "raw" :class:`core.World` object by a
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
               "Joseph SALINI <joseph.salini@gmail.com>")
 
-import osg, osgDB, osgGA, osgViewer, osgText
+import osg, osgDB, osgGA, osgViewer, osgText, osgUtil
 from numpy import pi, arctan2, array, dot, cross, sqrt, eye, cos, sin
 import shapes
 import core
@@ -226,8 +226,7 @@ def draw_line(start, end, radius=0.04, color=None):
         return line
     else:
         return None
-        
-
+       
 def draw_text(label, size=1.):
     """Create a text geode.
 
@@ -250,7 +249,6 @@ def draw_text(label, size=1.):
     geode = osg.Geode()
     geode.addDrawable(text)
     return geode
-
 
 def graphic_options(scale=1.):
     """Default dictionnary of graphic options.
@@ -321,10 +319,12 @@ class WorldDrawer(object):
         self.switches = {}
         self.is_displayed = {
             'frame': True,
+            'inertia ellipsoid': False,
             'link': True,
             'name': False,
-            'shape': True,
-            'inertia ellipsoid': False}
+            'shape': True}
+        # Current "active" frame:
+        self._frame = None
         if world is not None:
             self.init(world)
 
@@ -521,6 +521,27 @@ class WorldDrawer(object):
         #self.generic_frame.setScale(s)
         pass
 
+    def set_active_frame(self, frame):
+        """Set the active frame."""
+
+        if not isinstance(frame, core.Frame):
+            raise TypeError
+        else:
+            self._frame = frame
+
+    def move_active_frame(self, twist):
+        """Move the active frame parent joint"""
+
+        if not isinstance(self._frame, core.Frame):
+            raise TypeError
+        else:
+            from numpy.linalg import pinv
+            joint = self._frame.body.parentjoint
+            J = joint.jacobian
+            nu = dot(pinv(J),twist)
+            joint.gvel[:] = nu
+            dt = 0.01
+            joint.integrate(dt)
 
 def init_viewer(drawer, fullscreen=False, window=(0,0,800,600), 
                 coi=(0,0,0), camera=(3,3,3), up=(0,1,0)):
@@ -543,18 +564,18 @@ def init_viewer(drawer, fullscreen=False, window=(0,0,800,600),
                 viewer.setUpViewInWindow(window[0], window[1], 
                                         window[2], window[3])
         viewer.home()
-        kbh = KeyboardHandler(drawer)
+        kbh = SwitcherHandler(drawer)
         viewer.addEventHandler(kbh.__disown__())
-        return viewer     
+        return viewer
 
 
-class KeyboardHandler(osgGA.GUIEventHandler):
-    base_class = osgGA.GUIEventHandler
-    
+class SwitcherHandler(osgGA.GUIEventHandler):
+    """Switches parts of the display on/off according to keys pressed.
+    """
     def __init__(self, drawer):
         osgGA.GUIEventHandler.__init__(self)
         self._drawer = drawer
-        self._logger = logging.getLogger('visu_osg.KeyboardHandler')
+        self._logger = logging.getLogger(self.__class__.__name__)
 
     def handle(self, ea, aa, obj, nv):
 
@@ -566,7 +587,7 @@ class KeyboardHandler(osgGA.GUIEventHandler):
                     drawer.switch('link')
                 elif action == ord('n'):
                     drawer.switch('name')
-                elif action == ord('s'):
+                elif action == ord('g'):
                     drawer.switch('shape')
                 elif action == ord('i'):
                     drawer.switch('inertia ellipsoid')
@@ -574,6 +595,14 @@ class KeyboardHandler(osgGA.GUIEventHandler):
                     drawer.rescale(1.25)
                 elif action == ord('-'): # - as decreasing
                     drawer.rescale(.8)
+                elif action == 65362: # up
+                    drawer.move_frame([1,0,0,0,0,0])
+                elif action == 65364: # down
+                    drawer.move_frame([-1,0,0,0,0,0])
+                elif action == 65361: # left
+                    drawer.move_frame([0,0,0,0,0,-1])
+                elif action == 65363: # right
+                    drawer.move_frame([0,0,0,0,0,1])
 
         eventtype = ea.getEventType()
         if eventtype == ea.KEYDOWN:
@@ -583,6 +612,90 @@ class KeyboardHandler(osgGA.GUIEventHandler):
             else:
                 self._logger.info('action %d', action)
             _update_action(action, self._drawer)
+        return False
+
+
+class JointIkHandler(osgGA.GUIEventHandler):
+    """Move the mouse-selected joint with keyboard.
+    """
+
+    def __init__(self, drawer, viewer, keymap='us'):
+        osgGA.GUIEventHandler.__init__(self)
+        self._drawer = drawer
+        self._viewer = viewer
+        self._frame = None
+        self._logger = logging.getLogger(self.__class__.__name__)
+        if keymap == 'us':
+            self._key_to_twist = {
+                ord('w'): (0,0,0,1,0,0),
+                ord('s'): (0,0,0,-1,0,0),
+                ord('d'): (0,0,0,0,0,1),
+                ord('a'): (0,0,0,0,0,-1),
+                ord('q'): (0,0,0,0,1,0),
+                ord('e'): (0,0,0,0,-1,0),
+                23: (1,0,0,0,0,0), # CTRL+w
+                19: (-1,0,0,0,0,0), # CTRL+s
+                4: (0,0,1,0,0,0), # CTRL+d
+                1: (0,0,-1,0,0,0), # CTRL+a
+                17: (0,1,0,0,0,0), # CTRL+q
+                5: (0,-1,0,0,0,0), # CTRL+e
+            }
+        elif  keymap == 'fr':
+            self._key_to_twist = {
+                ord('z'): (0,0,0,1,0,0),
+                ord('s'): (0,0,0,-1,0,0),
+                ord('d'): (0,0,0,0,0,1),
+                ord('q'): (0,0,0,0,0,-1),
+                ord('a'): (0,0,0,0,1,0),
+                ord('e'): (0,0,0,0,-1,0),
+                26: (1,0,0,0,0,0), # CTRL+z
+                19: (-1,0,0,0,0,0), # CTRL+s
+                4: (0,0,1,0,0,0), # CTRL+d
+                17: (0,0,-1,0,0,0), # CTRL+q
+                1: (0,1,0,0,0,0), # CTRL+a
+                5: (0,-1,0,0,0,0), # CTRL+e
+            }
+
+    def _move_frame(self, twist):
+        #TODO: express twist in the basis of self._frame?
+        assert isinstance(self._frame, core.Frame)
+        from numpy.linalg import pinv
+        joint = self._frame.body.parentjoint
+        if joint is not None:
+            J = joint.jacobian
+            nu = dot(pinv(J),twist)
+            self._logger.info(('nu',nu))
+            joint.gvel[:] = nu
+            dt = 0.01
+            joint.integrate(dt)
+
+    def handle(self, ea, aa, obj, nv):
+        eventtype = ea.getEventType()
+        if eventtype == ea.PUSH:
+            inter = osgUtil.LineSegmentIntersector(
+                osgUtil.LineSegmentIntersector.PROJECTION, 
+                ea.getXnormalized(), 
+                ea.getYnormalized())
+            iv = osgUtil.IntersectionVisitor(inter)
+            self._viewer.getCamera().accept(iv)
+            if inter.containsIntersections():
+                pick = inter.getFirstIntersection()
+                result = osg.NodeToMatrixTransform(pick.nodePath[2])
+                for k, v in self._drawer.transforms.iteritems():
+                    if v.this == result.this:
+                        assert isinstance(k,core.Frame)
+                        self._frame = k
+                        self._logger.info('selected frame: %s named "%s"', k,
+                                          k.name)
+                        break
+        elif eventtype == ea.KEYDOWN:
+            action = ea.getKey()
+            if (self._frame is not None) and (action is not None):
+                try:
+                    twist = self._key_to_twist[action]
+                    self._move_frame(twist)
+                except KeyError:
+                    pass
         return False
 
 
