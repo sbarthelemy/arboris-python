@@ -63,65 +63,57 @@ class FreeJoint(Joint):
         from twistvector import exp
         self.gpos = dot(self.gpos, exp( dt*self.gvel))
 
-#class PivotJoint(Joint):
-#
-#    """Pivot (2-dof)
-#    """
-#
-#class BallJoint(Joint):
-#
-#    """Ball and socket (3-dof)
-#    """
-
 class RzRyRxJoint(LinearConfigurationSpaceJoint):
-    """Ball and socket (3-dof) implemented with 3 serial hinges
+    """Ball and socket (3-dof) joint implemented with 3 serial hinges
 
-    the resulting homogeneous matrix is given by H = Rz*Ry*Rx
+    the resulting homogeneous matrix is given by `\Hg[0]_1 = Rz Ry Rx`
     """
     def __init__(self, gpos=[0.,0.,0.], gvel=[0.,0.,0.], frames=None, name=None):
         self.gpos = array(gpos).reshape((3))
         self.gvel = array(gvel).reshape((3))
         Joint.__init__(self,  frames, name)
+
     @property
     def ndof(self):
         return 3
 
     @property
     def pose(self):
-        return homogeneousmatrix.rotzyx(self.gpos[0],self.gpos[1],self.gpos[2])
+        return homogeneousmatrix.rotzyx(
+            self.gpos[0],self.gpos[1],self.gpos[2])
 
     @property
     def jacobian(self):
         """
         T_n/r = 
         """   
-        sx = sin(self.gpos[0])
-        cx = cos(self.gpos[0])
+        sx = sin(self.gpos[2])
+        cx = cos(self.gpos[2])
         sy = sin(self.gpos[1])
         cy = cos(self.gpos[1])
         return array(
-            [[ 1.   ,  0. , -sy    ],
-             [ 0.   , cx  ,  sx*sy ],
-             [ 0.   ,-sx  ,  cx*cy ],
-             [ 0.   ,  0. ,  0.    ],
-             [ 0.   ,  0. ,  0.    ],
-             [ 0.   ,  0. ,  0.    ]])
+            [[ -sy    ,   0. , 1. ],
+             [  sx*cy ,  cx  , 0. ],
+             [  cx*cy , -sx  , 0. ],
+             [  0.    ,   0. , 0. ],
+             [  0.    ,   0. , 0. ],
+             [  0.    ,   0. , 0. ]])
     
     @property
     def djacobian(self):
-        sx = sin(self.gpos[0])
-        cx = cos(self.gpos[0])
+        sx = sin(self.gpos[2])
+        cx = cos(self.gpos[2])
         sy = sin(self.gpos[1])
         cy = cos(self.gpos[1])
-        dx = self.gvel[0]
+        dx = self.gvel[2]
         dy = self.gvel[1]
         return array(
-            [[ 0.   , 0.    ,-dy*cy             ],
-             [ 0.   ,-dx*sx , dx*cx*sy+dy*sx*cy ],
-             [ 0.   ,-dx*cx ,-dx*sx*cy-dy*cx*sy ],
-             [ 0.   ,  0. ,  0.    ],
-             [ 0.   ,  0. ,  0.    ],
-             [ 0.   ,  0. ,  0.    ]])
+            [[-dy*cy             , 0.    ,  0. ],
+             [ dx*cx*sy+dy*sx*sy ,-dx*sx ,  0. ],
+             [-dx*sx*cy-dy*cx*sy ,-dx*cx ,  0. ],
+             [ 0.                ,  0.   ,  0. ],
+             [ 0.                ,  0.   ,  0. ],
+             [ 0.                ,  0.   ,  0. ]])
 
 
 class RzRyJoint(LinearConfigurationSpaceJoint):
@@ -133,6 +125,7 @@ class RzRyJoint(LinearConfigurationSpaceJoint):
         self.gpos = array(gpos).reshape((2))
         self.gvel = array(gvel).reshape((2))
         Joint.__init__(self,  frames, name)
+
     @property
     def ndof(self):
         return 2
@@ -146,28 +139,28 @@ class RzRyJoint(LinearConfigurationSpaceJoint):
         """
         T_n/r = 
         """   
-        sy = sin(self.gpos[0])
-        cy = cos(self.gpos[0])
+        sy = sin(self.gpos[1])
+        cy = cos(self.gpos[1])
         return array(
-            [[ 0.   , -sy ],
-             [ 1.   ,  0. ],
-             [ 0.   ,  cy ],
-             [ 0.   ,  0. ],
-             [ 0.   ,  0. ],
-             [ 0.   ,  0. ]])
+            [[ -sy , 0. ],
+             [  0. , 1. ],
+             [  cy , 0. ],
+             [  0. , 0. ],
+             [  0. , 0. ],
+             [  0. , 0. ]])
     
     @property
     def djacobian(self):
-        sy = sin(self.gpos[0])
-        cy = cos(self.gpos[0])
-        dy = self.gvel[0]
+        sy = sin(self.gpos[1])
+        cy = cos(self.gpos[1])
+        dy = self.gvel[1]
         return array(
-            [[ 0.   ,-dy*cy ],
-             [ 0.   , 0.    ],
-             [ 0.   ,-dy*sy ],
-             [ 0.   ,  0.   ],
-             [ 0.   ,  0.   ],
-             [ 0.   ,  0.   ]])
+            [[ -dy*cy , 0.  ],
+             [  0.    , 0.  ],
+             [ -dy*sy , 0.  ],
+             [   0.   , 0.  ],
+             [   0.   , 0.  ],
+             [   0.   , 0.  ]])
              
              
 class RzRxJoint(LinearConfigurationSpaceJoint):
@@ -179,6 +172,7 @@ class RzRxJoint(LinearConfigurationSpaceJoint):
         self.gpos = array(gpos).reshape((2))
         self.gvel = array(gvel).reshape((2))
         Joint.__init__(self,  frames, name)
+
     @property
     def ndof(self):
         return 2
@@ -192,28 +186,28 @@ class RzRxJoint(LinearConfigurationSpaceJoint):
         """
         T_n/r = 
         """   
-        sx = sin(self.gpos[0])
-        cx = cos(self.gpos[0])
+        sx = sin(self.gpos[1])
+        cx = cos(self.gpos[1])
         return array(
-            [[ 1.   ,  0. ],
-             [ 0.   ,  sx ],
-             [ 0.   ,  cx ],
-             [ 0.   ,  0. ],
-             [ 0.   ,  0. ],
-             [ 0.   ,  0. ]])
+            [[ 0. , 1. ],
+             [ sx , 0. ],
+             [ cx , 0. ],
+             [ 0. , 0. ],
+             [ 0. , 0. ],
+             [ 0. , 0. ]])
     
     @property
     def djacobian(self):
-        sx = sin(self.gpos[0])
-        cx = cos(self.gpos[0])
-        dx = self.gvel[0]
+        sx = sin(self.gpos[1])
+        cx = cos(self.gpos[1])
+        dx = self.gvel[1]
         return array(
-            [[ 0.   , 0.    ],
-             [ 0.   , dx*cx ],
-             [ 0.   ,-dx*sx ],
-             [ 0.   ,  0.   ],
-             [ 0.   ,  0.   ],
-             [ 0.   ,  0.   ]])
+            [[  0.    , 0.  ],
+             [  dx*cx , 0.  ],
+             [ -dx*sx , 0.  ],
+             [   0.   , 0.  ],
+             [   0.   , 0.  ],
+             [   0.   , 0.  ]])
              
              
 class RyRxJoint(LinearConfigurationSpaceJoint):
@@ -225,6 +219,7 @@ class RyRxJoint(LinearConfigurationSpaceJoint):
         self.gpos = array(gpos).reshape((2))
         self.gvel = array(gvel).reshape((2))
         Joint.__init__(self,  frames, name)
+
     @property
     def ndof(self):
         return 2
@@ -238,28 +233,28 @@ class RyRxJoint(LinearConfigurationSpaceJoint):
         """
         T_n/r = 
         """   
-        sx = sin(self.gpos[0])
-        cx = cos(self.gpos[0])
+        sx = sin(self.gpos[1])
+        cx = cos(self.gpos[1])
         return array(
-            [[ 1.   ,  0. ],
-             [ 0.   ,  cx ],
-             [ 0.   , -sx ],
-             [ 0.   ,  0. ],
-             [ 0.   ,  0. ],
-             [ 0.   ,  0. ]])
+            [[  0. , 1. ],
+             [  cx , 0. ],
+             [ -sx , 0. ],
+             [  0. , 0. ],
+             [  0. , 0. ],
+             [  0. , 0. ]])
     
     @property
     def djacobian(self):
-        sx = sin(self.gpos[0])
-        cx = cos(self.gpos[0])
-        dx = self.gvel[0]
+        sx = sin(self.gpos[1])
+        cx = cos(self.gpos[1])
+        dx = self.gvel[1]
         return array(
-            [[ 0.   , 0.    ],
-             [ 0.   ,-dx*sx ],
-             [ 0.   ,-dx*cx ],
-             [ 0.   , 0.    ],
-             [ 0.   , 0.    ],
-             [ 0.   , 0.    ]])
+            [[ 0.    , 0. ],
+             [-dx*sx , 0. ],
+             [-dx*cx , 0. ],
+             [ 0.    , 0. ],
+             [ 0.    , 0. ],
+             [ 0.    , 0. ]])
              
 
 class RzJoint(LinearConfigurationSpaceJoint):
@@ -278,6 +273,7 @@ class RzJoint(LinearConfigurationSpaceJoint):
         self.gpos = array(gpos).reshape((1))
         self.gvel = array(gvel).reshape((1))
         Joint.__init__(self,  frames, name)
+
     @property
     def ndof(self):
         return 1
@@ -344,3 +340,60 @@ class RzJoint(LinearConfigurationSpaceJoint):
         """
         return zeros((6,1))
 
+class RyJoint(LinearConfigurationSpaceJoint):
+    """Hinge (1-dof) with axis in the y-direction.
+    """
+
+    def __init__(self, gpos=0., gvel=0., frames=None, name=None):
+        self.gpos = array(gpos).reshape((1))
+        self.gvel = array(gvel).reshape((1))
+        Joint.__init__(self, frames, name)
+        
+    @property
+    def ndof(self):
+        return 1
+
+    @property
+    def pose(self):
+        return homogeneousmatrix.roty(self.gpos[0])
+
+    @property
+    def ipose(self):
+        return homogeneousmatrix.roty(-self.gpos[0])
+
+    @property
+    def jacobian(self):
+        return array([[0.], [1.], [0.], [0.], [0.], [0.]])
+
+    @property
+    def djacobian(self):
+        return zeros((6,1))
+        
+class RxJoint(LinearConfigurationSpaceJoint):
+
+    """Hinge (1-dof) with axis in the x-direction
+    """
+    def __init__(self, gpos=0., gvel=0., frames=None, name=None):
+        self.gpos = array(gpos).reshape((1))
+        self.gvel = array(gvel).reshape((1))
+        Joint.__init__(self, frames, name)
+        
+    @property
+    def ndof(self):
+        return 1
+
+    @property
+    def pose(self):
+        return homogeneousmatrix.rotx(self.gpos[0])
+
+    @property
+    def ipose(self):
+        return homogeneousmatrix.rotx(-self.gpos[0])
+
+    @property
+    def jacobian(self):
+        return array([[1.], [0.], [0.], [0.], [0.], [0.]])
+
+    @property
+    def djacobian(self):
+        return zeros((6,1))

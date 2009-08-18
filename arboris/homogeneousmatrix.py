@@ -33,11 +33,11 @@ def transl(t_x, t_y, t_z):
 
 
 def rotzyx(angle_z, angle_y, angle_x):
-    """homogeneous transformation matrix from pitch-roll-yaw angles)
+    """homogeneous transformation matrix from pitch-roll-yaw angles
     
     In short:  R = Rz * Ry * Rx
 
-    Example:
+    **Example:**
 
     >>> rotzyx(3.14/6, 3.14/4, 3.14/3)
     array([[ 0.61271008,  0.27992274,  0.73907349,  0.        ],
@@ -90,7 +90,7 @@ def rotzx(angle_z, angle_x):
     
     In short:  R = Rz * Rx
 
-    Example:
+    **Example:**
 
     >>> rotzx(3.14/6, 3.14/3)
     array([[ 0.86615809, -0.25011479,  0.43268088,  0.        ],
@@ -115,7 +115,7 @@ def rotyx(angle_y, angle_x):
     
     In short:  R = Ry * Rx
 
-    Example:
+    **Example:**
 
     >>> rotyx(3.14/4, 3.14/3)
     array([[ 0.70738827,  0.61194086,  0.35373751,  0.        ],

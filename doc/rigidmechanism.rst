@@ -9,8 +9,8 @@ Ideal Joints
 
 An ideal joint is a kinematic restriction of the allowed relative twist of two rigid bodies `i` and `j` to a linear subspace of dimension `k`, where the relative motion of the bodies is described by two sets of states, namely 
 
-- a matrix `\GPos`, parameterizing the relative configuration as `\Hg[i]_j = \Hg[i]_j(\GPos)`,
-- a vector `\GVel \in \Re^k`, parameterizing the relative twist as `\twist[i]_{i/j} = X(\GPos) \GVel`
+- a matrix `\GPos`, parameterizing the relative configuration as `\Hg[0]_1 = \Hg[0]_1(\GPos)`,
+- a vector `\GVel \in \Re^k`, parameterizing the relative twist as `\twist[1]_{1/0} = X(\GPos) \GVel`
 
 where `X(\GPos)` depends smoothly on `\GPos` and `\nu = V_\GPos(\dot{\GPos})` with `V_\GPos` invertible and linear in `\dot{\GPos}`. Furthermore, there exists a mapping `F_\GPos : \Re^k \rightarrow \GPosSet`.
 
@@ -37,7 +37,7 @@ Let's take the example of an hinge joint, it has 1 dof, and may be parametrized 
   >>> j.gpos
   >>> j.gvel
 
-The relative configuration corresponding to this joint is defined by the homogeneous `\Hg[r]_n` is given by ``pose()``
+The relative configuration corresponding to this joint is defined by the homogeneous `\Hg[0]_1` is given by ``pose()``
 
 .. math::
 
@@ -57,7 +57,7 @@ The relative configuration corresponding to this joint is defined by the homogen
          [ 0.        ,  0.        ,  1.        ,  0.        ],
          [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
-Its inverse, `\Hg[n]_r = \Hg[r]_n^{-1}` is given by ``ipose()``
+Its inverse, `\Hg[1]_0 = \Hg[0]_1^{-1}` is given by ``ipose()``
 
 .. doctest::
 
@@ -67,7 +67,7 @@ Its inverse, `\Hg[n]_r = \Hg[r]_n^{-1}` is given by ``ipose()``
          [ 0.        ,  0.        ,  1.        ,  0.        ],
          [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
-Similarly, the relative twist `\twist[n]_{n/r}` is given by ``twist()`` and its inverse by ``itwist()``
+Similarly, the relative twist `\twist[1]_{1/0}` is given by ``twist()`` and its inverse by ``itwist()``
 
 .. doctest::
 
@@ -84,12 +84,18 @@ jacobian, is given by ``jacobian()``
   >>> j.jacobian()
   array([ 0.,  0.,  1.,  0.,  0.,  0.])
 
+One can notice that 
+
+.. doctest::
+  
+  >>> j.twist == dot(j.jacobian, j.gvel)
+
+as expected.
+
 Mechanisms
 ==========
 
-Joints an bodies are interconnected in a tree-like structure, whose nodes are the bodies and edges are the joints. More precisely, a joint is connected between to *frames*, each belonging to a different body.
-
-
+Joints an bodies are interconnected in a tree-like structure, whose nodes are the bodies and edges are the joints. More precisely, a joint is connected between two *frames*, each belonging to a different body.
 
 Bodies and frames
 =================

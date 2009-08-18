@@ -35,8 +35,46 @@ class NamedObject(object):
 class DuplicateNameError(Exception):
     pass
 
+class Frame(object):
+    """A generic class for frames.
+    """
+    __metaclass__ = ABCMeta
+
+    @abstractproperty
+    def pose(self):
+        pass
+
+    @abstractproperty
+    def jacobian(self):
+        pass
+
+    @abstractproperty
+    def djacobian(self):
+        pass
+
+    @abstractproperty
+    def twist(self):
+        pass
+
+    @abstractproperty
+    def body(self):
+        pass
+
+    @abstractproperty
+    def bpose(self):
+        pass
+
 class Joint(RigidMotion, NamedObject):
     """A generic class for ideal joints.
+    
+    An ideal joint is a kinematic restriction of the allowed relative 
+    twist of two frames, here named frames 0 and 1, to which the joint
+    is said to be attached. In arboris, it serves to parametrize the
+    relative position and velocity of frame 1 regarding to frame 0.
+    
+    This class has virtual methods and properties. It should be 
+    subclassed by concrete implementations.
+
     """    
     __metaclass__ = ABCMeta
 
@@ -48,6 +86,12 @@ class Joint(RigidMotion, NamedObject):
             self._frames = (None, None)
         self._dof = None # will be set by World.init()
 
+    @abstractproperty
+    def ndof(self):
+        """Number of degrees of freedom.
+        """
+        pass
+
     @property
     def dof(self):
         if self._dof is None:
@@ -56,34 +100,29 @@ class Joint(RigidMotion, NamedObject):
             return self._dof
 
     @property
-    def ndof(self):
-        if self._dof is None:
-            raise ValueError
-        else:
-            return self._dof.size
-            
-    @property
     def frames(self):
+        """Frames to which the joint is attached.
+        """
         return self._frames
 
     def attach(self, frame0, frame1):
+        """Set the frames the joint is attached to.
+        """
+        assert isinstance(frame0, Frame)
+        assert isinstance(frame1, Frame)
         self._frames = (frame0, frame1)
         if frame1.body.parentjoint is None:
             frame1.body.parentjoint = self
         else:
             raise ValueError(
-                'frame1\'s body already as a parentjoint, which means you\'re probably trying to create a kinematic loop. Try using a constraint instead.')
+                'frame1\'s body already has a parentjoint, which means you\'re probably trying to create a kinematic loop. Try using a constraint instead.')
         frame0.body.childrenjoints.append(self)
 
     @property
     def twist(self):
-        return dot(self.jacobian, self.gvel)
-
-    @abstractproperty
-    def ndof(self):
-        """Number of degrees of freedom of the joint
+        r"""Relative twist of frame 1 regarding to frame 0 expressed in frame 1: `\twist[1]_{1/0}`
         """
-        pass
+        return dot(self.jacobian, self.gvel)
 
     @abstractproperty
     def jacobian(self):
@@ -118,7 +157,7 @@ class Constraint(NamedObject):
 
     @abstractproperty
     def ndol(self):
-        """Number of degree of "liaison" 
+        """Number of degrees of "liaison" 
         
         In french: *nombre de degrés de liaison*. This is equal to 6-ndof.
         """
@@ -221,14 +260,16 @@ class World(NamedObject):
         **Example:**
             >>> from arboris.joints import FreeJoint
             >>> w = World()
-            >>> #stone = Body('stone')
+            >>> #stone = Body('stone') TODO: why comment?
             >>> #j = FreeJoint()
             >>> #j.attach(w.ground, stone)
             >>> #w.register(j)
             >>> d = w.getbodiesdict()
             >>> d.keys()
             ['ground']
+
         """
+
         bodies_dict = {self.ground.name: self.ground}
         for b in self.ground.iter_descendant_bodies():
             if b.name is not None :
@@ -292,7 +333,7 @@ class World(NamedObject):
         as name will be ignored. Duplicate names will raise a 
         ``DuplicateName`` exception.
 
-        Example:
+        **Example:**
             >>> w = World()
             >>> d = w.getjointsdict()
             >>> d.keys()
@@ -312,7 +353,7 @@ class World(NamedObject):
         """Returns a list whose values are references to the 
         joints.
 
-        Example:
+        **Example:**
             >>> w = World()
             >>> d = w.getjointsdict()
             >>> d.keys()
@@ -335,7 +376,7 @@ class World(NamedObject):
                 the object that will be added. It may be a subframe, a shape,
                 a joint, a body or a controller.
 
-        Example:
+        **Example:**
 
         >>> from arboris.robots.simplearm import simplearm
         >>> w = simplearm()
@@ -755,34 +796,6 @@ class World(NamedObject):
                             dot(self._mass, self._gvel/dt) + self._gforce)
         for j in self.iterjoints():
             j.integrate(dt)
-
-
-class Frame(object):
-    __metaclass__ = ABCMeta
-
-    @abstractproperty
-    def pose(self):
-        pass
-
-    @abstractproperty
-    def jacobian(self):
-        pass
-
-    @abstractproperty
-    def djacobian(self):
-        pass
-
-    @abstractproperty
-    def twist(self):
-        pass
-
-    @abstractproperty
-    def body(self):
-        pass
-
-    @abstractproperty
-    def bpose(self):
-        pass
 
 
 class SubFrame(NamedObject, Frame):
