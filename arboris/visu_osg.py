@@ -114,9 +114,15 @@ def com_position(Mb):
         return [eye(4), zeros((6,6))]
 
 def draw_frame(length=1., radius=0.05, alpha=1.):
-    """
-    create a pointer to an osg node that represents a frame
-    this pointer with be used to draw every frame
+    """Draw a frame, as 3 cylinders.
+
+    :param length: the cylinders length
+    :type length: float
+    :param radius: the cylinders radius
+    :type radius: float
+    :param alpha: the cylinders alpha value
+    :type alpha: float
+    :rtype: osg.PositionAttitudeTransform
 
     **Example:**
 
@@ -186,7 +192,7 @@ def draw_line(start, end, radius=0.04, color=None):
     :type start: (3,)-shaped ndarray
     :param end: end point
     :type end: (3,)-shaped ndarray
-    :param radius: the cylinder radius is 0.04*scale
+    :param radius: the cylinder radius
     :type radius: float
     :param color: the line color 
     :type color: osg.Vec4
@@ -232,8 +238,8 @@ def draw_text(label, size=1.):
 
     :param label: the text
     :type lable: string
-    :param scale: a scaling factor
-    :type scale: float
+    :param size: a scaling factor
+    :type size: float
 
     **Example:**
 
