@@ -329,8 +329,6 @@ class WorldDrawer(object):
             'link': True,
             'name': False,
             'shape': True}
-        # Current "active" frame:
-        self._frame = None
         if world is not None:
             self.init(world)
 
@@ -526,28 +524,6 @@ class WorldDrawer(object):
         #s = osg.Vec3d(self.scale, self.scale, self.scale)
         #self.generic_frame.setScale(s)
         pass
-
-    def set_active_frame(self, frame):
-        """Set the active frame."""
-
-        if not isinstance(frame, core.Frame):
-            raise TypeError
-        else:
-            self._frame = frame
-
-    def move_active_frame(self, twist):
-        """Move the active frame parent joint"""
-
-        if not isinstance(self._frame, core.Frame):
-            raise TypeError
-        else:
-            from numpy.linalg import pinv
-            joint = self._frame.body.parentjoint
-            J = joint.jacobian
-            nu = dot(pinv(J),twist)
-            joint.gvel[:] = nu
-            dt = 0.01
-            joint.integrate(dt)
 
 def init_viewer(drawer, fullscreen=False, window=(0,0,800,600), 
                 coi=(0,0,0), camera=(3,3,3), up=(0,1,0)):
