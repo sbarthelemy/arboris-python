@@ -518,13 +518,6 @@ class WorldDrawer(object):
                 else:
                     sw[nodetype].setAllChildrenOff()
     
-    def rescale(self, coeff):
-        #TODO: do the actual rescaling
-        #self.scale *= coeff
-        #s = osg.Vec3d(self.scale, self.scale, self.scale)
-        #self.generic_frame.setScale(s)
-        pass
-
 def init_viewer(drawer, fullscreen=False, window=(0,0,800,600), 
                 coi=(0,0,0), camera=(3,3,3), up=(0,1,0)):
         # create the osg viewer:
@@ -573,10 +566,6 @@ class SwitcherHandler(osgGA.GUIEventHandler):
                     drawer.switch('shape')
                 elif action == ord('i'):
                     drawer.switch('inertia ellipsoid')
-                elif action == ord('+'): # + as increasing
-                    drawer.rescale(1.25)
-                elif action == ord('-'): # - as decreasing
-                    drawer.rescale(.8)
                 elif action == 65362: # up
                     drawer.move_frame([1,0,0,0,0,0])
                 elif action == 65364: # down
