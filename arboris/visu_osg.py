@@ -81,37 +81,10 @@ from numpy import pi, arctan2, array, dot, cross, sqrt, eye, cos, sin
 import shapes
 import core
 import homogeneousmatrix as Hg
-
+import massmatrix
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
-
-def com_position(Mb):
-    """Principal frame of inertia.
-
-    (Origin is the center of mass, and basis vectors are along principal axis).
-
-    TODO: move this function to somewhere else
-
-    """
-    from numpy import linalg, vstack, hstack, zeros, diag
-    m = Mb[5,5]
-    if m>0:
-        r_tilde = Mb[0:3,3:6]/m
-        r = array([r_tilde[2,1],r_tilde[0,2],r_tilde[1,0]])
-        RSR = Mb[0:3,0:3] + m*dot(r_tilde, r_tilde)
-        [S, R] = linalg.eig(RSR)
-        if linalg.det(R)<0:
-            iI = array([[0,0,1],[0,1,0],[1,0,0]])
-            R = dot(R, iI)
-            S = dot(iI, dot(S, iI))
-        R = eye(3)
-        H_b_com = vstack((hstack((R  , r.reshape(3,1))), array([0,0,0,1])))
-        Mg = zeros((6,6))
-        Mg[0:3,0:3] = diag(S)
-        Mg[3:6,3:6] = m*eye(3)
-        return [H_b_com, Mg]
-    else:
-        return [eye(4), zeros((6,6))]
 
 def draw_frame(length=1., radius=0.05, alpha=1.):
     """Draw a frame, as 3 cylinders.
@@ -431,7 +404,10 @@ class WorldDrawer(object):
                     #  |
                     # Sphere()
                     #
-                    [bHg, Mg] = com_position(Mb)
+                    
+                    bHg = massmatrix.principalframe(Mb)
+                    Mg = massmatrix.transport(Mb, bHg)
+                    print Mg
                     shape = osg.ShapeDrawable(
                         osg.Sphere(osg.Vec3(0.,0.,0.), 1.))
                     shape.setColor(color)

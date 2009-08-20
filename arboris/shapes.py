@@ -11,7 +11,7 @@ from core import Shape
 
 class Point(Shape):
     """
-    A point
+    A point.
     """
     def __init__(self, frame, name=None):
         Shape.__init__(self, frame, name)
@@ -19,7 +19,7 @@ class Point(Shape):
 
 class Box(Shape):
     """
-    A box
+    A box.
     """
     def __init__(self, frame, lengths=(1.,1.,1.), name=None):
         Shape.__init__(self, frame, name)
@@ -28,7 +28,7 @@ class Box(Shape):
 
 class Cylinder(Shape):
     """
-    A cylinder
+    A cylinder, whose symmetry axis is along the z-axis.
     """
     def __init__(self, frame, length=1., radius=1., name=None):
         Shape.__init__(self, frame, name)
@@ -38,7 +38,7 @@ class Cylinder(Shape):
 
 class Sphere(Shape):
     """
-    A sphere
+    A sphere.
     """
     def __init__(self, frame, radius=1., name=None):
         Shape.__init__(self, frame, name)

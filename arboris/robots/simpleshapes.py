@@ -8,20 +8,11 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 from arboris.joints import FreeJoint
 from arboris.shapes import Sphere, Box, Cylinder
 from arboris.core import World, Body
+import arboris.massmatrix as massmatrix
 import numpy
-
-def mass_parallelepiped(m,lengths):
-    """The mass matrix of an homogeneous parallelepiped."""
-    (a, b, c) = lengths
-    return numpy.diag((
-        m/12.*(b**2+c**2), 
-        m/12.*(a**2+c**2), 
-        m/12.*(a**2+b**2),
-        m, m, m))
 
 def ball(world=None, radius=1., mass=1., name=None):
     """Build a ball robot.
-    TODO: fix inertia
 
     Example:
 
@@ -40,7 +31,7 @@ def ball(world=None, radius=1., mass=1., name=None):
 
     ball = Body(
         name=name,
-        mass=mass_parallelepiped(mass, (radius,radius,radius)))
+        mass=massmatrix.sphere(radius, mass))
     freejoint = FreeJoint(frames=(w.ground, ball))
     s = Sphere(ball, radius)
     w.register(freejoint)
@@ -52,8 +43,6 @@ def ball(world=None, radius=1., mass=1., name=None):
 def box(world=None, lengths=(1.,1.,1.), mass=1., name='Box'):
     """Build a box robot.
 
-    TODO: fix inertia
-    
     Example:
 
         >>> r = box()
@@ -71,7 +60,7 @@ def box(world=None, lengths=(1.,1.,1.), mass=1., name='Box'):
     
     box = Body(
         name=name,
-        mass=mass_parallelepiped(mass, (lengths[0], lengths[1], lengths[2])))
+        mass=massmatrix.box(lengths, mass))
     freejoint = FreeJoint()
     freejoint.attach(w.ground, box)
     w.register(box)
@@ -81,10 +70,8 @@ def box(world=None, lengths=(1.,1.,1.), mass=1., name='Box'):
     return w
 
 
-def cylinder(world=None, radius=1., length=1., mass=1., name='Cylinder'):
-    """Build a cylinder robot.
-
-    TODO: fix inertia
+def cylinder(world=None, length=1., radius=1., mass=1., name='Cylinder'):
+    """Build a cylinder robot, whose symmetry axis is along the z-axis.
 
     Example:
 
@@ -103,7 +90,7 @@ def cylinder(world=None, radius=1., length=1., mass=1., name='Cylinder'):
 
     cylinder = Body(
         name=name,
-        mass=mass_parallelepiped(mass, (length, length, length)))
+        mass=massmatrix.cylinder(length, radius, mass))
     freejoint = FreeJoint(frames=(w.ground, cylinder))
     w.register(cylinder)
     s = Cylinder(cylinder, length, radius)
