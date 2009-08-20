@@ -109,7 +109,7 @@ class RzRyRxJoint(LinearConfigurationSpaceJoint):
         dy = self.gvel[1]
         return array(
             [[-dy*cy             , 0.    ,  0. ],
-             [ dx*cx*sy+dy*sx*sy ,-dx*sx ,  0. ],
+             [ dx*cx*cy-dy*sx*sy ,-dx*sx ,  0. ],
              [-dx*sx*cy-dy*cx*sy ,-dx*cx ,  0. ],
              [ 0.                ,  0.   ,  0. ],
              [ 0.                ,  0.   ,  0. ],
@@ -370,7 +370,6 @@ class RyJoint(LinearConfigurationSpaceJoint):
         return zeros((6,1))
         
 class RxJoint(LinearConfigurationSpaceJoint):
-
     """Hinge (1-dof) with axis in the x-direction
     """
     def __init__(self, gpos=0., gvel=0., frames=None, name=None):
