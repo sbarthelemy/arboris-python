@@ -6,34 +6,35 @@ Display a human
 ... as a plugin
 ---------------
 
->>> from arboris.visu_osg import DrawerPlugin
+>>> from arboris.visu_osg import DrawerObserver
 >>> from arboris.robots.human36 import add_human36
->>> from arboris.core import World, simulate
+>>> from arboris.core import simulate, ObservableWorld
 >>> from numpy import arange
->>> plugin = DrawerPlugin()
->>> world = World()
+>>> world = ObservableWorld()
+>>> world.observers.append(DrawerObserver(world))
 >>> add_human36(world)
->>> time = arange(0, 0.1, 1e-3)
->>> simulate(world, time, (plugin,))
+>>> timeline = arange(0, 0.1, 1e-3)
+>>> simulate(world, timeline)
 
 
 ... with a drawable world
 -------------------------
 
->>> from arboris.visu_osg import DrawableWorld
+>>> from arboris.core import ObservableWorld
+>>> from arboris.visu_osg import DrawerObserver
 >>> from arboris.robots.human36 import add_human36
->>> w = DrawableWorld()
->>> add_human36(world=w)
->>> w.update_geometric()
->>> w.init_graphic()
->>> joints = w.getjointslist()
+>>> world = ObservableWorld()
+>>> drawer = DrawerObserver(world)
+>>> world.observers.append(drawer)
+>>> add_human36(world)
+>>> joints = world.getjointslist()
 >>> t = 0.
->>> while not(w.graphic_is_done()):
+>>> while not(drawer.done()):
 ...     joints[1].gpos=[t,t,t]
 ...     joints[2].gpos=[t]
 ...     joints[3].gpos=[t,t]
-...     w.update_geometric()
-...     w.update_graphic()
+...     world.update_geometric()
+...     world._update_observers(0)
 ...     t += 1./180
 
 

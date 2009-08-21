@@ -8,7 +8,7 @@ Test joint limits
 >>> from arboris.constraints import JointLimits
 >>> from arboris.controllers import WeightController
 >>> world = simplearm()
->>> a = WeightController(world.ground)
+>>> a = WeightController(world)
 >>> world.register(a)
 >>> joints = world.getjointsdict()
 >>> c = JointLimits(joints['Shoulder'], -3.14/2, 3.14/2)
@@ -41,7 +41,7 @@ Test ball and socket constraint
 >>> w.register(j1)
 >>> w.init()
 >>> from arboris.controllers import WeightController
->>> ctrl =  WeightController(w.ground)
+>>> ctrl =  WeightController(w)
 >>> w.register(ctrl)
 >>> from arboris.constraints import BallAndSocketConstraint 
 >>> c0 = BallAndSocketConstraint(frames=(w.ground, b0))

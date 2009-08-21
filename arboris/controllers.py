@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
-from core import NamedObject, Controller
+from core import NamedObject, Controller, World
 from numpy import array, zeros, dot, ix_
 import homogeneousmatrix
 from joints import LinearConfigurationSpaceJoint
@@ -13,17 +13,19 @@ class WeightController(Controller):
     >>> joints['Shoulder'].gpos[0] = 3.14/4
     >>> joints['Elbow'].gpos[0] = 3.14/4
     >>> joints['Wrist'].gpos[0] = 3.14/4
-    >>> c = WeightController(w.ground)
+    >>> c = WeightController(w)
     >>> w.register(c)
     >>> w.init()
     >>> w.update_dynamic() #TODO change for update_kinematic
     >>> (gforce, impedance) = c.update()
 
     """
-    def __init__(self, ground, gravity=None, name=None):
-        self.ground = ground
+    def __init__(self, world, gravity=None, name=None):
+        assert isinstance(world, World)
+        self._bodies = world.ground.iter_descendant_bodies
         if gravity is None:
-            self._gravity = array([0., 0., 0., 0., -9.81, 0.])
+            self._gravity = zeros(6)
+            self._gravity[3:6] = -9.81*world.up
         else:
             self._gravity = array(gravity)
         Controller.__init__(self, name=name)
@@ -33,7 +35,7 @@ class WeightController(Controller):
 
     def update(self, dt=None, t=None):
         gforce = zeros(self._wndof)
-        for b in self.ground.iter_descendant_bodies():
+        for b in self._bodies():
             # gravity acceleration expressed in body frame
             g = dot(homogeneousmatrix.iadjoint(b.pose), self._gravity)
             gforce += dot(b.jacobian.T, dot(b.mass, g))

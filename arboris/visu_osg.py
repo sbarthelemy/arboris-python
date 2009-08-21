@@ -15,8 +15,6 @@ It can be used in four ways:
     
     - *interactive GUI*: TODO
 
-    - *interactive CLI*: using :class:`DrawableWorld`.
-
 Scene graph basics
 ------------------
 
@@ -67,10 +65,6 @@ world in order to update the representation when the bodies move.
 The :func:`init_viewer` function creates an OSG Viewer and an OSG
 GUIEventHandler. It is the place where window size, camera position
 and keyboard shortcuts are set.
-
-The end user can draw a world through, at choice, a :class:`DrawerPlugin`
-object, or superseding the "raw" :class:`core.World` object by a 
-:class:`visuosg.DrawableWorld` one.
 
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
@@ -645,51 +639,29 @@ class JointIkHandler(osgGA.GUIEventHandler):
         return False
 
 
-class DrawableWorld(core.World):
+class DrawerObserver(core.WorldObserver):
 
-    def __init__(self, world=None, scale=1., *positional_args, 
-                 **keyword_args):
-        if world is None:
-            core.World.__init__(self,*positional_args, **keyword_args)
-            self.update_geometric()
-        else:
-            raise NotImplemented
-        self._drawer = WorldDrawer(world=self, scale=1.)
-
+    def __init__(self, world, scale=1.,options=None):
+        self._drawer = WorldDrawer(world=world, scale=1., options=options)
+        self._world = world
     def register(self, obj):
-        core.World.register(self, obj)
         self._drawer.register(obj)
 
-    def init_graphic(self, *positional_args, **keyword_args):
-        self._viewer = init_viewer(
-            self._drawer, *positional_args, **keyword_args)
-        self._viewer.realize()
-
-    def update_graphic(self):
-        self._drawer.update()
-        try:
-            self._viewer.frame()
-        except AttributeError:
-            raise Error('You should call ``init_graphic()`` once before calling ``update_graphic``')
-
-    def graphic_is_done(self):
-        return self._viewer.done()
-
-
-class DrawerPlugin(core.Plugin):
-
-    def __init__(self, scale=1.,options=None):
-        self._drawer = WorldDrawer(scale=scale, options=options)
-
-    def init(self, world, time):
-        world.update_geometric()
-        self._drawer.init(world)
+    def init(self):
+        self._world.update_geometric() #TODO find a way to remove this
+        self._drawer.init(self._world)
         self._viewer = init_viewer(self._drawer)
         self._viewer.realize()
 
-    def update(self, t, dt):
+    def update(self, dt):
         self._drawer.update()
         self._viewer.frame()
+
+    def done(self):
+        return self._viewer.done()
+
+    def finish(self):
+        pass
 
 
 def hsv_to_rgb(hsv):

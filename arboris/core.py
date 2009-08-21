@@ -214,6 +214,8 @@ class World(NamedObject):
     def __init__(self, name=None):
         NamedObject.__init__(self, name)
         self.ground = Body('ground')
+        self._current_time = 0.
+        self._up = array((0,1,0))
         self._controllers = []
         self._constraints = []
         self._subframes = []
@@ -360,9 +362,9 @@ class World(NamedObject):
         joints.
 
         **Example:**
+
             >>> w = World()
-            >>> d = w.getjointsdict()
-            >>> d.keys()
+            >>> w.getjointslist()
             []
 
         """
@@ -459,6 +461,14 @@ class World(NamedObject):
         
         for a in self._controllers:
             a.init(self)
+
+    @property
+    def current_time(self):
+        return self._current_time
+    
+    @property
+    def up(self):
+        return self._up
 
     @property
     def mass(self):
@@ -630,9 +640,8 @@ class World(NamedObject):
 
         TODO: check the two last tests results!
 
-
-
         """
+        assert dt > 0
         self._gforce[:] = 0.
         self._impedance = self._mass/dt + self._viscosity + self._nleffects 
         for a in self._controllers:
@@ -731,6 +740,7 @@ class World(NamedObject):
         TODO: add an example.
 
         """
+        assert dt > 0
         constraints = []
         ndol = 0
         for c in self._constraints:
@@ -793,10 +803,12 @@ class World(NamedObject):
         >> w._gvel
         array([-0.00709132,  0.03355273, -0.09131555])
         """
+        assert dt > 0
         self._gvel[:] = dot(self._admittance, 
                             dot(self._mass, self._gvel/dt) + self._gforce)
         for j in self.iterjoints():
             j.integrate(dt)
+        self._current_time += dt
 
 
 class SubFrame(NamedObject, Frame):
@@ -1124,18 +1136,61 @@ class Body(NamedObject, Frame):
                                      child_twist)
 
 
-class Plugin(object):
+class ObservableWorld(World):
+
+    def __init__(self, *positional_args, 
+                 **keyword_args):
+        World.__init__(self, *positional_args, **keyword_args)
+        self.observers = []
+
+    def register(self, obj):
+        World.register(self, obj)
+        for obs in self.observers:
+            assert isinstance(obs, WorldObserver)
+            obs.register(obj)
+
+    def init(self):
+        World.init(self)
+        for obs in self.observers:
+            assert isinstance(obs, WorldObserver)
+            obs.init()
+
+    def _update_observers(self, dt):
+        for obs in self.observers:
+            assert isinstance(obs, WorldObserver)
+            obs.update(dt)
+
+    def integrate(self, dt):
+        World.integrate(self, dt)
+        self._update_observers(dt)
+
+    def finish(self):
+         for obs in self.observers:
+            assert isinstance(obs, WorldObserver)
+            obs.finish()
+
+
+class WorldObserver(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def init(self, world, time):
+    def register(self, obj):
         pass
 
     @abstractmethod
-    def update(self, t, dt):
+    def init(self):
         pass
 
-def simulate(world, time, plugins=()):
+    @abstractmethod
+    def update(self):
+        pass
+
+    @abstractmethod
+    def finish(self):
+        pass
+
+
+def simulate(world, timeline):
     """Run a full simulation, 
 
     :param world: the world to be simulated
@@ -1151,17 +1206,12 @@ def simulate(world, time, plugins=()):
     >>> simulate(w, time)
 
     """
+    world._current_time = timeline[0]
     world.init()
-    for plugin in plugins:
-        plugin.init(world, time)
-    previous_t = time[0]
-    for t in time[1:]:
-        dt = t - previous_t
+    for t in timeline[1:]:
+        dt = t - world._current_time
         world.update_dynamic()
-        world.update_controllers(dt, t)
+        world.update_controllers(dt)
         world.update_constraints(dt)
-        for plugin in plugins:
-            plugin.update(t, dt)
         world.integrate(dt)
-        previous_t = t    
 
