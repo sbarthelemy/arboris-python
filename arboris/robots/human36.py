@@ -627,12 +627,14 @@ def _humans_bodies(height, mass):
          "GyrationRadius": array([0.303, 0.261, 0.315])*L['yhead']})
     return bodies
 
-def _human36(height=1.741, mass=73, name='', world=None):
+def _human36(world, height=1.741, mass=73, name=''):
     """
 
     TODO: HuMAnS' doc about inertia is erroneous (the real math is in the IOMatrix proc in DynamicData.maple)
 
     """
+    assert isinstance(world, World)
+    w = world
     L = anatomical_lengths(height)
     
     bodies = {}
@@ -653,14 +655,6 @@ def _human36(height=1.741, mass=73, name='', world=None):
             mass=mass_o)
         
         humansbodyid_to_humansbodyname_map[b['HumansId']] = b['HumansName']
-
-    # Create a world
-    if world is None:
-        w = World()
-    elif isinstance(world, World):
-        w = world
-    else:
-        raise ValueError('the world argument must be an instance of the World class')
 
     rf = SubFrame(w.ground,
         Hg.transl(0, L['yfootL']+L['ytibiaL']+L['yfemurL'], 0))
@@ -760,9 +754,9 @@ def _human36(height=1.741, mass=73, name='', world=None):
         w.register(shape)
 
     w.init()
-    return (w, bodies, tags)
+    return (bodies, tags)
 
-def human36(height=1.741, mass=73, name='', world=None):
-    return _human36(height=height, mass=mass, name=name, world=world)[0]
+def add_human36(world, height=1.741, mass=73, name=''):
+    _human36(height=height, mass=mass, name=name, world=world)
     
 

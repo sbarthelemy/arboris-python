@@ -7,11 +7,12 @@ Display a human
 ---------------
 
 >>> from arboris.visu_osg import DrawerPlugin
->>> from arboris.robots.human36 import human36
->>> from arboris.core import simulate
+>>> from arboris.robots.human36 import add_human36
+>>> from arboris.core import World, simulate
 >>> from numpy import arange
 >>> plugin = DrawerPlugin()
->>> world = human36()
+>>> world = World()
+>>> add_human36(world)
 >>> time = arange(0, 0.1, 1e-3)
 >>> simulate(world, time, (plugin,))
 
@@ -20,9 +21,9 @@ Display a human
 -------------------------
 
 >>> from arboris.visu_osg import DrawableWorld
->>> from arboris.robots.human36 import human36
+>>> from arboris.robots.human36 import add_human36
 >>> w = DrawableWorld()
->>> foo = human36(world=w)
+>>> add_human36(world=w)
 >>> w.update_geometric()
 >>> w.init_graphic()
 >>> joints = w.getjointslist()
@@ -39,9 +40,11 @@ Display a human
 ... with a drawer
 -----------------
 
+>>> from arboris.core import World
 >>> from arboris.visu_osg import WorldDrawer, init_viewer
->>> from arboris.robots.human36 import human36
->>> w = human36()
+>>> from arboris.robots.human36 import add_human36
+>>> w = World()
+>>> add_human36(w)
 >>> w.update_geometric()
 >>> d = WorldDrawer(w)
 >>> viewer = init_viewer(d)

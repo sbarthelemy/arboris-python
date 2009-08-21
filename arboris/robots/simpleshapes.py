@@ -11,90 +11,66 @@ from arboris.core import World, Body
 import arboris.massmatrix as massmatrix
 import numpy
 
-def ball(world=None, radius=1., mass=1., name=None):
+def add_sphere(world, radius=1., mass=1., name=None):
     """Build a ball robot.
 
     Example:
 
-        >>> r = ball()
-        >>> r.update_dynamic()
+        >>> w = World()
+        >>> add_sphere(w)
+        >>> w.update_dynamic()
 
     """
-
-    # Create a world
-    if world is None:
-        w = World()
-    elif isinstance(world, World):
-        w = world
-    else:
-        raise ValueError('the world argument must be an instance of the World class')
-
+    assert isinstance(world, World)
     ball = Body(
         name=name,
         mass=massmatrix.sphere(radius, mass))
-    freejoint = FreeJoint(frames=(w.ground, ball))
+    freejoint = FreeJoint(frames=(world.ground, ball))
     s = Sphere(ball, radius)
-    w.register(freejoint)
-    w.register(s)
-    w.init()
-    return w
+    world.register(freejoint)
+    world.register(s)
+    world.init()
  
 
-def box(world=None, lengths=(1.,1.,1.), mass=1., name='Box'):
+def add_box(world, lengths=(1.,1.,1.), mass=1., name='Box'):
     """Build a box robot.
 
     Example:
 
-        >>> r = box()
-        >>> r.update_dynamic()
+        >>> w = World()
+        >>> add_box(w)
+        >>> w.update_dynamic()
 
     """
-
-    # Create a world
-    if world is None:
-        w = World()
-    elif isinstance(world, World):
-        w = world
-    else:
-        raise ValueError('the world argument must be an instance of the World class')
-    
+    assert isinstance(world, World)
     box = Body(
         name=name,
         mass=massmatrix.box(lengths, mass))
     freejoint = FreeJoint()
-    freejoint.attach(w.ground, box)
-    w.register(box)
+    freejoint.attach(world.ground, box)
+    world.register(box)
     s = Box(box, lengths)
-    w.register(freejoint)
-    w.init()
-    return w
+    world.register(freejoint)
+    world.init()
 
 
-def cylinder(world=None, length=1., radius=1., mass=1., name='Cylinder'):
+def add_cylinder(world, length=1., radius=1., mass=1., name='Cylinder'):
     """Build a cylinder robot, whose symmetry axis is along the z-axis.
 
     Example:
 
-        >>> r = cylinder()
-        >>> r.update_dynamic()
+        >>> w = World()
+        >>> add_cylinder(w)
+        >>> w.update_dynamic()
 
     """
-
-    # Create a world
-    if world is None:
-        w = World()
-    elif isinstance(world, World):
-        w = world
-    else:
-        raise ValueError('the world argument must be an instance of the World class')
-
+    assert isinstance(world, World)
     cylinder = Body(
         name=name,
         mass=massmatrix.cylinder(length, radius, mass))
-    freejoint = FreeJoint(frames=(w.ground, cylinder))
-    w.register(cylinder)
+    freejoint = FreeJoint(frames=(world.ground, cylinder))
+    world.register(cylinder)
     s = Cylinder(cylinder, length, radius)
-    w.register(s)
-    w.init()
-    return w
+    world.register(s)
+    world.init()
     

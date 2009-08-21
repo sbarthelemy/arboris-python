@@ -6,14 +6,14 @@ Non sliding, free
 -----------------
 
 >>> from arboris.visu_osg import DrawableWorld
->>> from arboris.robots.simpleshapes import ball
+>>> from arboris.robots.simpleshapes import add_sphere
 >>> from arboris.collisions import sphere_sphere_collision
 >>> from arboris.constraints import SoftFingerContact
 >>> from arboris.core import simulate
 >>> from numpy import arange
 >>> w = DrawableWorld(scale=.1)
->>> foo = ball(world=w, name='ball0')
->>> foo = ball(world=w, name='ball1')
+>>> add_sphere(world=w, name='ball0')
+>>> add_sphere(world=w, name='ball1')
 >>> bodies = w.getbodiesdict()
 >>> bodies['ball0'].parentjoint.gpos[1,3] = 2.5
 >>> bodies['ball0'].parentjoint.gvel[4] = -1.
@@ -42,13 +42,13 @@ Non-sliding, blocked
 
 >>> from arboris.visu_osg import DrawableWorld
 >>> from arboris.shapes import Sphere
->>> from arboris.robots.simpleshapes import ball
+>>> from arboris.robots.simpleshapes import add_sphere
 >>> from arboris.collisions import sphere_sphere_collision
 >>> from arboris.constraints import SoftFingerContact
 >>> from arboris.core import simulate
 >>> from numpy import arange
 >>> w = DrawableWorld(scale=.1)
->>> foo = ball(world=w, name='ball0')
+>>> add_sphere(world=w, name='ball0')
 >>> w.register(Sphere(w.ground))
 >>> bodies = w.getbodiesdict()
 >>> bodies['ball0'].parentjoint.gpos[1,3] = 2.5
@@ -78,13 +78,13 @@ Sliding, blocked
 
 >>> from arboris.visu_osg import DrawableWorld
 >>> from arboris.shapes import Sphere
->>> from arboris.robots.simpleshapes import ball
+>>> from arboris.robots.simpleshapes import add_sphere
 >>> from arboris.collisions import sphere_sphere_collision
 >>> from arboris.constraints import SoftFingerContact
 >>> from arboris.core import simulate
 >>> from numpy import arange
 >>> w = DrawableWorld(scale=.1)
->>> foo = ball(world=w, name='ball0')
+>>> add_sphere(world=w, name='ball0')
 >>> w.register(Sphere(w.ground))
 >>> bodies = w.getbodiesdict()
 >>> bodies['ball0'].parentjoint.gpos[2,3] = 1.99

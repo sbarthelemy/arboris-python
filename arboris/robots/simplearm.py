@@ -31,7 +31,7 @@ def mass_parallelepiped(m,lengths):
         m/12.*(a**2+b**2),
         m, m, m))
 
-def simplearm(world=None, name=None, lengths=(0.5 ,0.4 , 0.2), 
+def add_simplearm(world, name=None, lengths=(0.5 ,0.4 , 0.2), 
                 masses=(1.0, 0.8, 0.2)):
     """Build a  planar 3-R robot.
 
@@ -39,12 +39,13 @@ def simplearm(world=None, name=None, lengths=(0.5 ,0.4 , 0.2),
 
     Example:
 
-        >>> from arboris.robots.simplearm import simplearm
-        >>> r = simplearm()
-        >>> r.update_dynamic()
+        >>> w = World()
+        >>> add_simplearm(w)
+        >>> w.update_dynamic()
 
     """
-
+    assert isinstance(world, World)
+    w = world
     arm_length = lengths[0]
     arm_mass = masses[0]
     forearm_length = lengths[1]
@@ -52,15 +53,7 @@ def simplearm(world=None, name=None, lengths=(0.5 ,0.4 , 0.2),
     hand_length = lengths[2]
     hand_mass = masses[2]
 
-    # Create a world
-    if world is None:
-        w = World()
-    elif isinstance(world, World):
-        w = world
-    else:
-        raise ValueError('the world argument must be an instance of the World class')
-
-    # create other bodies
+    # create bodies
     arm = Body(
         name='Arm',
         mass=transport_mass_matrix(
@@ -112,5 +105,4 @@ def simplearm(world=None, name=None, lengths=(0.5 ,0.4 , 0.2),
     f = SubFrame(hand, Hg.transl(0,hand_length,0), 'EndEffector')
     w.register(f)
     w.init()
-    return w
 

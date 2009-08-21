@@ -115,9 +115,11 @@ Test tags
 
     Test:
 
+    >>> from arboris.core import World
     >>> from arboris.robots.human36 import _human36
     >>> from numpy import zeros
-    >>> (w, bodies, tags) = _human36()
+    >>> w = World()
+    >>> (bodies, tags) = _human36(w)
     >>> w.update_geometric()
     >>> def tag_positions(tag_frames):
     ...     """The tags absolute position
@@ -253,8 +255,10 @@ Tags(q)
 Test dynamical model (these were checked against HuMAnS):
 ---------------------------------------------------------
 
-    >>> from arboris.robots.human36 import human36
-    >>> w = human36()
+    >>> from arboris.robots.human36 import add_human36
+    >>> from arboris.core import World
+    >>> w = World()
+    >>> add_human36(w)
     >>> w.update_dynamic()
     >>> w.mass[5,5]
     73.000000000000014

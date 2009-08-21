@@ -7,7 +7,7 @@ from joints import LinearConfigurationSpaceJoint
 class WeightController(Controller):
     """
 
-    >>> from arboris.robots.simplearm import simplearm
+    >>> from arboris.core import simplearm
     >>> w = simplearm()
     >>> joints = w.getjointsdict()
     >>> joints['Shoulder'].gpos[0] = 3.14/4

@@ -407,7 +407,6 @@ class WorldDrawer(object):
                     
                     bHg = massmatrix.principalframe(Mb)
                     Mg = massmatrix.transport(Mb, bHg)
-                    print Mg
                     shape = osg.ShapeDrawable(
                         osg.Sphere(osg.Vec3(0.,0.,0.), 1.))
                     shape.setColor(color)

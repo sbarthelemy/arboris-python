@@ -24,6 +24,12 @@ import homogeneousmatrix as Hg
 from abc import ABCMeta, abstractmethod, abstractproperty
 from rigidmotion import RigidMotion
 
+def simplearm():
+    from arboris.robots.simplearm import add_simplearm
+    w = World()
+    add_simplearm(w)
+    return w
+
 class NamedObject(object):
     """
     A class for anything named to depend from.
@@ -378,7 +384,6 @@ class World(NamedObject):
 
         **Example:**
 
-        >>> from arboris.robots.simplearm import simplearm
         >>> w = simplearm()
         >>> from arboris.controllers import ProportionalDerivativeController
         >>> joints = w.getjointslist()
@@ -482,7 +487,6 @@ class World(NamedObject):
         
         Example:
 
-        >>> from arboris.robots.simplearm import simplearm
         >>> w = simplearm()
         >>> w.update_geometric()
         
@@ -508,7 +512,6 @@ class World(NamedObject):
 
         **Example:**
 
-        >>> from arboris.robots.simplearm import simplearm
         >>> w = simplearm()
         >>> w.update_dynamic()
         
@@ -563,7 +566,6 @@ class World(NamedObject):
         
         **Example:**
 
-        >>> from arboris.robots.simplearm import simplearm
         >>> w = simplearm()
         >>> from arboris.controllers import ProportionalDerivativeController
         >>> joints = w.getjointslist()
@@ -777,7 +779,6 @@ class World(NamedObject):
         TODO: repair this doctest
         TODO: check the last test result!
 
-        >> from arboris.robots.simplearm import simplearm
         >> w = simplearm()
         >> joints = w.getjointsdict()
         >> joints['Shoulder'].gpos[:] = -1.
@@ -1144,7 +1145,6 @@ def simulate(world, time, plugins=()):
 
     Example:
 
-    >>> from arboris.robots.simplearm import simplearm
     >>> w = simplearm()
     >>> dt = 0.001
     >>> time = numpy.arange(0,0.01,0.001)

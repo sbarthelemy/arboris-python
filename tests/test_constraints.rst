@@ -3,7 +3,7 @@ Test joint limits
 =================
 
 >>> from numpy import arange
->>> from arboris.robots.simplearm import simplearm
+>>> from arboris.core import simplearm
 >>> from arboris.core import simulate
 >>> from arboris.constraints import JointLimits
 >>> from arboris.controllers import WeightController
