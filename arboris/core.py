@@ -212,7 +212,7 @@ class Controller(NamedObject):
         pass
 
     @abstractmethod
-    def update(self, dt, t):
+    def update(self, dt):
         pass
 
 
@@ -576,7 +576,7 @@ class World(NamedObject):
                 b.jacobian.T,
                 dot(b.mass, b.djacobian) + dot(b.nleffects, b.jacobian))
 
-    def update_controllers(self, dt, t=None):
+    def update_controllers(self, dt):
         r"""
 
         :param dt:
@@ -655,7 +655,7 @@ class World(NamedObject):
         self._gforce[:] = 0.
         self._impedance = self._mass/dt + self._viscosity + self._nleffects 
         for a in self._controllers:
-            (gforce, impedance) = a.update(dt, t)
+            (gforce, impedance) = a.update(dt)
             self._gforce += gforce
             self._impedance -= impedance
         self._admittance = numpy.linalg.inv(self._impedance)

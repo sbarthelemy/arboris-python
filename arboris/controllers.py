@@ -33,7 +33,7 @@ class WeightController(Controller):
     def init(self, world):
         self._wndof = world.ndof
 
-    def update(self, dt=None, t=None):
+    def update(self, dt=None):
         gforce = zeros(self._wndof)
         for b in self._bodies():
             # gravity acceleration expressed in body frame
@@ -120,7 +120,7 @@ class ProportionalDerivativeController(Controller):
                 dof_map.extend(range(j.dof.start, j.dof.stop))
         self._dof_map = array(dof_map)
 
-    def update(self, dt, t):
+    def update(self, dt):
         """
         """
         gforce = zeros(self._wndof)
