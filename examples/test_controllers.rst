@@ -3,17 +3,18 @@ PD Control
 ==========
 
 >>> from arboris.controllers import ProportionalDerivativeController
->>> from arboris.core import simplearm
->>> from arboris.visu_osg import DrawerPlugin
->>> from arboris.core import simulate
+>>> from arboris.robots.simplearm import add_simplearm
+>>> from arboris.visu_osg import Drawer
+>>> from arboris.core import simulate, ObservableWorld
 >>> from numpy import arange, diag, sqrt
->>> world = simplearm()
+>>> world = ObservableWorld()
+>>> world.observers.append(Drawer(world))
+>>> add_simplearm(world)
 >>> joints = world.getjointslist()
 >>> kp = diag((1.,1.,1.))
 >>> kd = diag((1.,1.,1.))/sqrt(2)
 >>> c = ProportionalDerivativeController(joints,gpos_des=(3.14/4,3.14/4,3.14/4),kp=kp, kd=kd)
 >>> world.register(c)
 >>> time = arange(0, 3, 1e-3)
->>> plugin = DrawerPlugin(scale=1)
->>> simulate(world, time, (plugin,))
+>>> simulate(world, time)
 

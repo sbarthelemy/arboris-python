@@ -5,107 +5,67 @@ Test contact
 Non sliding, free
 -----------------
 
->>> from arboris.visu_osg import DrawableWorld
+>>> from arboris.visu_osg import Drawer
 >>> from arboris.robots.simpleshapes import add_sphere
 >>> from arboris.collisions import sphere_sphere_collision
 >>> from arboris.constraints import SoftFingerContact
->>> from arboris.core import simulate
+>>> from arboris.core import simulate, ObservableWorld
 >>> from numpy import arange
->>> w = DrawableWorld(scale=.1)
->>> add_sphere(world=w, name='ball0')
->>> add_sphere(world=w, name='ball1')
->>> bodies = w.getbodiesdict()
+>>> world = ObservableWorld()
+>>> world.observers.append(Drawer(world, scale=.1))
+>>> add_sphere(world, name='ball0')
+>>> add_sphere(world, name='ball1')
+>>> bodies = world.getbodiesdict()
 >>> bodies['ball0'].parentjoint.gpos[1,3] = 2.5
 >>> bodies['ball0'].parentjoint.gvel[4] = -1.
 >>> collision_solver = sphere_sphere_collision
->>> c = SoftFingerContact(w._shapes, 0.1, collision_solver)
->>> w.register(c)
->>> w.init()
->>> w.update_geometric()
->>> w.init_graphic()
->>> time = arange(0,1,1e-3)
->>> world = w
->>> world.init()
->>> previous_t = time[0]
->>> for t in time[1:]:
-...     dt = t - previous_t
-...     world.update_dynamic()
-...     world.update_controllers(dt, t)
-...     world.update_constraints(dt)
-...     world.update_graphic()
-...     world.integrate(dt)
-...     previous_t = t    
+>>> c = SoftFingerContact(world._shapes, 0.1, collision_solver)
+>>> world.register(c)
+>>> simulate(world,  arange(0,1,1e-3))
 
 
 Non-sliding, blocked
 --------------------
 
->>> from arboris.visu_osg import DrawableWorld
->>> from arboris.shapes import Sphere
+>>> from arboris.visu_osg import Drawer
 >>> from arboris.robots.simpleshapes import add_sphere
+>>> from arboris.shapes import Sphere
 >>> from arboris.collisions import sphere_sphere_collision
 >>> from arboris.constraints import SoftFingerContact
->>> from arboris.core import simulate
+>>> from arboris.core import simulate, ObservableWorld
 >>> from numpy import arange
->>> w = DrawableWorld(scale=.1)
->>> add_sphere(world=w, name='ball0')
->>> w.register(Sphere(w.ground))
->>> bodies = w.getbodiesdict()
+>>> world = ObservableWorld()
+>>> world.observers.append(Drawer(world, scale=.1))
+>>> add_sphere(world, name='ball0')
+>>> world.register(Sphere(world.ground))
+>>> bodies = world.getbodiesdict()
 >>> bodies['ball0'].parentjoint.gpos[1,3] = 2.5
 >>> bodies['ball0'].parentjoint.gvel[4] = -1.
 >>> collision_solver = sphere_sphere_collision
->>> c = SoftFingerContact(w._shapes, 0.1, collision_solver)
->>> w.register(c)
->>> w.init()
->>> w.update_geometric()
->>> w.init_graphic()
->>> time = arange(0,1,1e-3)
->>> world = w
->>> world.init()
->>> previous_t = time[0]
->>> for t in time[1:]:
-...     dt = t - previous_t
-...     world.update_dynamic()
-...     world.update_controllers(dt, t)
-...     world.update_constraints(dt)
-...     world.update_graphic()
-...     world.integrate(dt)
-...     previous_t = t    
+>>> c = SoftFingerContact(world._shapes, 0.1, collision_solver)
+>>> world.register(c)
+>>> simulate(world,  arange(0,1,1e-3))
 
 
 Sliding, blocked
 ----------------
 
->>> from arboris.visu_osg import DrawableWorld
->>> from arboris.shapes import Sphere
+>>> from arboris.visu_osg import Drawer
 >>> from arboris.robots.simpleshapes import add_sphere
+>>> from arboris.shapes import Sphere
 >>> from arboris.collisions import sphere_sphere_collision
 >>> from arboris.constraints import SoftFingerContact
->>> from arboris.core import simulate
+>>> from arboris.core import simulate, ObservableWorld
 >>> from numpy import arange
->>> w = DrawableWorld(scale=.1)
->>> add_sphere(world=w, name='ball0')
->>> w.register(Sphere(w.ground))
->>> bodies = w.getbodiesdict()
+>>> world = ObservableWorld()
+>>> world.observers.append(Drawer(world, scale=.1))
+>>> add_sphere(world, name='ball0')
+>>> world.register(Sphere(world.ground))
+>>> bodies = world.getbodiesdict()
 >>> bodies['ball0'].parentjoint.gpos[2,3] = 1.99
 >>> bodies['ball0'].parentjoint.gpos[1,3] = 0.5
 >>> bodies['ball0'].parentjoint.gvel[4] = -1.
 >>> collision_solver = sphere_sphere_collision
->>> c = SoftFingerContact(w._shapes, 0.1, collision_solver)
->>> w.register(c)
->>> w.init()
->>> w.update_geometric()
->>> w.init_graphic()
->>> time = arange(0,1.5,1e-3)
->>> world = w
->>> world.init()
->>> previous_t = time[0]
->>> for t in time[1:]:
-...     dt = t - previous_t
-...     world.update_dynamic()
-...     world.update_controllers(dt, t)
-...     world.update_constraints(dt)
-...     world.update_graphic()
-...     world.integrate(dt)
-...     previous_t = t    
-
+>>> c = SoftFingerContact(world._shapes, 0.1, collision_solver)
+>>> world.register(c)
+>>> simulate(world,  arange(0,1,1e-3))
