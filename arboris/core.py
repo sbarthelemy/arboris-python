@@ -37,6 +37,16 @@ class NamedObject(object):
 
     def __init__(self, name=None):
         self.name = name
+    
+    def __repr__(self):
+        if self.name is None:
+            return object.__repr__(self)
+        else:
+            return '<{0}.{1} object named "{2}" at "{3}")>'.format(
+                self.__class__.__module__,
+                self.__class__.__name__,
+                self.name, 
+                hex(id(self)))
 
 class DuplicateNameError(Exception):
     pass
