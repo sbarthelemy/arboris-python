@@ -33,9 +33,6 @@ class EnergyMonitor(WorldObserver):
     def __init__(self, world):
         self._world = world
 
-    def register(self, obj):
-        pass
-
     def init(self):
         self.time = []
         self.kinetic_energy = []
@@ -58,9 +55,6 @@ class EnergyMonitor(WorldObserver):
         Ep *= 9.81
         self.potential_energy.append(Ep)
         self.mechanichal_energy.append(Ec+Ep)
-
-    def finish(self):
-        pass
 
     def plot(self):
         """Plot the energy evolution.
@@ -89,10 +83,10 @@ class PerfMonitor(WorldObserver):
         >>> add_simplearm(w)
         >>> simulate(w, [0,1,2])
         >>> print obs.get_summary() #doctest: +ELLIPSIS
-        total sim time : ... s
-        min step time  : ... s
-        mean step time : ... s
-        max step time  : ... s
+        total computation time (s): ...
+        min computation time (s): ...
+        mean computation time (s): ...
+        max computation time (s): ...
         >>> #obs.plot()
 
     """
@@ -102,37 +96,31 @@ class PerfMonitor(WorldObserver):
         else:
             self._logger = None
         self._last_time = None
-        self._spent_time = []
+        self._computation_time = []
         self._world = world
-
-    def register(self, obj):
-        pass
 
     def init(self):
         self.last_time = _time()
     
     def update(self, dt):
-        self._spent_time.append(_time()-self.last_time)
+        self._computation_time.append(_time()-self.last_time)
         if self._logger is not None:
             self._logger.info('current time: %6.2f %%', 
                               self._world.current_time)
     
-    def finish(self):
-        pass
-
     def plot(self):
         from pylab import plot, show, xlabel, ylabel, title
-        plot(self._spent_time)
-        title('Computation times')
-        xlabel('time step')
+        plot(self._computation_time)
+        title('Computation time for each simulation time step')
+        xlabel('simulation time step')
         ylabel('computation time (s)')
         show()
 
     def get_summary(self):
-        total = sum(self._spent_time)
-        return """total sim time : {0} s
-min step time  : {1} s
-mean step time : {2} s
-max step time  : {3} s""".format(
-    total, min(self._spent_time), total/len(self._spent_time), 
-    max(self._spent_time)) 
+        total = sum(self._computation_time)
+        return """total computation time (s): {0}
+min computation time (s): {1}
+mean computation time (s): {2}
+max computation time (s): {3}""".format(
+    total, min(self._computation_time), total/len(self._computation_time), 
+    max(self._computation_time)) 

@@ -225,7 +225,7 @@ class World(NamedObject):
         NamedObject.__init__(self, name)
         self.ground = Body('ground')
         self._current_time = 0.
-        self._up = array((0,1,0))
+        self._up = array((0., 1., 0.))
         self._controllers = []
         self._constraints = []
         self._subframes = []
@@ -820,6 +820,9 @@ class World(NamedObject):
             j.integrate(dt)
         self._current_time += dt
 
+    def finish(self):
+        pass
+
 
 class SubFrame(NamedObject, Frame):
 
@@ -1145,7 +1148,6 @@ class Body(NamedObject, Frame):
             j._frames[1].body.update_dynamic(child_pose, child_jac, child_djac, 
                                      child_twist)
 
-
 class ObservableWorld(World):
 
     def __init__(self, *positional_args, 
@@ -1183,7 +1185,6 @@ class ObservableWorld(World):
 class WorldObserver(object):
     __metaclass__ = ABCMeta
 
-    @abstractmethod
     def register(self, obj):
         pass
 
@@ -1195,7 +1196,6 @@ class WorldObserver(object):
     def update(self):
         pass
 
-    @abstractmethod
     def finish(self):
         pass
 
@@ -1224,4 +1224,4 @@ def simulate(world, timeline):
         world.update_controllers(dt)
         world.update_constraints(dt)
         world.integrate(dt)
-
+    world.finish()
