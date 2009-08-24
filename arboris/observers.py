@@ -42,7 +42,7 @@ class EnergyMonitor(WorldObserver):
         self._bodies = self._world.ground.iter_descendant_bodies
         for body in self._bodies():
             self._com_pos[body]  = principalframe(body.mass)[:,3]
-    
+
     def update(self, dt):
         self.time.append(self._world.current_time)
         Ec = dot(self._world.gvel, 
@@ -60,9 +60,9 @@ class EnergyMonitor(WorldObserver):
         """Plot the energy evolution.
         """
         from pylab import plot, show, legend, xlabel, ylabel, title, figure
-        plot(self.times, self.kinetic_energy)
-        plot(self.times, self.potential_energy)
-        plot(self.times, self.mechanichal_energy)
+        plot(self.time, self.kinetic_energy)
+        plot(self.time, self.potential_energy)
+        plot(self.time, self.mechanichal_energy)
         legend(('kinetic','potential','mechanical'))
         title('Energy evolution')
         xlabel('time (s)')
@@ -100,14 +100,16 @@ class PerfMonitor(WorldObserver):
         self._world = world
 
     def init(self):
-        self.last_time = _time()
-    
+        self._last_time = _time()
+
     def update(self, dt):
-        self._computation_time.append(_time()-self.last_time)
+        current_time = _time()
+        self._computation_time.append(current_time - self._last_time)
+        self._last_time = current_time
         if self._logger is not None:
-            self._logger.info('current time: %6.2f %%', 
+            self._logger.info('current time (s): %.3f', 
                               self._world.current_time)
-    
+
     def plot(self):
         from pylab import plot, show, xlabel, ylabel, title
         plot(self._computation_time)
@@ -122,5 +124,10 @@ class PerfMonitor(WorldObserver):
 min computation time (s): {1}
 mean computation time (s): {2}
 max computation time (s): {3}""".format(
-    total, min(self._computation_time), total/len(self._computation_time), 
-    max(self._computation_time)) 
+    total, 
+    min(self._computation_time), 
+    total/len(self._computation_time), 
+    max(self._computation_time))
+
+
+
