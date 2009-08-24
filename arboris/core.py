@@ -431,6 +431,12 @@ class World(NamedObject):
         elif isinstance(obj, Constraint):
             if not obj in self._constraints:
                 self._constraints.append(obj)
+                from arboris.constraints import PointContact
+                if isinstance(obj, PointContact):
+                    #TODO: World should not know about PointContact!
+                    self.register(obj._frames[0])
+                    self.register(obj._frames[1])
+
 
         elif isinstance(obj, Controller):
             if not obj in self._controllers:
