@@ -77,6 +77,77 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
+def hsv_to_rgb(hsv):
+    """Convert color from hsv to rgb.
+
+    :param hsv: hsv values (with h in [0..360], s and v in [0..1])
+    :type hsv: 3-tuple of floats (h, s, v)
+    :return rgb: rgb values (with r, g and b in [0..1])
+    :rtype rgb: 3-tuple of floats (r, g, b)
+
+    The algorithm is taken from:
+    http://en.wikipedia.org/wiki/HSL_and_HSV
+
+    **Examples:**
+
+    >>> hsv_to_rgb((360,1.,1.)) # red
+    (1.0, 0.0, 0.0)
+    >>> hsv_to_rgb((360,0.5,1.)) # faded red
+    (1.0, 0.5, 0.5)
+    >>> hsv_to_rgb((360,1.,0.5)) # dark red
+    (0.5, 0.0, 0.0)
+    >>> hsv_to_rgb((120,1.,1)) # green
+    (0.0, 1, 0.0)
+    >>> hsv_to_rgb((240,1.,1)) # blue
+    (0.0, 0.0, 1)
+
+    """
+    from math import floor
+    (h, s, v) = hsv
+    hi = floor(h/60) % 6
+    f = h/60. - floor(h/60)
+    p = v * (1 - s)
+    q = v * (1 - f*s)
+    t = v * (1 - (1-f)*s)
+    if hi == 0:
+        rgb = (v, t, p)
+    elif hi == 1:
+        rgb = (q, v, p)
+    elif hi == 2:
+        rgb = (p, v, t)
+    elif hi == 3:
+        rgb = (p, q, v)
+    elif hi == 4:
+        rgb = (t, p, v)
+    elif hi == 5:
+        rgb = (v, p, q)
+    return rgb
+
+def pose2mat(pose):
+    """Convert an homogeneous transform matrix from python to osg. 
+    
+    The conversion handles the transposition required by osg.
+
+    :param pose: the homogeneous transform matrix.
+    :type pose: (4,4)-shaped ndarray
+
+    **Example:**
+
+    >>> mat = array([[ 1.,  2.,  3.,  4.],
+    ...              [ 5.,  6.,  7.,  8.],
+    ...              [ 9., 10., 11., 12.],
+    ...              [13., 14., 15., 16.]])
+    >>> osg_mat = pose2mat(mat)
+    
+    """
+    m = osg.Matrixd()
+    m.set(pose[0,0], pose[1,0], pose[2,0], pose[3,0],
+          pose[0,1], pose[1,1], pose[2,1], pose[3,1],
+          pose[0,2], pose[1,2], pose[2,2], pose[3,2],
+          pose[0,3], pose[1,3], pose[2,3], pose[3,3],
+          )
+    return m
+
 def align_z_with_vector(vec, transform):
         assert isinstance(transform, osg.PositionAttitudeTransform)
         z = array([0.,0.,1.])
@@ -137,31 +208,6 @@ def draw_frame(length=1., radius=0.05, alpha=1.):
     frame.addChild(trans_y)
     frame.addChild(geo_z)
     return frame
-
-def pose2mat(pose):
-    """Convert an homogeneous transform matrix from python to osg. 
-    
-    The conversion handles the transposition required by osg.
-
-    :param pose: the homogeneous transform matrix.
-    :type pose: (4,4)-shaped ndarray
-
-    **Example:**
-
-    >>> mat = array([[ 1.,  2.,  3.,  4.],
-    ...              [ 5.,  6.,  7.,  8.],
-    ...              [ 9., 10., 11., 12.],
-    ...              [13., 14., 15., 16.]])
-    >>> osg_mat = pose2mat(mat)
-    
-    """
-    m = osg.Matrixd()
-    m.set(pose[0,0], pose[1,0], pose[2,0], pose[3,0],
-          pose[0,1], pose[1,1], pose[2,1], pose[3,1],
-          pose[0,2], pose[1,2], pose[2,2], pose[3,2],
-          pose[0,3], pose[1,3], pose[2,3], pose[3,3],
-          )
-    return m
 
 def draw_line(start, end, radius=0.04, color=None):
     """Draw a line between two points.
@@ -244,37 +290,6 @@ def draw_force(length=1., radius=0.03, alpha=1.):
     geode = osg.Geode()
     geode.addDrawable(cyl)
     return geode
-
-def graphic_options(scale=1.):
-    """Default dictionnary of graphic options.
-    
-    :param scale: the scaling factor
-    :type scale: float
-    :return: scaled graphic options
-    :rtype: dict
-
-    """
-    body_palette = []
-    ncolor = 20
-    for k in range(ncolor):
-        h = 360./ncolor * k
-        body_palette.append(hsv_to_rgb((h, 0.9 , 0.9)))
-    options = {
-        'frame length': 0.08 * scale,
-        'frame radius': 0.005 * scale,
-        'frame alpha': 1.,
-        'link radius': 0.004 * scale,
-        'point radius': 0.008 * scale,
-        'text size': 0.1 * scale,
-        'body palette': body_palette,
-        'fullscreen': False,
-        'window size': (800,600),
-        'window position': (0,0),
-        'center of interest': (0., 0., 0.),
-        'camera position': (3.,3.,3.),
-        'force length': 0.1 * scale,
-        'force radius': 0.002 * scale}
-    return options
 
 class SwitcherVisitor(osg.NodeVisitor):
     def __init__(self, root, node_name, on):
@@ -404,6 +419,38 @@ class JointIkHandler(osgGA.GUIEventHandler):
                 except KeyError:
                     pass
         return False
+
+
+def graphic_options(scale=1.):
+    """Default dictionnary of graphic options.
+    
+    :param scale: the scaling factor
+    :type scale: float
+    :return: scaled graphic options
+    :rtype: dict
+
+    """
+    body_palette = []
+    ncolor = 20
+    for k in range(ncolor):
+        h = 360./ncolor * k
+        body_palette.append(hsv_to_rgb((h, 0.9 , 0.9)))
+    options = {
+        'frame length': 0.08 * scale,
+        'frame radius': 0.005 * scale,
+        'frame alpha': 1.,
+        'link radius': 0.004 * scale,
+        'point radius': 0.008 * scale,
+        'text size': 0.1 * scale,
+        'body palette': body_palette,
+        'fullscreen': False,
+        'window size': (800,600),
+        'window position': (0,0),
+        'center of interest': (0., 0., 0.),
+        'camera position': (3.,3.,3.),
+        'force length': 0.1 * scale,
+        'force radius': 0.002 * scale}
+    return options
 
 
 class Drawer(core.WorldObserver):
@@ -675,54 +722,4 @@ class Drawer(core.WorldObserver):
 
     def finish(self):
         pass
-
-
-def hsv_to_rgb(hsv):
-    """Convert color from hsv to rgb.
-
-    :param hsv: hsv values (with h in [0..360], s and v in [0..1])
-    :type hsv: 3-tuple of floats (h, s, v)
-    :return rgb: rgb values (with r, g and b in [0..1])
-    :rtype rgb: 3-tuple of floats (r, g, b)
-
-    The algorithm is taken from:
-    http://en.wikipedia.org/wiki/HSL_and_HSV
-
-    **Examples:**
-
-    >>> hsv_to_rgb((360,1.,1.)) # red
-    (1.0, 0.0, 0.0)
-    >>> hsv_to_rgb((360,0.5,1.)) # faded red
-    (1.0, 0.5, 0.5)
-    >>> hsv_to_rgb((360,1.,0.5)) # dark red
-    (0.5, 0.0, 0.0)
-    >>> hsv_to_rgb((120,1.,1)) # green
-    (0.0, 1, 0.0)
-    >>> hsv_to_rgb((240,1.,1)) # blue
-    (0.0, 0.0, 1)
-
-    """
-    from math import floor
-    (h, s, v) = hsv
-    hi = floor(h/60) % 6
-    f = h/60. - floor(h/60)
-    p = v * (1 - s)
-    q = v * (1 - f*s)
-    t = v * (1 - (1-f)*s)
-    if hi == 0:
-        rgb = (v, t, p)
-    elif hi == 1:
-        rgb = (q, v, p)
-    elif hi == 2:
-        rgb = (p, v, t)
-    elif hi == 3:
-        rgb = (p, q, v)
-    elif hi == 4:
-        rgb = (t, p, v)
-    elif hi == 5:
-        rgb = (v, p, q)
-    return rgb
-
-
-
 
