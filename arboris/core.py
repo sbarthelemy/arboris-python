@@ -242,30 +242,35 @@ class World(NamedObject):
 
 
     def iterbodies(self):
-        """Iterate over all bodies, with a depth-first strategy"""
+        """Iterate over all bodies, with a depth-first strategy."""
         yield self.ground
         for b in self.ground.iter_descendant_bodies():
             yield b
+    
+    def iterconstraints(self):
+        """Iterate over all constraints."""
+        for obj in self._constraints:
+            yield obj
 
     def itersubframes(self):
-        """Iterate over all subframes"""
+        """Iterate over all subframes."""
         for obj in self._subframes:
             yield obj
 
     def iterframes(self):
-        """Iterate over all subframes"""
+        """Iterate over all frames (bodies and subframes)."""
         for obj in self.iterbodies():
             yield obj
         for obj in self.itersubframes():
             yield obj
 
     def itershapes(self):
-        """Iterate over all shapes"""
+        """Iterate over all shapes."""
         for obj in self._shapes:
             yield obj
 
     def iterjoints(self):
-        """Iterate over all joints, with a depth-first strategy"""
+        """Iterate over all joints, with a depth-first strategy."""
         for j in self.ground.iter_descendant_joints():
             yield j
 

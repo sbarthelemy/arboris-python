@@ -62,10 +62,6 @@ tuned with a dict of options, whose default values are given by the
 :func:`graphic_option` function. The object stores a ref to the arboris
 world in order to update the representation when the bodies move.
 
-The :func:`init_viewer` function creates an OSG Viewer and an OSG
-GUIEventHandler. It is the place where window size, camera position
-and keyboard shortcuts are set.
-
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
               "Joseph SALINI <joseph.salini@gmail.com>")
@@ -74,11 +70,28 @@ import osg, osgDB, osgGA, osgViewer, osgText, osgUtil
 from numpy import pi, arctan2, array, dot, cross, sqrt, eye, cos, sin
 import shapes
 import core
+import constraints
 import homogeneousmatrix as Hg
 import massmatrix
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
+
+def align_z_with_vector(vec, transform):
+        assert isinstance(transform, osg.PositionAttitudeTransform)
+        z = array([0.,0.,1.])
+        length = sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2])
+        if length > 0.:
+            vec = vec/length
+            q = cross(z, vec)
+            sin_theta = sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2])
+            cos_theta = dot(z, vec)
+            theta = arctan2(sin_theta, cos_theta)
+            if sin_theta == 0.:
+                transform.setAttitude(osg.Quat(theta, osg.Vec3d(1.,0.,0.)))
+            else:
+                transform.setAttitude(
+                    osg.Quat(theta, osg.Vec3d(q[0], q[1], q[2])))
 
 def draw_frame(length=1., radius=0.05, alpha=1.):
     """Draw a frame, as 3 cylinders.
@@ -167,13 +180,13 @@ def draw_line(start, end, radius=0.04, color=None):
 
     **Example:**
 
-    >>> draw_line(array((1.,2.,3.)), array((4.,5.,6.)), radius=.5) #doctest: +ELLIPSIS
+    >>> draw_line((1.,2.,3.), (4.,5.,6.), radius=.5) #doctest: +ELLIPSIS
     <osg.PositionAttitudeTransform; proxy of <Swig Object of type 'osg::PositionAttitudeTransform *' at 0x...> >
 
     TODO: raise an exception when start==end?
 
     """
-    v = end - start
+    v = array((end[0] - start[0], end[1] - start[1], end[2] - start[2]))
     length = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
     if length != 0.:
         v = v/length
@@ -182,20 +195,11 @@ def draw_line(start, end, radius=0.04, color=None):
             osg.Cylinder(osg.Vec3(0., 0., length/2), radius, length))
         if color is not None:
             cyl.setColor(color)
-        geo = osg.Geode()
-        geo.addDrawable(cyl)
+        geode = osg.Geode()
+        geode.addDrawable(cyl)
         line = osg.PositionAttitudeTransform()
-        line.setPosition(osg.Vec3d(start[0], start[1], start[2]))
-        z = array([0.,0.,1.])
-        q = cross(z, v)
-        sin_theta = sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2])
-        cos_theta = dot(z, v)
-        theta = arctan2(sin_theta, cos_theta)
-        if sin_theta == 0.:
-            line.setAttitude(osg.Quat(theta, osg.Vec3d(1.,0.,0.)))
-        else:
-            line.setAttitude(osg.Quat(theta, osg.Vec3d(q[0], q[1], q[2])))
-        line.addChild(geo)
+        align_z_with_vector(v, line)
+        line.addChild(geode)
         return line
     else:
         return None
@@ -218,9 +222,27 @@ def draw_text(label, size=1.):
     text.setText(str(label))
     text.setDrawMode(osgText.Text.TEXT | osgText.Text.BOUNDINGBOX)
     text.setAlignment(osgText.Text.CENTER_TOP)
-    #text.setAxisAlignment(osgText.Text.SCREEN) # un-comment for HUD version
     geode = osg.Geode()
     geode.addDrawable(text)
+    return geode
+
+def draw_force(length=1., radius=0.03, alpha=1.):
+    """Draw a force as a cylinder.
+
+    :param length: the cylinder length
+    :type length: float
+    :param radius: the cylinder radius
+    :type radius: float
+    :param alpha: the cylinders alpha value
+    :type alpha: float
+    :rtype: osg.Geode
+    
+    """
+    cyl = osg.ShapeDrawable(osg.Cylinder(
+        osg.Vec3(0.,0.,length/2.), radius, length))
+    cyl.setColor(osg.Vec4(1.,0.,0.,alpha))
+    geode = osg.Geode()
+    geode.addDrawable(cyl)
     return geode
 
 def graphic_options(scale=1.):
@@ -244,314 +266,59 @@ def graphic_options(scale=1.):
         'link radius': 0.004 * scale,
         'point radius': 0.008 * scale,
         'text size': 0.1 * scale,
-        'body palette': body_palette}
+        'body palette': body_palette,
+        'fullscreen': False,
+        'window size': (800,600),
+        'window position': (0,0),
+        'center of interest': (0., 0., 0.),
+        'camera position': (3.,3.,3.),
+        'force length': 0.1 * scale,
+        'force radius': 0.002 * scale}
     return options
 
+class SwitcherVisitor(osg.NodeVisitor):
+    def __init__(self, root, node_name, on):
+        assert isinstance(root, osg.Node)
+        osg.NodeVisitor.__init__(self, osg.NodeVisitor.NODE_VISITOR,
+                                 osg.NodeVisitor.TRAVERSE_ALL_CHILDREN)
+        self._root = root
+        self._node_name = node_name
+        self._on = on
 
-class WorldDrawer(object):
-    """Draw the world, creating OSG nodes.
+    def toggle(self):
+        self._on = not(self._on)
+        self._root.accept(self)
 
-    **Attributes:**
-    - :attr:`root`: the root node of the OSG scene,
-    - :attr:`transforms`: a dictionnary of tranform nodes corresponding to and
-      indexed by :class:`core.Frame` objects,
-    - :attr:`switches`: a dictionnary indexed by arboris objects, whose values
-      are dictionnaries too. These latter dictionaries values are OSG switches
-      (which switch on/off the display of their children), while their keys 
-      are strings, explaining what is displayed (``name``, 
-      ``inertia ellipsoid``...).
-
-    **Methods:**
-    - :meth:`__init__` creates ``root`` OSG node, get the graphic options
-      (colors, sizes...) and do house keeping. If the ``world`` parameter is
-      given, it we be converted to OSG nodes (it calls :meth:`init`). 
-    - :meth:`init` converts the ``world`` to osg nodes 
-      (it calls :meth:`register`).
-    - :meth:`register` converts a single arboris object ``obj`` to zero or more
-      OSG nodes. It populates :attr:`transforms`:
-    
-    """
-
-    def __init__(self, world=None, scale=1., options=None):
-        if options is None:
-            self._options = graphic_options(scale)
-        else:
-            self._options = options
-        self.root = osg.Group()
-        # enable the transparency/alpha
-        blend = osg.StateSet()
-        blend.setMode(osg.GL_BLEND, osg.StateAttribute.ON)
-        self.root.setStateSet(blend)
-        
-        self._generic_frame = draw_frame(
-            length=self._options['frame length'],
-            radius=self._options['frame radius'],
-            alpha=self._options['frame alpha'])
-        self._body_colors = {}
-        self.transforms = {}
-        self.switches = {}
-        self.is_displayed = {
-            'frame': True,
-            'inertia ellipsoid': False,
-            'link': True,
-            'name': False,
-            'shape': True}
-        if world is not None:
-            self.init(world)
-
-    def init(self, world):
-        self.world = world
-        for obj in self.world.iterbodies():
-            self.register(obj)
-        for obj in self.world.itersubframes():
-            self.register(obj)
-        for obj in self.world.itershapes():
-            self.register(obj)
-
-    def _choose_color(self, body, alpha=1.):
-        """Select a colour in the palette for the body.
-        """
-        if body in self._body_colors:
-            color = self._body_colors[body]
-        else:
-            try:
-                c = self._options['body palette'].pop()
-                color = osg.Vec4(c[0], c[1], c[2], alpha)
-                self._body_colors[body] = color
-            except IndexError:
-                color = osg.Vec4(1., 1., 1., alpha)
-        return color
-
-    def register(self, obj):
-        """Given an arboris obect ``obj`` as input, this method
-        return a dictionnary of OSG nodes for the rendering of 
-        ``obj``. I also returns a dictionary of osg switches, in
-        order to make it possible to disable the rendering of some nodes.
-        Each node is the child of its corresponding switch.
-
-        If the optional ``parent`` argument is given, the switches are its
-        children
-
-        for instance, if ``obj`` is an instance of 
-        :class:`arboris.core.SubFrame`, and ``parent`` is given, it will 
-        result in the following tree::
-
-            parent
-              |
-              +-----------------+------------------+
-              |                 |                  |
-            switches['name']  switches['frame']  switches['link']
-              |                 |                  |
-            nodes['name']     nodes['frame']     nodes['link']
-
-        - ``name`` for any instance of the :class:`arboris.core.NamedObject` class
-        - ``frame`` for objects of the :class:`arboris.core.Frame` class
-        - ``link`` lines for skeletton-like view
-        - ``shapes`` the basic shapes (:class:`arboris.core.Shape`) 
-          used in the simulation for contact detection
-        - ``geometry``
-        - ``cog``
-
-        """
-
-        # create a transform for the frames (instances of 
-        # the Body and Subframe classes)
-        if isinstance(obj, core.Frame):
-            if obj in self.transforms:
-                pass
+    def apply_Switch(self, node):
+        if self._node_name == node.getName():
+            if self._on:
+                node.setAllChildrenOn()
             else:
-                t = osg.MatrixTransform()
-                self.transforms[obj] = t
-                if isinstance(obj, core.Body):
-                    self.root.addChild(t)
-                elif isinstance(obj, core.SubFrame):
-                    self.transforms[obj.body].addChild(t)
-                else:
-                    raise NotImplemented()
-                
-        # create other nodes
-        if obj in self.switches:
-            pass
+                node.setAllChildrenOff()
         else:
-            switches = {}
-            opts = self._options
-            if isinstance(obj, core.SubFrame):
-                parent = self.transforms[obj]
-                color = self._choose_color(obj.body)
-                nl = draw_line((0,0,0),
-                               -dot(obj.bpose[0:3,0:3].T, obj.bpose[0:3,3]),
-                               opts['link radius'], color)
-                switches['link'] = osg.Switch()
-                switches['link'].addChild(nl)
-            elif isinstance(obj, core.Body):
-                parent = self.transforms[obj]
-                color = self._choose_color(obj)
-                Mb = obj.mass
-                if Mb[5,5] != 0:
-                    # MatrixTransform() # position
-                    #  |
-                    # PositionAttitudeTransform() # global scaling
-                    #  |
-                    # PositionAttitudeTransform() # ellispoid axis scale
-                    #  |
-                    # Geode()
-                    #  |
-                    # Sphere()
-                    #
-                    
-                    bHg = massmatrix.principalframe(Mb)
-                    Mg = massmatrix.transport(Mb, bHg)
-                    shape = osg.ShapeDrawable(
-                        osg.Sphere(osg.Vec3(0.,0.,0.), 1.))
-                    shape.setColor(color)
-                    shape_geo = osg.Geode()
-                    shape_geo.addDrawable(shape)
-                    scale_node = osg.PositionAttitudeTransform()
-                    scale_node.setScale(osg.Vec3d(Mg[0,0], Mg[1,1], Mg[2,2]))
-                    scale_node.addChild(shape_geo)
-                    gen_scale_node = osg.PositionAttitudeTransform()
-                    gen_scale_node.addChild(scale_node)
-                    pos_node = osg.MatrixTransform()
-                    pos_node.setMatrix(pose2mat(bHg))
-                    pos_node.addChild(gen_scale_node)
-                    switches['inertia ellipsoid'] = osg.Switch()
-                    switches['inertia ellipsoid'].addChild(pos_node)
-            elif isinstance(obj, core.Shape):
-                parent = self.transforms[obj.frame]
-                color = self._choose_color(obj.frame.body)
-                if isinstance(obj, shapes.Sphere):
-                    shape = osg.ShapeDrawable(
-                        osg.Sphere(osg.Vec3(0.,0.,0.), obj.radius))
-                elif isinstance(obj, shapes.Point):
-                    shape = osg.ShapeDrawable(
-                        osg.Sphere(osg.Vec3(0.,0.,0.), 
-                                   self._options['point radius']))
-                elif isinstance(obj, shapes.Box):
-                    shape = osg.ShapeDrawable(
-                        osg.Box(osg.Vec3(0.,0.,0.), obj.lengths[0], 
-                                obj.lengths[1], obj.lengths[2]))
-                elif isinstance(obj, shapes.Cylinder):
-                    shape = osg.ShapeDrawable(
-                        osg.Cylinder(osg.Vec3(0.,0.,0.),
-                                     obj.radius, obj.length))
-                else:
-                    raise NotImplemented("Cannot draw this shape")
-                shape.setColor(color)
-                switches['shape'] = osg.Switch()
-                geode =  osg.Geode()
-                geode.addDrawable(shape)
-                switches['shape'].addChild(geode)
-            #elif isinstance(obj, str):
-                # TODO handle exceptions here
-                #parent = self.transforms[obj]
-                #nodes['geometry'] = osg.PositionAttitudeTransform()
-                #nodes['geometry'].addChild(osgDB.readNodeFile(obj))
-                #nodes['geometry'].setScale(osg.Vec3d(.003,.003,.003)) #TODO: DELETE THIS LINE LATER
-                #switches['geometry'] = osg.Switch()
-            elif isinstance(obj, core.Joint) or \
-                isinstance(obj, core.Constraint) or \
-                isinstance(obj, core.Controller):
-                parent = None
-            else:
-                raise NotImplemented(obj)
-
-            if isinstance(obj, core.NamedObject) and (obj.name is not None):
-                switches['name'] = osg.Switch()
-                switches['name'].addChild(
-                    draw_text(obj.name, opts['text size']))
-            if isinstance(obj, core.Frame):
-                switches['frame'] = osg.Switch()
-                switches['frame'].addChild(self._generic_frame)
-            if (parent is not None) and (len(switches) != 0):
-                self.switches[obj] = {}
-                for key, val in switches.items():
-                    parent.addChild(val)
-                    self.switches[obj][key] = val
-                    if self.is_displayed[key]:
-                        val.setAllChildrenOn()
-                    else:
-                        val.setAllChildrenOff()
-
-    def update(self):
-        for obj in self.world.itersubframes():
-            self.transforms[obj].setMatrix(pose2mat(obj.bpose))
-        for obj in self.world.iterbodies():
-            self.transforms[obj].setMatrix(pose2mat(obj.pose))
-
-    def switch(self, nodetype):
-        self.is_displayed[nodetype] = not(self.is_displayed[nodetype])
-        for sw in self.switches.itervalues():
-            if nodetype in sw:
-                if self.is_displayed[nodetype]:
-                    sw[nodetype].setAllChildrenOn()
-                else:
-                    sw[nodetype].setAllChildrenOff()
-    
-def init_viewer(drawer, fullscreen=False, window=(0,0,800,600), 
-                coi=(0,0,0), camera=(3,3,3), up=(0,1,0)):
-        # create the osg viewer:
-        viewer = osgViewer.Viewer()
-        viewer.setSceneData(drawer.root)
-        #fill the osgViewer:
-        manipulator = osgGA.TrackballManipulator()
-        viewer.setCameraManipulator(manipulator)
-        #we set the position of the camera/view
-        manipulator.setHomePosition(
-            osg.Vec3d(coi[0]+camera[0], coi[1]+camera[1], coi[2]+camera[2]),
-            osg.Vec3d(coi[0], coi[1], coi[2]),
-            osg.Vec3d(up[0], up[1], up[2]))     
-        #check if we want to see simulation in a window
-        if fullscreen is False:
-            if len(window) == 2:
-                viewer.setUpViewInWindow(0.,0.,window[0], window[1])
-            elif len(window) == 4:
-                viewer.setUpViewInWindow(window[0], window[1], 
-                                        window[2], window[3])
-        viewer.home()
-        kbh = SwitcherHandler(drawer)
-        viewer.addEventHandler(kbh.__disown__())
-        return viewer
+            self.traverse(node)
 
 
 class SwitcherHandler(osgGA.GUIEventHandler):
     """Switches parts of the display on/off according to keys pressed.
     """
-    def __init__(self, drawer):
+    def __init__(self):
         osgGA.GUIEventHandler.__init__(self)
-        self._drawer = drawer
         self._logger = logging.getLogger(self.__class__.__name__)
+        self._actions = {}
+
+    def add_action(self, key, callback):
+        self._actions[key] = callback
 
     def handle(self, ea, aa, obj, nv):
-
-        def _update_action(action, drawer):
-            if action is not None:
-                if action == ord('f'):
-                    drawer.switch('frame')
-                elif action == ord('l'):
-                    drawer.switch('link')
-                elif action == ord('n'):
-                    drawer.switch('name')
-                elif action == ord('g'):
-                    drawer.switch('shape')
-                elif action == ord('i'):
-                    drawer.switch('inertia ellipsoid')
-                elif action == 65362: # up
-                    drawer.move_frame([1,0,0,0,0,0])
-                elif action == 65364: # down
-                    drawer.move_frame([-1,0,0,0,0,0])
-                elif action == 65361: # left
-                    drawer.move_frame([0,0,0,0,0,-1])
-                elif action == 65363: # right
-                    drawer.move_frame([0,0,0,0,0,1])
-
         eventtype = ea.getEventType()
         if eventtype == ea.KEYDOWN:
-            action = ea.getKey()
-            if action < 256:
-                self._logger.info('action %d: %s', action, chr(action))
-            else:
-                self._logger.info('action %d', action)
-            _update_action(action, self._drawer)
+            key = ea.getKey()
+            self._logger.info('key %d pressed', key)
+            try:
+                self._actions[key]()
+            except KeyError:
+                pass
         return False
 
 
@@ -639,26 +406,272 @@ class JointIkHandler(osgGA.GUIEventHandler):
         return False
 
 
-class DrawerObserver(core.WorldObserver):
+class Drawer(core.WorldObserver):
+    """Draw the world, creating OSG nodes.
 
-    def __init__(self, world, scale=1.,options=None):
-        self._drawer = WorldDrawer(world=world, scale=1., options=options)
+    **Attributes:**
+    - :attr:`root`: the root node of the OSG scene,
+    - :attr:`frames`: a dictionnary of tranform nodes corresponding to
+      and indexed by :class:`core.Frame` objects,
+    - :attr:`constraint_forces` and :attr:`constraints_moment`: 
+      dictionnaries of tranform nodes corresponding to and indexed by
+      :class:`core.Constraint` objects,
+
+    **Methods:**
+    - :meth:`__init__` creates ``root`` OSG node, get the graphic options
+      (colors, sizes...) and do house keeping. If the ``world`` parameter is
+      given, it will be converted to OSG nodes (it calls :meth:`init`). 
+    - :meth:`init` converts the ``world`` to osg nodes 
+      (it calls :meth:`register`).
+    - :meth:`register` converts a single arboris object ``obj`` to zero or more
+      OSG nodes.
+    
+    """
+
+    def __init__(self, world, scale=1., options=None, viewer=None):
+        if options is None:
+            self._options = graphic_options(scale)
+        else:
+            self._options = options
+        self.root = osg.Group()
+        # enable the transparency/alpha:
+        blend = osg.StateSet()
+        blend.setMode(osg.GL_BLEND, osg.StateAttribute.ON)
+        self.root.setStateSet(blend)
+        
+        self._generic_frame = draw_frame(
+            length=self._options['frame length'],
+            radius=self._options['frame radius'],
+            alpha=self._options['frame alpha'])
+        self._generic_force = draw_force(
+            length= self._options['force length'],
+            radius = self._options['force radius'])
+        self._body_colors = {}
+        self.registered = []
+        self.frames = {}
+        self.constraint_forces = {}
         self._world = world
-    def register(self, obj):
-        self._drawer.register(obj)
+        self.register(self._world.ground)
+        if viewer is None:
+            # create the osg viewer:
+            self.viewer = osgViewer.Viewer()
+            self.viewer.setSceneData(self.root)
+            manipulator = osgGA.TrackballManipulator()
+            self.viewer.setCameraManipulator(manipulator)
+            # set the position of the camera/view:
+            coi = map(float, self._options['center of interest'])
+            cam = map(float, self._options['camera position'])
+            up = map(float, self._world.up)
+            manipulator.setHomePosition(
+                osg.Vec3d(coi[0]+cam[0], coi[1]+cam[1], coi[2]+cam[2]),
+                osg.Vec3d(coi[0], coi[1], coi[2]),
+                osg.Vec3d(up[0], up[1], up[2]))
+            # setup the window:
+            if self._options['fullscreen'] is False:
+                window_size = self._options['window size']
+                window_pos = self._options['window position']
+                self.viewer.setUpViewInWindow(
+                    window_pos[0], window_pos[1], 
+                    window_size[0], window_size[1])
+            self.viewer.home()
+        else:
+            self.viewer = viewer
+        # add an handler for GUI Events (will toggle display on/off):
+        self.handler = SwitcherHandler()
+        self.viewer.addEventHandler(self.handler.__disown__())
+
+    def _choose_color(self, body, alpha=1.):
+        """Select a colour in the palette for the body.
+        """
+        if body in self._body_colors:
+            color = self._body_colors[body]
+        else:
+            try:
+                c = self._options['body palette'].pop()
+                color = osg.Vec4(c[0], c[1], c[2], alpha)
+                self._body_colors[body] = color
+            except IndexError:
+                color = osg.Vec4(1., 1., 1., alpha)
+        return color
+
+    def _register(self, obj):
+        """Given an arboris obect ``obj`` as input, this method
+        return a dictionnary of OSG nodes for the rendering of 
+        ``obj``. I also returns a dictionary of osg switches, in
+        order to make it possible to disable the rendering of some nodes.
+        Each node is the child of its corresponding switch.
+
+        If the optional ``parent`` argument is given, the switches are its
+        children
+
+        for instance, if ``obj`` is an instance of 
+        :class:`arboris.core.SubFrame`, and ``parent`` is given, it will 
+        result in the following tree::
+
+            parent
+              |
+              +-----------------+------------------+
+              |                 |                  |
+            switches['name']  switches['frame']  switches['link']
+              |                 |                  |
+            nodes['name']     nodes['frame']     nodes['link']
+
+        - ``name`` for any instance of the :class:`arboris.core.NamedObject` class
+        - ``frame`` for objects of the :class:`arboris.core.Frame` class
+        - ``link`` lines for skeletton-like view
+        - ``shapes`` the basic shapes (:class:`arboris.core.Shape`) 
+          used in the simulation for contact detection
+        - ``geometry``
+        - ``cog``
+
+        """
+        if obj in self.registered:
+            pass
+        else:
+            self.registered.append(obj)
+            opts = self._options
+
+            def _add_switch(parent, child, name):
+                switch = osg.Switch()
+                parent.addChild(switch)
+                switch.addChild(child)
+                switch.setName(name)
+
+            if isinstance(obj, core.Frame):
+                # create a transform for the frames (instances of 
+                # the Body and Subframe classes)
+                t = osg.MatrixTransform()
+                self.frames[obj] = t
+                # draw the frame name:
+                _add_switch(t, draw_text(obj.name, opts['text size']), 'name')
+                # draw the frame basis:
+                _add_switch(t, self._generic_frame, 'frame')
+                if isinstance(obj, core.Body):
+                    self.root.addChild(t)
+                    if obj.mass[5,5] != 0:
+                        # draw the body inertia ellipsoid.
+                        #
+                        # MatrixTransform() # position
+                        #  |
+                        # PositionAttitudeTransform() # ellispoid axis scale
+                        #  |
+                        # Geode()
+                        #  |
+                        # Sphere()
+                        #
+                        Mb = obj.mass
+                        color = self._choose_color(obj)
+                        bHg = massmatrix.principalframe(Mb)
+                        Mg = massmatrix.transport(Mb, bHg)
+                        shape = osg.ShapeDrawable(
+                            osg.Sphere(osg.Vec3(0.,0.,0.), 1.))
+                        shape.setColor(color)
+                        shape_geo = osg.Geode()
+                        shape_geo.addDrawable(shape)
+                        scale_node = osg.PositionAttitudeTransform()
+                        scale_node.setScale(
+                            osg.Vec3d(Mg[0,0], Mg[1,1], Mg[2,2]))
+                        scale_node.addChild(shape_geo)
+                        gen_scale_node = osg.PositionAttitudeTransform()
+                        gen_scale_node.addChild(scale_node)
+                        pos_node = osg.MatrixTransform()
+                        pos_node.setMatrix(pose2mat(bHg))
+                        pos_node.addChild(gen_scale_node)
+                        _add_switch(self.frames[obj], pos_node, 
+                                    'inertia ellipsoid')
+                elif isinstance(obj, core.SubFrame):
+                    self.frames[obj.body].addChild(t)
+                    # draw a line between the subframe and its parent:
+                    color = self._choose_color(obj.body)
+                    nl = draw_line((0,0,0),
+                               -dot(obj.bpose[0:3,0:3].T, obj.bpose[0:3,3]),
+                               opts['link radius'], color)
+                    _add_switch(self.frames[obj], nl, 'link')
+            elif isinstance(obj, constraints.SoftFingerContact):
+                t = osg.PositionAttitudeTransform()
+                self.constraint_forces[obj] = t
+                _add_switch(self.frames[obj._frames[0]],t,"constraint force")
+                t.addChild(self._generic_force)
+            elif isinstance(obj, core.Shape):
+                color = self._choose_color(obj.frame.body)
+                if isinstance(obj, shapes.Sphere):
+                    shape = osg.ShapeDrawable(
+                        osg.Sphere(osg.Vec3(0.,0.,0.), obj.radius))
+                elif isinstance(obj, shapes.Point):
+                    shape = osg.ShapeDrawable(
+                        osg.Sphere(osg.Vec3(0.,0.,0.), 
+                                   self._options['point radius']))
+                elif isinstance(obj, shapes.Box):
+                    shape = osg.ShapeDrawable(
+                        osg.Box(osg.Vec3(0.,0.,0.), obj.lengths[0], 
+                                obj.lengths[1], obj.lengths[2]))
+                elif isinstance(obj, shapes.Cylinder):
+                    shape = osg.ShapeDrawable(
+                        osg.Cylinder(osg.Vec3(0.,0.,0.),
+                                     obj.radius, obj.length))
+                else:
+                    raise NotImplemented("Cannot draw this shape")
+                shape.setColor(color)
+                switch = osg.Switch()
+                self.frames[obj.frame].addChild(switch)
+                geode =  osg.Geode()
+                geode.addDrawable(shape)
+                switch.addChild(geode)
+                switch.setName('shape')
+            elif isinstance(obj, core.Joint) or \
+                isinstance(obj, core.Constraint) or \
+                isinstance(obj, core.Controller):
+                pass
+            else:
+                raise NotImplemented(obj)
 
     def init(self):
         self._world.update_geometric() #TODO find a way to remove this
-        self._drawer.init(self._world)
-        self._viewer = init_viewer(self._drawer)
-        self._viewer.realize()
+        for obj in self._world.iterbodies():
+            self._register(obj)
+        for obj in self._world.itersubframes():
+            self._register(obj)
+        for obj in self._world.itershapes():
+            self._register(obj)
+        for obj in self._world._constraints:
+            self._register(obj)
+        for key, name, on in (
+            (ord('f'), 'frame', True),
+            (ord('i'), 'inertia ellipsoid', False),
+            (ord('l'), 'link', True),
+            (ord('n'), 'name', False),
+            (ord('g'), 'shape', True)):
+            visitor = SwitcherVisitor(self.root, name, on)
+            self.root.accept(visitor)
+            self.handler.add_action(key, visitor.toggle)
 
-    def update(self, dt):
-        self._drawer.update()
-        self._viewer.frame()
+    def update(self, dt=None):
+        for obj in self._world.itersubframes():
+            self.frames[obj].setMatrix(pose2mat(obj.bpose))
+        for obj in self._world.iterbodies():
+            self.frames[obj].setMatrix(pose2mat(obj.pose))
+        for obj in self._world.iterconstraints():
+            sw = self.constraint_forces[obj].getParent(0)
+            sw = sw.asSwitch()
+            if obj.is_active():
+                from numpy.linalg import norm
+
+ 
+                # scale the generic_force according to the force
+                # norm. We constraint the scaling to be in [0.1, 10]
+                scale = min(10., max(0.1, norm(obj._force[1:4])/100))
+                self.constraint_forces[obj].setScale(
+                    osg.Vec3d(scale,scale,scale))
+                align_z_with_vector(obj._force[1:4],
+                                    self.constraint_forces[obj])
+                sw.setAllChildrenOn()
+            else:
+                sw.setAllChildrenOff()
+                
+        self.viewer.frame()
 
     def done(self):
-        return self._viewer.done()
+        return self.viewer.done()
 
     def finish(self):
         pass

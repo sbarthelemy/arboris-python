@@ -69,3 +69,27 @@ Sliding, blocked
 >>> c = SoftFingerContact(world._shapes, 0.1, collision_solver)
 >>> world.register(c)
 >>> simulate(world,  arange(0,1,1e-3))
+
+Sphere-box with gravity
+-----------------------
+
+>>> from arboris.visu_osg import Drawer
+>>> from arboris.robots.simpleshapes import add_sphere
+>>> from arboris.shapes import Box
+>>> from arboris.collisions import box_sphere_collision
+>>> from arboris.constraints import SoftFingerContact
+>>> from arboris.core import simulate, ObservableWorld
+>>> from arboris.controllers import WeightController
+>>> from numpy import arange
+>>> world = ObservableWorld()
+>>> world.observers.append(Drawer(world, scale=1))
+>>> world.register(Box(world.ground))
+>>> world.register(WeightController(world))
+>>> add_sphere(world, name='ball0')
+>>> bodies = world.getbodiesdict()
+>>> bodies['ball0'].parentjoint.gpos[1,3] = 1.55
+>>> bodies['ball0'].parentjoint.gvel[4] = -1.
+>>> collision_solver = box_sphere_collision
+>>> c = SoftFingerContact(world._shapes, 0.1, collision_solver)
+>>> world.register(c)
+>>> simulate(world,  arange(0,0.7,1e-3))
