@@ -3,37 +3,46 @@
 """
 __author__ = ("Joseph Salini <joseph.salini@gmail.com>")
 
-from arboris.core import World, Controller
-from arboris.homogeneousmatrix import iadjoint, transl
+from arboris.core import World, Controller, Frame
 from cvxmod import param, optvar, matrix, norm2, problem, minimize
 from numpy import array, zeros, dot, sqrt
 
+class Task(object):
+    
+    def __init__(self, controlled_frame, target_frame, world):
+        assert isinstance(controlled_frame, Frame)
+        assert isinstance(target_frame, Frame)
+        self._controlled_frame = controlled_frame
+        self._target_frame = target_frame
+        self._world = world #TODO: remove
+        
+    def cost(self, dgvel):
+        """Returns the cost function of the task.
+        
+        TODO: add a (possibly singular) weighting matrix (thus allow to control the orientation)
+        
+        """
+        J_ = self._controlled_frame.jacobian[3:6,:]
+        J = param(value=matrix(J_))
+        dJ = self._controlled_frame.djacobian[3:6,:]
+        gvel = self._world.gvel
+        Pdes = self._target_frame.pose[0:3,3]
+        cf = self._controlled_frame
+        dVdes = 10.*dot(cf.pose[0:3,0:3].T, Pdes - cf.pose[0:3,3]) -\
+            2.*sqrt(10.)*dot(J_, self._world.gvel)
+        return norm2(J*dgvel + param(value=matrix(dot(dJ, gvel) - dVdes)))
+
+    
 class BalanceController(Controller):
 
-    def __init__(self, world, name=None):
+    def __init__(self, world, tasks=[], name=None):
         assert isinstance(world, World)
         Controller.__init__(self, name=name)
         self.world = world
         self.frames = self.world.getframesdict()
         self._rec_tau = [] #TODO: move this elsewhere
-        
-    def _opt_params(self, Pdes, frame):
-        """Return the cvxmod parameters corresponding to the dynamical model.
-        """
-    
-        # vars with a _ suffix are numerical
-        M = param('M', value=matrix(self.world.mass))
-        N = param('N', value=matrix(self.world.nleffects))
-        J_ = dot(iadjoint(transl(0,0,0)), frame.jacobian)[3:6,:]
-        J = param('J', value=matrix(J_))
-        dJ = param('dJ', value=matrix(dot(iadjoint(transl(0,0,0)), 
-                                          frame.djacobian)[3:6,:]))
-        dTdes_ = 10.*dot(frame.pose[0:3,0:3].T, 
-                         Pdes - frame.pose[0:3,3]) -\
-                         2.*sqrt(10.)*dot(J_, self.world.gvel)
-        dTdes = param('dTdes', value=matrix(dTdes_))
-        return (M, N, J, dJ, dTdes)
-    
+        self._tasks = tasks
+
     def init(self, world):
         self._wndof = world.ndof
     
@@ -52,13 +61,8 @@ class BalanceController(Controller):
         
         self.solve_LQP()
 
-        # task frame:
-        f = self.frames['EndEffector']      
-        Pdes = self.frames['Target'].pose[0:3,3]
-        
-        # params:
-        (M, N, J, dJ, dTdes) = self._opt_params(Pdes, f)
-        
+        M = param('M', value=matrix(self.world.mass))
+        N = param('N', value=matrix(self.world.nleffects))
         # variables:
         dgvel = optvar('dgvel', self._wndof)
         tau   = optvar('tau', self._wndof)
@@ -67,9 +71,12 @@ class BalanceController(Controller):
         taumax = param('taumax', value=matrix(array([10.,10.,10.])))
         
         ### resolution ###
-        Fopti = norm2(tau) + 100.*norm2(J*dgvel + dJ*gvel - dTdes)
-        p = problem(minimize(Fopti))
-        p.constr.append( M*dgvel + N*gvel == tau )
+        cost = norm2(tau)
+        for task in self._tasks:
+            cost += 100. * task.cost(dgvel)
+            
+        p = problem(minimize(cost))
+        p.constr.append(M*dgvel + N*gvel == tau)
         p.constr.append(-taumax <= tau)
         p.constr.append( tau <= taumax)
         p.solve(True)
