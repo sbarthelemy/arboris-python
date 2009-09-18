@@ -55,21 +55,21 @@ def add_simplearm(world, name=None, lengths=(0.5 ,0.4 , 0.2),
 
     # create bodies
     arm = Body(
-        name='Arm',
+        name=name+'Arm',
         mass=transport_mass_matrix(
             mass_parallelepiped(
                 arm_mass, 
                 (arm_length/10,arm_length,arm_length/10)),
                 Hg.transl(0,arm_length/2,0)))
     forearm = Body(
-        name='ForeArm',
+        name=name+'ForeArm',
         mass=transport_mass_matrix(
             mass_parallelepiped(
                 forearm_mass, 
                 (forearm_length/10,forearm_length,forearm_length/10)),
                 Hg.transl(0,forearm_length/2,0)))
     hand = Body(
-        name='Hand',
+        name=name+'Hand',
         mass=transport_mass_matrix(
             mass_parallelepiped(
                 hand_mass, 
@@ -78,7 +78,7 @@ def add_simplearm(world, name=None, lengths=(0.5 ,0.4 , 0.2),
 
 
     # create a joint between the ground and the arm
-    shoulder = RzJoint(name='Shoulder', frames=(w.ground, arm))
+    shoulder = RzJoint(name=name+'Shoulder', frames=(w.ground, arm))
 
     # add the new joint to the world (this will also add arm to w)
     w.register(shoulder)
@@ -86,23 +86,23 @@ def add_simplearm(world, name=None, lengths=(0.5 ,0.4 , 0.2),
     # add a frame to the arm, where the forearm will be anchored
     f = SubFrame(arm,
         Hg.transl(0,arm_length,0),
-        'ElbowBaseFrame')
+        name+'ElbowBaseFrame')
 
     # create a joint between the arm and the forearm
-    elbow = RzJoint(name='Elbow', frames=(f, forearm))
+    elbow = RzJoint(name=name+'Elbow', frames=(f, forearm))
     w.register(elbow)
 
     # add a frame to the forearm, where the hand will be anchored
     f = SubFrame(forearm,
         Hg.transl(0,forearm_length,0),
-        'WristBaseFrame')
+        name+'WristBaseFrame')
 
     # create a joint between the forearm and the hand
-    wrist = RzJoint(name='Wrist', frames=(f, hand))
+    wrist = RzJoint(name=name+'Wrist', frames=(f, hand))
     w.register(wrist)
 
     # create a frame at the end of the hand
-    f = SubFrame(hand, Hg.transl(0,hand_length,0), 'EndEffector')
+    f = SubFrame(hand, Hg.transl(0,hand_length,0), name+'EndEffector')
     w.register(f)
     w.init()
 
