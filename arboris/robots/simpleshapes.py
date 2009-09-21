@@ -7,7 +7,8 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
 from arboris.joints import FreeJoint
 from arboris.shapes import Sphere, Box, Cylinder
-from arboris.core import World, Body
+from arboris.core import World, Body, SubFrame
+from arboris.homogeneousmatrix import transl
 import arboris.massmatrix as massmatrix
 import numpy
 
@@ -74,3 +75,9 @@ def add_cylinder(world, length=1., radius=1., mass=1., name='Cylinder'):
     world.register(s)
     world.init()
     
+def add_groundplane(w, length=(1., .1, 1.) ):
+    """Add a ground plane using a box shape.
+    """
+    frame = SubFrame(w.ground, transl(0., -length[1]/2., 0.) )
+    w.register(frame)
+    w.register(Box(frame, length, 'Ground shape'))

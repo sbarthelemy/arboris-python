@@ -31,7 +31,7 @@ def mass_parallelepiped(m,lengths):
         m/12.*(a**2+b**2),
         m, m, m))
 
-def add_simplearm(world, name=None, lengths=(0.5 ,0.4 , 0.2), 
+def add_simplearm(world, name='', lengths=(0.5 ,0.4 , 0.2), 
                 masses=(1.0, 0.8, 0.2)):
     """Build a  planar 3-R robot.
 

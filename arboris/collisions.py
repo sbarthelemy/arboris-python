@@ -80,7 +80,7 @@ def _normal_to_frame(vec):
     x = H[0:3,0]
     y = H[0:3,1]
     z = H[0:3,2]
-    # z-axis, normal to the tangeant plane:
+    # z-axis, normal to the tangent plane:
     z[:] = vec
     idx = argsort(absolute(z))
     # x axis, normal to z-axis
@@ -132,7 +132,7 @@ def box_point_collision(shapes):
     """
     assert isinstance(shapes[0], Box)
     assert isinstance(shapes[1], Point)
-    return _box_sphere_collision(shapes[0].frame.pose[0:3,3], 
+    return _box_sphere_collision(shapes[0].frame.pose, 
                                     shapes[0].lengths,
                                     shapes[1].frame.pose[0:3,3],
                                     0.)
@@ -264,7 +264,7 @@ def _box_sphere_collision(H_g0, lengths0, p_g1, radius1):
             normal[i] = 1
         else:
             f_0[i-3] = -lengths0[i-3]/2.
-            normal[i] = -1
+            normal[i-3] = -1 #TODO check this line is correct
         f_g = Hg.pdot(H_g0, f_0)
         sdist = -norm(f_g - p_g1)-radius1
     else:

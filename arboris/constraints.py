@@ -56,7 +56,7 @@ class JointLimits(Constraint):
 
     def init(self, world):
         self._jacobian = zeros((1, world.ndof))
-        self._jacobian[0,self._joint._dof] = 1
+        self._jacobian[0, self._joint.dof] = 1
 
     @property
     def jacobian(self):

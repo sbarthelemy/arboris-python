@@ -59,7 +59,7 @@ class EnergyMonitor(WorldObserver):
     def plot(self):
         """Plot the energy evolution.
         """
-        from pylab import plot, show, legend, xlabel, ylabel, title, figure
+        from pylab import plot, show, legend, xlabel, ylabel, title
         plot(self.time, self.kinetic_energy)
         plot(self.time, self.potential_energy)
         plot(self.time, self.mechanichal_energy)
