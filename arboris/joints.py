@@ -12,7 +12,8 @@ class LinearConfigurationSpaceJoint(Joint):
     joints whose space is diffeomorph to the real set.
     """
 
-    def integrate(self, dt):
+    def integrate(self, gvel, dt):
+        self.gvel = gvel
         self.gpos += dt * self.gvel
 
 
@@ -59,8 +60,9 @@ class FreeJoint(Joint):
     def djacobian(self):
         return zeros((6,6))
 
-    def integrate(self, dt):
+    def integrate(self, gvel, dt):
         from twistvector import exp
+        self.gvel = self.gvel
         self.gpos = dot(self.gpos, exp( dt*self.gvel))
 
 class RzRyRxJoint(LinearConfigurationSpaceJoint):

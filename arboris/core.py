@@ -148,7 +148,7 @@ class Joint(RigidMotion, NamedObject):
         pass
 
     @abstractproperty
-    def integrate(self, dt):
+    def integrate(self, gvel, dt):
         pass
 
 
@@ -450,7 +450,6 @@ class World(NamedObject):
             old_ndof = self._ndof
             self._ndof += j.ndof
             j._dof = slice(old_ndof, self._ndof)
-            j._dof = slice(old_ndof, self._ndof)
 
         # Adjust the size of the worldwide model matrices 
         # (we wipe their content)
@@ -461,17 +460,9 @@ class World(NamedObject):
         self._gforce = zeros(self._ndof)
             
         # Init the worldwide generalized velocity vector:
-        # we make self._gvel be a view of a new generalized velocities
-        # vector, of the good size.
         self._gvel = zeros(self._ndof)
-        # Then, copy the content of each joint generalized velocity 
-        # vector to the world one, and then make the joint genralized
-        # velocity vector be a (limited) view of the worldwide one.
-        # Thus the actual velocity data will be shared in memory between 
-        # the world and its joints.
         for j in self.iterjoints():
             self._gvel[j._dof] = j.gvel[:]
-            j.gvel = self._gvel[j._dof]
 
         for c in self._constraints:
             c.init(self)
@@ -556,7 +547,7 @@ class World(NamedObject):
             N &= \sum_b \J[b]_{b/g}^T 
             \left( M_b \; \dJ[b]_{b/g} + N_b \; \J[b]_{b/g}\right)
 
-        If there is no additionnal constraint (such as contacts) nor actuation
+        If there is no additional constraint (such as contacts) nor actuation
         involved, the resulting (free) model is then:
 
         .. math::
@@ -824,7 +815,7 @@ class World(NamedObject):
         self._gvel[:] = dot(self._admittance, 
                             dot(self._mass, self._gvel/dt) + self._gforce)
         for j in self.iterjoints():
-            j.integrate(dt)
+            j.integrate(self._gvel[j.dof], dt)
         self._current_time += dt
 
     def finish(self):
