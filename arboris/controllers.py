@@ -133,10 +133,10 @@ class ProportionalDerivativeController(Controller):
             gvel.append(j.gvel)
         gpos = array(gpos).reshape(self._cndof)
         gvel = array(gvel).reshape(self._cndof)
-        gforce[ix_(self._dof_map)] = \
+        gforce[self._dof_map] = \
                 dot(self.kp, self.gpos_des - gpos) + \
                 dot(self.kd, self.gvel_des)
-        impedance[ix_(self._dof_map)] = -(dt*self.kp+self.kd)
+        impedance[ix_(self._dof_map, self._dof_map)] = -(dt*self.kp+self.kd)
         return (gforce, impedance)
 
 

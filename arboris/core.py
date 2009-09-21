@@ -14,15 +14,14 @@ of the tree (which is body called "ground")).
 One or more frames (instances of the :class:`SubFrame` class) can be associated to bodies and serve as anchor points to the joints.
 
 """
-
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
-from numpy import ix_, array, zeros, ones, eye, dot
+from numpy import array, zeros, eye, dot
 import numpy
-import twistvector as T
 import homogeneousmatrix as Hg
 from abc import ABCMeta, abstractmethod, abstractproperty
 from rigidmotion import RigidMotion
+
 
 def simplearm():
     from arboris.robots.simplearm import add_simplearm
@@ -191,11 +190,8 @@ class Constraint(NamedObject):
     def solve(self, vel, admittance, dt):
         pass
 
-
-
-
 class Shape(NamedObject):
-    """A generic class for geometrical shapes used in collision detection
+    """A generic class for geometric shapes used in collision detection
     """
     def __init__(self, frame, name=None):
         self.frame = frame
@@ -447,7 +443,7 @@ class World(NamedObject):
                 'I do not know how to register objects of type {0}'.format(type(obj)))
 
     def init(self):
-        """ Init the joins-space model of the world.
+        """ Init the joints-space model of the world.
         """
         self._ndof = 0
         for j in self.iterjoints():
@@ -607,12 +603,12 @@ class World(NamedObject):
         >>> w.update_controllers(0.001)
         >>> w._impedance
         array([[ 686.98833333,  223.44666667,   20.67333333],
-               [ 223.44866667,   93.44866667,   10.67533333],
+               [ 223.44666667,   93.44866667,   10.67333333],
                [  20.67333333,   10.67333333,    2.67333333]])
         >>> w._admittance
-        array([[ 0.00732511, -0.02030736,  0.02444643],
-               [-0.02030542,  0.07596712, -0.14633178],
-               [ 0.02442349, -0.14625994,  0.76924892]])
+        array([[ 0.00732382, -0.0203006 ,  0.0244142 ],
+               [-0.0203006 ,  0.07594182, -0.14621124],
+               [ 0.0244142 , -0.14621124,  0.76901683]])
         
         **Algorithm:**
 
@@ -851,6 +847,7 @@ class SubFrame(NamedObject, Frame):
 
         The ``bpose`` argument must be an homogeneous matrix:
         >>> b = Body()
+        >>> from numpy import ones
         >>> f = SubFrame(b, ones((4,4)))
         Traceback (most recent call last):
             ...
