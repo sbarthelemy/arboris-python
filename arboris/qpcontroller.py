@@ -1,4 +1,3 @@
-# coding=utf-8
 """This module is still work in progress.
 """
 __author__ = ("Joseph Salini <joseph.salini@gmail.com>")
@@ -39,7 +38,7 @@ class BalanceController(Controller):
         assert isinstance(world, World)
         Controller.__init__(self, name=name)
         self.world = world
-        self.frames = self.world.getframesdict()
+        self.frames = self.world.getframes()
         self._rec_tau = [] #TODO: move this elsewhere
         self._tasks = tasks
 

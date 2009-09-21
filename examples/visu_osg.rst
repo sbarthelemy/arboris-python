@@ -27,7 +27,7 @@ Display a human
 >>> drawer = Drawer(world)
 >>> world.observers.append(drawer)
 >>> add_human36(world)
->>> joints = world.getjointslist()
+>>> joints = world.getjoints()
 >>> t = 0.
 >>> dt = 1./180
 >>> while not(drawer.done()):

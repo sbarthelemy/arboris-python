@@ -2,20 +2,9 @@
 
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
-from numpy import array, zeros, eye, dot, sin, cos, dot
-from abc import ABCMeta, abstractmethod
+from numpy import array, zeros, eye, sin, cos, dot
 import homogeneousmatrix
-from core import Joint
-
-class LinearConfigurationSpaceJoint(Joint):
-    """
-    joints whose space is diffeomorph to the real set.
-    """
-
-    def integrate(self, gvel, dt):
-        self.gvel = gvel
-        self.gpos += dt * self.gvel
-
+from core import Joint, LinearConfigurationSpaceJoint
 
 class FreeJoint(Joint):
 
@@ -40,6 +29,7 @@ class FreeJoint(Joint):
         self.gpos = array(gpos).reshape((4,4))
         self.gvel = array(gvel).reshape((6))
         Joint.__init__(self, frames, name)
+        
     @property
     def ndof(self):
         return 6

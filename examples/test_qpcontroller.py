@@ -7,23 +7,32 @@ __author__ = ("Joseph Salini <joseph.salini@gmail.com>")
 
 from arboris.core import ObservableWorld, simulate, SubFrame
 from arboris.homogeneousmatrix import transl
-from arboris.robots import simplearm
+from arboris.robots.simplearm import add_simplearm
 from arboris.visu_osg import Drawer
-from arboris.qpcontroller import BalanceController
+from arboris.qpcontroller import BalanceController, Task
 #from arboris.controllers import WeightController
 from numpy import arange
 
 world = ObservableWorld()
-world.observers.append(Drawer(world))
-simplearm.add_simplearm(world)
-world.register(SubFrame(world.ground, transl(0.5,0.5,0), 'Target'))
-
-# set initial position
-joints = world.getjointslist()
+#world.observers.append(Drawer(world))
+add_simplearm(world, name='Left')
+world.register(SubFrame(world.ground, transl(0.5, 0.5, 0), 'LeftTarget'))
+joints = world.getjoints()
+frames = world.getframes()
+# set initial position:
 joints[0].gpos = [0.1]
 
-#world.register(WeightController(world))
-world.register(BalanceController(world))
+task = Task(controlled_frame=frames['LeftEndEffector'],
+         target_frame=frames['LeftTarget'], 
+         world=world)
 
-time = arange(0, 20., 0.005)
-simulate(world, time)
+#world.register(WeightController(world))
+world.register(BalanceController(world, [task]))
+
+from arboris.core import JointsList
+add_simplearm(world, name='Right')
+joints=world.getjoints()
+J=JointsList(joints[0:3])
+
+#time = arange(0, 20., 0.005)
+#simulate(world, time)

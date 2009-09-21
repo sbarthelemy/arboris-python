@@ -23,12 +23,12 @@ That world has 3 degrees of freedom.
   >>> w.ndof
   3
 
-One can get a python dictionary of the bodies and joints:
+One can get a list of the bodies[1]_:
 
 .. doctest::
 
-  >>> bodies = w.getbodiesdict()
-  >>> joints = w.getjointsdict()
+  >>> bodies = w.getbodies()
+  >>> joints = w.getjoints()
   >>> bodies['ForeArm'].mass
   array([[  4.27733333e-02,   0.00000000e+00,   0.00000000e+00,
             0.00000000e+00,   0.00000000e+00,   1.60000000e-01],
@@ -44,6 +44,10 @@ One can get a python dictionary of the bodies and joints:
             0.00000000e+00,   0.00000000e+00,   8.00000000e-01]])
   >>> joints['Elbow'].gpos
   array([ 0.])
+
+.. _[1] this is not a raw python list, but instance of 
+  :class:`arboris.core.NamedObjectsList` which allows to index elements
+  by the object name in addition to integers.
 
 Once the forward geometric model is computed, bodies poses can be queried
 
@@ -78,7 +82,7 @@ pose given by the ``bpose`` property."
 
 .. doctest::
 
-  >>> frames =  w.getframesdict()
+  >>> frames =  w.getframes()
   >>> frames['Hand'].pose
   array([[  7.96326711e-04,  -9.99999683e-01,   0.00000000e+00,
            -3.99999873e-01],
@@ -115,13 +119,13 @@ method.
   >>> from arboris.robots.simplearm import simplearm
   >>> from numpy import dot, pi
   >>> w = simplearm(lengths=(1., 1., 0.2))
-  >>> joints = w.getjointsdict()
+  >>> joints = w.getjoints()
   >>> joints['Shoulder'].gpos[0] = pi/3
   >>> joints['Elbow'].gpos[0] = -2*pi/3
   >>> joints['Wrist'].gpos[0] = pi/3
   >>> joints['Wrist'].gvel[0] = pi/18
   >>> w.update_dynamic()
-  >>> frames = w.getframesdict()
+  >>> frames = w.getframes()
   >>> frames['EndEffector'].pose
   array([[  1.00000000e+00,  -1.48806748e-17,   0.00000000e+00,
            -2.97613496e-18],
@@ -156,7 +160,7 @@ The simplest way to have a graphic representation of a world is to use :class:`D
   >>> from arboris.robots.simplearm import simplearm
   >>> from arboris.visu_osg import DrawableWorld
   >>> w = simplearm(DrawableWorld())
-  >>> joints = w.getjointsdict()
+  >>> joints = w.getjoints()
   >>> t = 0.
   >>> dt = 1./100.
   >>> w.init_graphic()

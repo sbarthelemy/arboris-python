@@ -5,7 +5,7 @@ Test
 
     >>> from arboris.core import simplearm
     >>> w = simplearm()
-    >>> joints  = w.getjointslist()
+    >>> joints  = w.getjoints()
     >>> joints[0].gpos[0]=0.5
     >>> joints[0].gvel[0]=2.5
     >>> joints[1].gpos[0]=1.0
@@ -13,7 +13,7 @@ Test
     >>> joints[2].gpos[0]=2.0/3.0
     >>> joints[2].gvel[0]=-0.5
     >>> w.update_dynamic()
-    >>> bodies = w.getbodiesdict()
+    >>> bodies = w.getbodies()
     >>> bodies['Arm'].pose
     array([[ 0.87758256, -0.47942554,  0.        ,  0.        ],
            [ 0.47942554,  0.87758256,  0.        ,  0.        ],

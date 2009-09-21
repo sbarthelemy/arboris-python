@@ -10,7 +10,7 @@ PD Control
 >>> world = ObservableWorld()
 >>> world.observers.append(Drawer(world))
 >>> add_simplearm(world)
->>> joints = world.getjointslist()
+>>> joints = world.getjoints()
 >>> c = ProportionalDerivativeController(joints, 
 ...     gpos_des=(3.14/4,3.14/4,3.14/4),
 ...     kp=diag((1.,1.,1.)),

@@ -34,7 +34,7 @@ test with human36
 >>> kbh = JointIkHandler(drawer, viewer)
 >>> viewer.addEventHandler(kbh.__disown__())
 >>> viewer.realize()
->>> joints = world.getjointslist()
+>>> joints = world.getjoints()
 >>> t = 0.
 >>> while not(viewer.done()):
 ...     joints[1].gpos=[t,t,t]

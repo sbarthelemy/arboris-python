@@ -144,8 +144,8 @@ tree.br({br}).bd({bd}).shape(1).H = eye(4);
         
         self.stream.write("\n\n% Write the registered contacting shapes\n")
         num_in_bd = {}
-        s = self.w.getshapesdict()
-        for v in s.itervalues():
+        shapes = self.w.getshapes()
+        for v in shapes:
             body = v.frame.body
             (br,bd)= self._b_map[body.name]
             if body.name in num_in_bd.iterkeys():

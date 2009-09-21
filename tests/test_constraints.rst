@@ -10,7 +10,7 @@ Test joint limits
 >>> world = simplearm()
 >>> a = WeightController(world)
 >>> world.register(a)
->>> joints = world.getjointsdict()
+>>> joints = world.getjoints()
 >>> c = JointLimits(joints['Shoulder'], -3.14/2, 3.14/2)
 >>> world.register(c)
 >>> joints['Shoulder'].gpos[0] = 3.14/2 - 0.1

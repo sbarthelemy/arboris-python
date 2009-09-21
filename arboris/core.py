@@ -47,8 +47,76 @@ class NamedObject(object):
                 self.name, 
                 hex(id(self)))
 
+class NamedObjectsList(list):
+    """A list of (possibly) NamedObjects.
+    
+    This class behaves like the built-in ``list`` class except that
+    objects can be retrieved by name, using a string index or the 
+    ``find`` method. In the first case, the first matching object is
+    returned, in the second case a (raw) list of matching objects is
+    returned.
+    
+    **Example:**
+    
+    >>> L = [Body(name="Jean-Paul"), 1., 'sss']
+    >>> NL = NamedObjectsList(L)
+    >>> NL.append(Body(name=u'Guard'))
+    >>> NL.append(Body(name=u'Jean-Paul'))
+    >>> NL['Guard'] #doctest: +ELLIPSIS
+    <arboris.core.Body object named "Guard" at "0x...")>
+    >>> NL['Jean-Paul'] #doctest: +ELLIPSIS
+    <arboris.core.Body object named "Jean-Paul" at "0x...")>
+    >>> NL.find('Jean-Paul') #doctest: +ELLIPSIS
+    [<arboris.core.Body object named "Jean-Paul" at "0x...")>, <arboris.core.Body object named "Jean-Paul" at "0x...")>]
+    >>> NL['Jean-Marie']
+    Traceback (most recent call last):
+        ...
+    KeyError: 'No object named "Jean-Marie".'
+    >>> NL['Jean-Paul'] = 3
+    Traceback (most recent call last):
+        ...
+    TypeError: list indices must be integers, not str
+
+    """
+    def __init__(self, iterable=None):
+        self.extend(iterable)
+    
+    def find(self, name):
+        result = []
+        for obj in self:
+            if isinstance(obj, NamedObject) and (obj.name == name):
+                result.append(obj)
+        return result
+    
+    def __getitem__(self, index):
+        if isinstance(index, str) or isinstance(index, unicode):
+            # returns the first item whose name is matching 
+            for obj in self:
+                if isinstance(obj, NamedObject) and (obj.name == index):
+                    return obj
+            raise KeyError('No object named "{0}".'.format(index))
+        else:
+            return list.__getitem__(self, index)
+
+    def as_dict(self):
+        """Returns a dictionary whose keys are the objects names and 
+        values are the objects themselves. Objects with no name are
+        ignored. Duplicate names raise a ``DuplicateName`` 
+        exception.
+
+        """
+        result = {}
+        for obj in self:
+            if isinstance(obj, NamedObject) and obj.name is not None:
+                if obj.name not in result:  
+                    result[obj.name] = obj
+                else:
+                    raise DuplicateNameError()
+        return result
+       
 class DuplicateNameError(Exception):
     pass
+
 
 class Frame(object):
     """A generic class for frames.
@@ -152,6 +220,41 @@ class Joint(RigidMotion, NamedObject):
         pass
 
 
+class LinearConfigurationSpaceJoint(Joint):
+    """
+    Joints whose configuration space is diffeomorph to R^ndof.
+    """
+
+    def integrate(self, gvel, dt):
+        self.gvel = gvel
+        self.gpos += dt * self.gvel
+
+class JointsList(NamedObjectsList):
+    def __init__(self, iterable):
+        NamedObjectsList.__init__(self, iterable)
+        self._init_dof()
+    
+    def _init_dof(self):
+        self._dof = slice(0,0)
+        for obj in self:
+            if isinstance(obj, Joint):
+                assert obj.dof.step in (None, 1)
+                if isinstance(self._dof, slice):
+                    if (self._dof.stop == obj.dof.start):
+                        assert self._dof.step in (None, 1)
+                        # if possible, keep self._dof as a slice
+                        self._dof = slice(self._dof.start, obj.dof.stop)
+                    else:
+                        # otherwise, self._dof is converted into a sequence
+                        self._dof = range(self._dof.start, self._dof.stop)
+                        self._dof.extend(range(obj.dof.start, obj.dof.stop))
+                else:
+                    self._dof.extend(range(obj.dof.start, obj.dof.stop))
+
+    @property
+    def dof(self):
+        return self._dof
+
 class Constraint(NamedObject):
     __metaclass__ = ABCMeta
 
@@ -190,12 +293,14 @@ class Constraint(NamedObject):
     def solve(self, vel, admittance, dt):
         pass
 
+
 class Shape(NamedObject):
     """A generic class for geometric shapes used in collision detection
     """
     def __init__(self, frame, name=None):
         self.frame = frame
         NamedObject.__init__(self, name)
+
 
 class Controller(NamedObject):
     __metaclass__ = ABCMeta
@@ -236,12 +341,16 @@ class World(NamedObject):
         self._admittance = array([]) # updated by self.update_controller()
 
 
-
     def iterbodies(self):
         """Iterate over all bodies, with a depth-first strategy."""
         yield self.ground
         for b in self.ground.iter_descendant_bodies():
             yield b
+
+    def getbodies(self):
+        """Returns a NamedObjectsList of the world bodies.
+        """
+        return NamedObjectsList(self.iterbodies())
     
     def iterconstraints(self):
         """Iterate over all constraints."""
@@ -260,129 +369,44 @@ class World(NamedObject):
         for obj in self.itersubframes():
             yield obj
 
+    def getframes(self):
+        """Returns a NamedObjectsList of the world frames.
+        """
+        frames = self.getbodies()
+        frames.extend(self._subframes)
+        return frames
+
     def itershapes(self):
         """Iterate over all shapes."""
         for obj in self._shapes:
-            yield obj
+            yield obj    
+
+    def getshapes(self):
+        """Returns a NamedObjectsList of the world shapes.
+        """
+        return NamedObjectsList(self._shapes)
 
     def iterjoints(self):
         """Iterate over all joints, with a depth-first strategy."""
         for j in self.ground.iter_descendant_joints():
             yield j
 
-    def getbodiesdict(self):
-        """Returns a dictionary whose values are references to the 
-        bodies and keys are the bodies names. Bodies with ``None`` 
-        as name will be ignored. Duplicate names will raise a 
-        ``DuplicateName`` exception.
-
-        **Example:**
-            >>> from arboris.joints import FreeJoint
-            >>> w = World()
-            >>> #stone = Body('stone') TODO: why comment?
-            >>> #j = FreeJoint()
-            >>> #j.attach(w.ground, stone)
-            >>> #w.register(j)
-            >>> d = w.getbodiesdict()
-            >>> d.keys()
-            ['ground']
-
-        """
-
-        bodies_dict = {self.ground.name: self.ground}
-        for b in self.ground.iter_descendant_bodies():
-            if b.name is not None :
-                if b.name not in bodies_dict:  
-                    bodies_dict[b.name] = b
-                else:
-                    raise DuplicateNameError()
-        return bodies_dict
-
-    def getframesdict(self):
-        """Returns a dictionary whose values are references to the
-        frames and keys are the frames names. Frames with ``None``
-        as name will be ignored. Duplicate names will raise a 
-        ``DuplicateName`` exception.
-
-        **Example:**
-            >>> w = World()
-            >>> w.register(SubFrame(w.ground, name="ground again"))
-            >>> d = w.getframesdict()
-            >>> d.keys()
-            ['ground again', 'ground']
-
-        """
-        frames_dict = self.getbodiesdict()
-        for f in self._subframes:
-            if f.name is not None :
-                if f.name not in frames_dict:  
-                    frames_dict[f.name] = f
-                else:
-                    raise DuplicateNameError()
-        return frames_dict
-
-    def getshapesdict(self):
-        """Returns a dictionary whose values are references to the
-        shapes and keys are the shapes names. Frames with ``None``
-        as name will be ignored. Duplicate names will raise a 
-        ``DuplicateName`` exception.
-
-        **Example:**
-            >>> w = World()
-            >>> from shapes import Sphere
-            >>> w.register(Sphere(w.ground, name="my ball"))
-            >>> d = w.getshapesdict()
-            >>> d.keys()
-            ['my ball']
-
-        """
-        shapes_dict = {}
-        for s in self._shapes:
-            if s.name is not None :
-                if s.name not in shapes_dict:
-                    shapes_dict[s.name] = s
-                else:
-                    raise DuplicateNameError()
-        return shapes_dict
-
-
-    def getjointsdict(self):
-        """Returns a dictionary whose values are references to the 
-        joints and keys are the joints names. Frames with ``None`` 
-        as name will be ignored. Duplicate names will raise a 
-        ``DuplicateName`` exception.
-
-        **Example:**
-            >>> w = World()
-            >>> d = w.getjointsdict()
-            >>> d.keys()
-            []
-
-        """
-        joints_dict = {}
-        for j in self.ground.iter_descendant_joints():
-            if j.name is not None :
-                if j.name not in joints_dict:  
-                    joints_dict[j.name] = j
-                else:
-                    raise DuplicateNameError()
-        return joints_dict
-
-    def getjointslist(self):
-        """Returns a list whose values are references to the 
-        joints.
+    def getjoints(self):
+        """Returns a JointsList of the joints.
 
         **Example:**
 
-            >>> w = World()
-            >>> w.getjointslist()
-            []
+            >>> w = simplearm()
+            >>> joints = w.getjoints()
+            >>> joints[1] #doctest: +ELLIPSIS
+            <arboris.joints.RzJoint object named "Elbow" at "0x...")>
+            >>> joints['Elbow'] #doctest: +ELLIPSIS
+            <arboris.joints.RzJoint object named "Elbow" at "0x...")>
+            >>> joints.dof
+            slice(0, 3, None)
 
         """
-        joints_list = []
-        for j in self.ground.iter_descendant_joints():
-            joints_list.append(j)
-        return joints_list
+        return JointsList(self.iterjoints())
 
     def register(self, obj):
         """
@@ -399,7 +423,7 @@ class World(NamedObject):
 
         >>> w = simplearm()
         >>> from arboris.controllers import ProportionalDerivativeController
-        >>> joints = w.getjointslist()
+        >>> joints = w.getjoints()
         >>> c0 = ProportionalDerivativeController(joints[1:3], 
         ...     name = 'my controller')
         >>> w.register(c0)
@@ -462,7 +486,8 @@ class World(NamedObject):
         # Init the worldwide generalized velocity vector:
         self._gvel = zeros(self._ndof)
         for j in self.iterjoints():
-            self._gvel[j._dof] = j.gvel[:]
+            self._gvel[j.dof] = j.gvel[:]
+            j.gvel = self._gvel[j.dof]
 
         for c in self._constraints:
             c.init(self)
@@ -586,7 +611,7 @@ class World(NamedObject):
 
         >>> w = simplearm()
         >>> from arboris.controllers import ProportionalDerivativeController
-        >>> joints = w.getjointslist()
+        >>> joints = w.getjoints()
         >>> a0 = ProportionalDerivativeController(joints[1:2], 2.)
         >>> w.register(a0)
         >>> w.init()
@@ -798,7 +823,7 @@ class World(NamedObject):
         TODO: check the last test result!
 
         >> w = simplearm()
-        >> joints = w.getjointsdict()
+        >> joints = w.getjoints()
         >> joints['Shoulder'].gpos[:] = -1.
         >> from arboris.controllers import ProportionalDerivativeController
         >> c0 = ProportionalDerivativeController(w.joints[1:2], 1.)
@@ -814,6 +839,7 @@ class World(NamedObject):
         assert dt > 0
         self._gvel[:] = dot(self._admittance, 
                             dot(self._mass, self._gvel/dt) + self._gforce)
+        
         for j in self.iterjoints():
             j.integrate(self._gvel[j.dof], dt)
         self._current_time += dt
@@ -1140,10 +1166,10 @@ class Body(NamedObject, Frame):
             dJ_nr = j.djacobian
             child_twist = dot(Ad_cp, T_pg) + dot(Ad_cn, T_nr)
             child_jac = dot(Ad_cp, J_pg)
-            child_jac[:,j._dof] += dot(Ad_cn, J_nr)
+            child_jac[:,j.dof] += dot(Ad_cn, J_nr)
 
             child_djac = dot(dAd_cp, J_pg) + dot(Ad_cp, dJ_pg)
-            child_djac[:,j._dof] += dot(Ad_cn, dJ_nr)
+            child_djac[:,j.dof] += dot(Ad_cn, dJ_nr)
             j._frames[1].body.update_dynamic(child_pose, child_jac, child_djac, 
                                      child_twist)
 
