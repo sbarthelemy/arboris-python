@@ -3,6 +3,7 @@
 Functions for working with mass matrices.
 
 """
+
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
 import homogeneousmatrix as Hg
@@ -18,7 +19,7 @@ def checkismassmatrix(M, tol=tol):
     """
     Raise an error if input is not a mass matrix
     """
-    if not ishomogeneousmatrix(H, tol):
+    if not ismassmatrix(M, tol):
         raise ValueError("{M} is not a mass matrix".format(M=M))
 
 def transport(M, H):
