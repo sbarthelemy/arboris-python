@@ -1198,8 +1198,8 @@ class ObservableWorld(World):
             obs.update(dt)
 
     def integrate(self, dt):
-        World.integrate(self, dt)
         self._update_observers(dt)
+        World.integrate(self, dt)
 
     def finish(self):
          for obs in self.observers:
@@ -1241,10 +1241,12 @@ def simulate(world, timeline):
     >>> simulate(w, time)
 
     """
+    if world._current_time != timeline[0]:
+        pass #TODO: use logger to warn user of possible problem
     world._current_time = timeline[0]
     world.init()
-    for t in timeline[1:]:
-        dt = t - world._current_time
+    for next_time in timeline[1:]:
+        dt = next_time - world._current_time
         world.update_dynamic()
         world.update_controllers(dt)
         world.update_constraints(dt)
