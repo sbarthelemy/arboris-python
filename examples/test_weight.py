@@ -35,7 +35,7 @@ class TrajLog(WorldObserver):
         pass
     
     def get_theoric(self):
-        mass = self.frame.frame.mass[3,3]
+        mass = self.frame.body.mass[3,3]
         return [self.height[0]-9.81/2*mass*t**2 for t in self.timeline]
         
     def get_error(self):
