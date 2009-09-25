@@ -7,13 +7,154 @@ an arboris-python robot.
 __author__ = ("Joseph SALINI <joseph.salini@gmail.com>",
               "Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
+from arboris.core import Body, SubFrame, Joint, World
 from arboris import joints, shapes
 from numpy import zeros, eye
+
+
+class GenerationError(RuntimeError):
+    pass
 
 class ConversionError(RuntimeError):
     pass
 
-class  MatlabConverter(object):
+class MatlabConverter(object):
+    """Convert an arboris-python joint to another one that is compatible with arboris-matlab.
+    
+    This works around two caveats of arboris-python:
+    
+    - the first joint should always be a FreeJoint
+    
+    - the other joints can only have one rotational dof.
+    
+    # TODO: we should handle gpos and gvel
+    
+    **Examples:**
+        
+        >>> from arboris.robots.human36 import add_human36
+        >>> w = World()
+        >>> add_human36(w)
+        >>> MatlabConverter().convert_robot(w, w.getjoints()[0])
+    
+        >>> from arboris.robots.simplearm import add_simplearm
+        >>> w = World()
+        >>> add_simplearm(w)
+        >>> MatlabConverter().convert_robot(w, w.getjoints()[0])
+
+    """
+    
+    def __init__(self):
+        # default taken from arboris-matlab human36:
+        self.small_mass = 1.0e-2
+        # defaults taken from arboris-matlab's t06_ConstructionRobot.m:
+        self.base_mass = 1.0e4
+        self.base_lengths = [0.5/2, 0.5/5, 0.5/10]
+        self.contact_radius = 0.05
+        self.friction_coeff = 0.05
+        
+    def convert_root_joint(self, world, root_joint):
+        assert isinstance(root_joint, Joint)
+        assert isinstance(world, World)
+        assert root_joint.frames[0].body is world.ground 
+        if isinstance(root_joint, joints.FreeJoint):
+            # nothing to do
+            pass
+        else:
+            from arboris.homogeneousmatrix import transl
+            from arboris.massmatrix import box as boxmass
+            from arboris.shapes import Box, Sphere
+            from arboris.constraints import SoftFingerContact
+            # add a "free-floating" base body to the robot
+            base = Body(mass=boxmass(self.base_lengths, self.base_mass))
+            world.replace_joint(root_joint, 
+                                root_joint.frames[0], 
+                                joints.FreeJoint(), 
+                                base,
+                                base,
+                                root_joint, 
+                                root_joint.frames[1])
+            # add a ground plane
+            r = self.contact_radius
+            ground_lengths = [ d+4*r for d in self.base_lengths]
+            ground_plane = Box(world.ground, ground_lengths)
+            world.register(ground_plane)
+            # put 4 spheres at the bottom of the base
+            (x, y, z) = self.base_lengths
+            for (i, j) in ((1, 1), (1, -1), (-1, -1), (-1, 1)):
+                sf = SubFrame(base, transl(i*x/2, -y/2, j*z/2))
+                sh = Sphere(sf, r)
+                world.register(sh)
+                contact = SoftFingerContact((ground_plane, sh), self.friction_coeff)
+                world.register(contact)
+                
+                
+    def convert_robot(self, world, root_joint):
+        child_body = root_joint.frames[1].body
+        self.convert_root_joint(world, root_joint)
+        self._traverse(world, child_body)
+        
+    def _traverse(self, world, body):
+        """Recurse through the tree."""
+        assert isinstance(world, World)
+        assert isinstance(body, Body)
+        for joint in body.childrenjoints:
+            child_body = joint.frames[1].body
+            # try a conversion:
+            self.convert_nonroot_joint(world, joint)
+            # recurse:
+            self._traverse(world, child_body)         
+
+    
+    def convert_nonroot_joint(self, world, joint):
+        """Convert a joint, which is assume not to be the root one of the robot."""
+        assert isinstance(joint, Joint)
+        assert isinstance(world, World)
+        assert joint.frames[0].body is not world.ground 
+        frame0, frame1 = joint.frames
+        
+        def name(suffix):
+            if joint.name is None:
+                return None
+            else:
+                return joint.name+suffix
+                        
+        def mass():
+            from numpy import diag
+            return self.base_mass*diag([1.0, 1.0, 1.0, 0.1, 0.1, 0.1])
+        
+        if isinstance(joint, joints.RzJoint) or \
+            isinstance(joint, joints.RyJoint) or \
+            isinstance(joint, joints.RxJoint):
+                # nothing to do, the joint is compatible
+                pass
+        elif isinstance(joint, joints.RzRyRxJoint):
+            Rz = joints.RzJoint(name=name('Rz'))
+            Bzy = Body(mass=mass())
+            Ry = joints.RyJoint(name=name('Ry'))
+            Byx = Body(mass=mass())
+            Rx = joints.RxJoint(name=name('Rx'))
+            world.replace_joint(joint, frame0, Rz, Bzy, Bzy, Ry, Byx, Byx, Rx, frame1)
+
+        elif isinstance(joint, joints.RzRyJoint):
+            Rz = joints.RzJoint(name=name('Rz'))
+            Bzy = Body(mass=mass())
+            Ry = joints.RyJoint(name=name('Ry'))
+            world.replace_joint(joint, frame0, Rz, Bzy, Bzy, Ry, frame1)
+
+        elif isinstance(joint, joints.RyRxJoint):
+            Ry = joints.RyJoint(name=name('Ry'))
+            Byx = Body(mass=mass())
+            Rx = joints.RxJoint(name=name('Rx'))
+            world.replace_joint(joint, frame0, Ry, Byx, Byx, Rx, frame1)
+
+        elif isinstance(joint, joints.RzRxJoint):
+            Rz = joints.RzJoint(name=name('Rz'))
+            Bzx = Body(mass=mass())
+            Rx = joints.RxJoint(name=name('Rx'))
+            world.replace_joint(joint, frame0, Rz, Bzx, Bzx, Rx, frame1)
+
+
+class  MatlabGenerator(object):
     """Generates a matlab file that would create the arboris-matlab equivalent to an arboris-python robot.
 
     **Tests:**
@@ -23,17 +164,17 @@ class  MatlabConverter(object):
     >>> w = simplearm()
     >>> from arboris.robots.human36 import add_human36
     >>> add_human36(w)
-    >>> mc = MatlabConverter(w)
+    >>> mc = MatlabGenerator(w)
     >>> stream = cStringIO.StringIO()
     >>> #stream = open(filename, "w")
     >>> mc.make_robot(w.ground.childrenjoints[0], stream, 'simplearm')
     Traceback (most recent call last):
         ...
-    ConversionError: The root joint must be a FreeJoint.
+    GenerationError: The root joint must be a FreeJoint.
     >>> mc.make_robot(w.ground.childrenjoints[1], stream, 'human36')
     Traceback (most recent call last):
         ...
-    ConversionError: Cannot convert joints of type "<class 'arboris.joints.RzRyRxJoint'>".
+    GenerationError: Cannot generate joints of type "<class 'arboris.joints.RzRyRxJoint'>".
     >>> stream.close()
 
     The tests uses ``cStringIO.StringIO()`` instead of ``open()`` in 
@@ -47,8 +188,9 @@ class  MatlabConverter(object):
         self._b_map = {}
     
     def make_robot(self, root_joint, stream, name=None):
+        assert isinstance(root_joint, Joint)
         if not isinstance(root_joint, joints.FreeJoint):
-            raise ConversionError("The root joint must be a FreeJoint.")
+            raise GenerationError("The root joint must be a FreeJoint.")
         self.stream = stream
         try:
             self._add_tree(name)
@@ -108,12 +250,12 @@ tree.br({br}).root_jk={par};
             jtype = "[0 0 0 0 0 1]"
         elif isinstance(joint, joints.FreeJoint):
             if num_br != 1 or num_bd != 1:
-                raise ConversionError(
+                raise GenerationError(
                     'FreeJoint is only available as the root joint.')
             jtype = "eye(6)"
         else:
-            raise ConversionError(
-                'Cannot convert joints of type "{0}".'.format(type(joint)))
+            raise GenerationError(
+                'Cannot generate joints of type "{0}".'.format(type(joint)))
         text = """
 tree.br({br}).bd({bd}).name = '{name}'; % body name is '{name2}'
 tree.br({br}).bd({bd}).E = {jtype}';

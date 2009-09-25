@@ -16,33 +16,24 @@ from arboris.joints import *
 def add_robot(w):
     assert isinstance(w, World)
     
-    l   = [1., .9, .8, .7, .6, .5, .4 , .3, .2]
-    r   = [.1, .09, .08, .07, .06, .05, .04, .03, .02] 
-    m   = [1., .9, .8, .7, .6, .5, .4 , .3, .2]
-    
-    nb_body = 7
-    
-    ##### build bodies
-    bd  = []
-    bdframe = []
-    for i in range(nb_body):
-        Mbi = transport( cylinder(l[i], r[i], m[i]), transl(0., -l[i]/2., 0.) )
-        bodyi = Body( name='bd'+str(i), mass= Mbi )
-        bd.append( bodyi )
-        bdframe.append( SubFrame(bd[-1], transl(0., l[i], 0.)) )
-    w.register( bdframe[-1] )
-    
-    
-    ##### build joints
-    jt = []
-    jt.append( RzJoint(name='first', frames=(w.ground, bd[0] )) ) # link ground and body 0
-    for i in range(nb_body-1):
-        jointi = RzJoint( name='jt'+str(i), frames=(bdframe[i], bd[i+1]) )
-        jt.append( jointi ) 
-        w.register(jt[-1])
-    
-    ##### init config
-    jt[0].gpos = [3.14159/4.]
+    l   = [1., .9, .8 , .7 , .6, .5, .4 , .3, .2]
+    m   = [1., .9, .8 , .7 , .6, .5, .4 , .3, .2]
+
+    frame = w.ground
+    for (length, mass) in zip(l, m):
+        radius = length/10.
+        M = transport(cylinder(length, radius, mass), 
+                      transl(0., -length/2., 0.))
+        body = Body(mass= M)
+        joint = RzJoint()
+        w.add_link(frame, joint, body)
+        frame = SubFrame(body, transl(0., length, 0.))
+    w.register(frame)
+    w.init()
+        
+    # initial configuration
+    w.getjoints()[0].gpos = [3.14159/4.]
+
     
 from arboris.core import WorldObserver
 from numpy import linalg, where

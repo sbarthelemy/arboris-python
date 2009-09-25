@@ -658,81 +658,61 @@ def _human36(world, height=1.741, mass=73, name=''):
 
     rf = SubFrame(w.ground,
         Hg.transl(0, L['yfootL']+L['ytibiaL']+L['yfemurL'], 0))
-    j = FreeJoint()
-    j.attach(rf, bodies['LPT'])
-    w.register(j)
+    w.add_link(rf, FreeJoint(), bodies['LPT'])
     
     rf = SubFrame(bodies['LPT'], Hg.transl(0, 0, L['zhip']/2.))
     j = RzRyRxJoint()
-    j.attach(rf, bodies['ThighR'])
-    w.register(j)
+    w.add_link(rf, j, bodies['ThighR'])
     
     rf = SubFrame(bodies['ThighR'], Hg.transl(0, -L['yfemurR'], 0))
-    j = RzJoint()
-    j.attach(rf, bodies['ShankR'])
-    w.register(j)
+    w.add_link(rf, RzJoint(), bodies['ShankR'])
     
     rf = SubFrame(bodies['ShankR'], Hg.transl(0, -L['ytibiaR'], 0))
-    j = RzRxJoint()
-    j.attach(rf, bodies['FootR'])
-    w.register(j)
+    w.add_link(rf, RzRxJoint(), bodies['FootR'])
 
     rf = SubFrame(bodies['LPT'], Hg.transl(0, 0, -L['zhip']/2.))
-    j = RzRyRxJoint()
-    j.attach(rf, bodies['ThighL'])
-    w.register(j)
+    w.add_link(rf, RzRyRxJoint(), bodies['ThighL'])
 
     rf = SubFrame(bodies['ThighL'], Hg.transl(0, -L['yfemurL'], 0))
-    j = RzJoint()
-    j.attach(rf,bodies['ShankL'])
-    w.register(j)
+    w.add_link(rf, RzJoint(), bodies['ShankL'])
 
     rf = SubFrame(bodies['ShankL'], Hg.transl(0, -L['ytibiaL'], 0))
-    j = RzRxJoint()
-    j.attach(rf, bodies['FootL'])
-    w.register(j)
+    w.add_link(rf, RzRxJoint(), bodies['FootL'])
 
     rf = SubFrame(bodies['LPT'], Hg.transl(-L['xvT10'], L['yvT10'], 0))
-    j = RzRyRxJoint()
-    j.attach(rf, bodies['UPT'])
-    w.register(j)
+    w.add_link(rf, RzRyRxJoint(), bodies['UPT'])
     
     rf = SubFrame(bodies['UPT'], 
         Hg.transl(L['xsternoclavR'], L['ysternoclavR'], L['zsternoclavR']))
     j = RyRxJoint()
-    j.attach(rf, bodies['ScapulaR'])
-    w.register(j)
+    w.add_link(rf, j, bodies['ScapulaR'])
     
     rf = SubFrame(bodies['ScapulaR'], 
         Hg.transl(-L['xshoulderR'], L['yshoulderR'], L['zshoulderR']))
-    j = RzRyRxJoint()
-    j.attach(rf, bodies['ArmR'])
-    w.register(j)
+    w.add_link(rf, RzRyRxJoint(), bodies['ArmR'])
 
     rf = SubFrame(bodies['ArmR'], Hg.transl(0, -L['yhumerusR'], 0))
-    j = RzRyJoint()
-    j.attach(rf, bodies['ForearmR'])
-    w.register(j)
+    w.add_link(rf, RzRyJoint(), bodies['ForearmR'])
     
     rf = SubFrame(bodies['ForearmR'], Hg.transl(0, -L['yforearmR'], 0))
-    w.register(RzRxJoint(frames=(rf, bodies['HandR'])))
+    w.add_link(rf, RzRxJoint(), bodies['HandR'])
     
     rf = SubFrame(bodies['UPT'], Hg.transl(
         L['xsternoclavL'], L['ysternoclavL'], -L['zsternoclavL']))
-    w.register(RyRxJoint(frames=(rf, bodies['ScapulaL'])))
+    w.add_link(rf, RyRxJoint(), bodies['ScapulaL'])
     
     rf = SubFrame(bodies['ScapulaL'], 
         Hg.transl(-L['xshoulderL'], L['yshoulderL'], -L['zshoulderL']))
-    w.register(RzRyRxJoint(frames=(rf, bodies['ArmL'])))
+    w.add_link(rf, RzRyRxJoint(), bodies['ArmL'])
     
     rf = SubFrame(bodies['ArmL'], Hg.transl(0, -L['yhumerusL'], 0))
-    w.register(RzRyJoint(frames=(rf, bodies['ForearmL'])))
+    w.add_link(rf, RzRyJoint(), bodies['ForearmL'])
     
     rf = SubFrame(bodies['ForearmL'], Hg.transl(0, -L['yforearmL'], 0))
-    w.register(RzRxJoint(frames=(rf, bodies['HandL'])))
+    w.add_link(rf, RzRxJoint(), bodies['HandL'])
     
     rf = SubFrame(bodies['UPT'], Hg.transl(L['xvT10'], L['yvC7'], 0))
-    w.register(RzRyRxJoint(frames=(rf, bodies['Head'])))
+    w.add_link(rf, RzRyRxJoint(), bodies['Head'])
 
     # add tags
     tags = {}

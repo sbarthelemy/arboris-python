@@ -31,14 +31,10 @@ Test ball and socket constraint
 >>> from arboris.core import Body, World
 >>> from arboris.joints import FreeJoint
 >>> b0 = Body(mass = eye(6))
->>> j0 = FreeJoint()
 >>> w = World()
->>> j0.attach(w.ground, b0)
->>> w.register(j0)
+>>> w.add_link(w.ground, FreeJoint(), b0)
 >>> b1 = Body(mass = eye(6))
->>> j1 = FreeJoint()
->>> j1.attach(b0, b1)
->>> w.register(j1)
+>>> w.add_link(b0, FreeJoint(), b1)
 >>> w.init()
 >>> from arboris.controllers import WeightController
 >>> ctrl =  WeightController(w)

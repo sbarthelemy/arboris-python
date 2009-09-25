@@ -78,10 +78,8 @@ def add_simplearm(world, name='', lengths=(0.5 ,0.4 , 0.2),
 
 
     # create a joint between the ground and the arm
-    shoulder = RzJoint(name=name+'Shoulder', frames=(w.ground, arm))
-
-    # add the new joint to the world (this will also add arm to w)
-    w.register(shoulder)
+    shoulder = RzJoint(name=name+'Shoulder')
+    w.add_link(w.ground, shoulder, arm)
     
     # add a frame to the arm, where the forearm will be anchored
     f = SubFrame(arm,
@@ -89,8 +87,8 @@ def add_simplearm(world, name='', lengths=(0.5 ,0.4 , 0.2),
         name+'ElbowBaseFrame')
 
     # create a joint between the arm and the forearm
-    elbow = RzJoint(name=name+'Elbow', frames=(f, forearm))
-    w.register(elbow)
+    elbow = RzJoint(name=name+'Elbow')
+    w.add_link(f, elbow, forearm)
 
     # add a frame to the forearm, where the hand will be anchored
     f = SubFrame(forearm,
@@ -98,8 +96,8 @@ def add_simplearm(world, name='', lengths=(0.5 ,0.4 , 0.2),
         name+'WristBaseFrame')
 
     # create a joint between the forearm and the hand
-    wrist = RzJoint(name=name+'Wrist', frames=(f, hand))
-    w.register(wrist)
+    wrist = RzJoint(name=name+'Wrist')
+    w.add_link(f, wrist, hand)
 
     # create a frame at the end of the hand
     f = SubFrame(hand, Hg.transl(0,hand_length,0), name+'EndEffector')

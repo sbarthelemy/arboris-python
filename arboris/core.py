@@ -161,12 +161,10 @@ class Joint(RigidMotion, NamedObject):
     """    
     __metaclass__ = ABCMeta
 
-    def __init__(self, frames=None, name=None):
+    def __init__(self, name=None):
         NamedObject.__init__(self, name)
-        if frames is not None:
-            self.attach(frames[0], frames[1])
-        else:
-            self._frames = (None, None)
+        self._frame0 = None
+        self._frame1 = None
         self._dof = None # will be set by World.init()
 
     @abstractproperty
@@ -186,20 +184,7 @@ class Joint(RigidMotion, NamedObject):
     def frames(self):
         """Frames to which the joint is attached.
         """
-        return self._frames
-
-    def attach(self, frame0, frame1):
-        """Set the frames the joint is attached to.
-        """
-        assert isinstance(frame0, Frame)
-        assert isinstance(frame1, Frame)
-        self._frames = (frame0, frame1)
-        if frame1.body.parentjoint is None:
-            frame1.body.parentjoint = self
-        else:
-            raise ValueError(
-                'frame1\'s body already has a parentjoint, which means you\'re probably trying to create a kinematic loop. Try using a constraint instead.')
-        frame0.body.childrenjoints.append(self)
+        return (self._frame0, self._frame1)
 
     @property
     def twist(self):
@@ -409,6 +394,81 @@ class World(NamedObject):
         """
         return JointsList(self.iterjoints())
 
+    def add_link(self, frame0, joint, frame1, *args):
+        """Add a link (ie. Joint and Body) to the world.
+        
+        :param frame0: the frame where the new joint will be attached. 
+                       It should belong to a bady which is already in the world.
+        :param joint: the joint to be added.
+        :param frame1: the frame of the body which is to be added to the world.
+        
+        One can also add several links at a time::
+        
+            world.add_link(frame0_a, joint_a, frame1_a, frame0_b, joint_b, frame1_b)
+            
+        """
+        assert isinstance(frame0, Frame)
+        assert isinstance(frame1, Frame)
+        assert isinstance(joint, Joint)
+        assert joint._frame0 is None
+        assert joint._frame1 is None
+        assert len(args) % 3 == 0
+        joint._frame0 = frame0
+        joint._frame1 = frame1
+        if frame1.body.parentjoint is None:
+            frame1.body.parentjoint = joint
+        else:
+            raise ValueError(
+                'frame1\'s body already has a parent joint, which means you\'re probably trying to create a kinematic loop. Try using a constraint instead.')
+        frame0.body.childrenjoints.append(joint)
+        self.register(frame0)
+        self.register(frame1)
+        if len(args) > 0:
+            self.add_link(*args)
+    
+    def replace_joint(self, old_joint, *args):
+        """Replace a joint by another joint or by another kinematic chain.
+        
+        **Syntax:** ::
+            
+            world.replace_joint(old_joint, new_joint)
+            world.replace_joint(old_joint, frame0, new_joint, ... , frame1)
+            
+        **Example:**
+
+            >>> w = simplearm()
+            >>> from arboris.joints import RzJoint
+            >>> joints = w.getjoints()
+            >>> w.replace_joint(joints['Elbow'], RzJoint())
+            
+        """
+        assert isinstance(old_joint, Joint)
+        assert old_joint in old_joint._frame0.body.childrenjoints
+        assert old_joint is old_joint._frame1.body.parentjoint
+        if len(args) == 1:
+            new_joint = args[0]
+            frame0 = old_joint._frame0
+            frame1 = old_joint._frame1
+            self.replace_joint(old_joint, frame0, new_joint, frame1)
+        elif len(args) == 0 or len(args) % 3 != 0:
+            raise RuntimeError() #TODO
+        else:
+            body0 = args[0].body 
+            body1 = args[-1].body
+            assert old_joint._frame0.body is body0 
+            assert old_joint._frame1.body is body1
+            body1.parentjoint = None
+            old_joint._frame0 = None
+            old_joint._frame1 = None
+            self.add_link(*args)
+            # new_joint is now the last in body0.childrenjoint
+            # and old_joint is still somewhere in body0.childrenjoint
+            # let's fix that
+            i = body0.childrenjoints.index(old_joint)
+            body0.childrenjoints[i] = body0.childrenjoints.pop()
+            
+            self.init() #TODO
+        
     def register(self, obj):
         """
         Register an object into the world.
@@ -939,14 +999,14 @@ class Body(NamedObject, Frame):
     def iter_descendant_bodies(self):
         """Iterate over all descendant bodies, with a depth-first strategy"""
         from itertools import imap
-        for b in imap(lambda j: j._frames[1].body, self.childrenjoints):
+        for b in imap(lambda j: j._frame1.body, self.childrenjoints):
             yield b
             for bb in b.iter_descendant_bodies():
                 yield bb
 
     def iter_ancestor_bodies(self):
         if self.parentjoint is not None:
-            parentbody = self.parentjoint._frames[0].body
+            parentbody = self.parentjoint._frame0.body
             yield parentbody
             for a in parentbody.iter_ancestor_bodies():
                 yield a
@@ -955,13 +1015,13 @@ class Body(NamedObject, Frame):
         """Iterate over all descendant joints, with a depth-first strategy"""
         for j in self.childrenjoints:
             yield j
-            for jj in j._frames[1].body.iter_descendant_joints():
+            for jj in j._frame1.body.iter_descendant_joints():
                 yield jj
 
     def iter_ancestor_joints(self):
         if self.parentjoint is not None:
             yield self.parentjoint
-            for a in self.parentjoint._frames[0].body.iter_ancestor_joints():
+            for a in self.parentjoint._frame0.body.iter_ancestor_joints():
                 yield a
 
     @property
@@ -1008,12 +1068,12 @@ class Body(NamedObject, Frame):
         self._pose = pose
         H_gp = pose
         for j in self.childrenjoints:
-            H_cn = j._frames[1].bpose
-            H_pr = j._frames[0].bpose
+            H_cn = j._frame1.bpose
+            H_pr = j._frame0.bpose
             H_rn = j.pose
             H_pc = dot(H_pr, dot(H_rn, Hg.inv(H_cn)))
             child_pose = dot(H_gp, H_pc)
-            j._frames[1].body.update_geometric(child_pose)
+            j._frame1.body.update_geometric(child_pose)
         
     def update_dynamic(self, pose, jac, djac, twist):
         r"""Sets
@@ -1152,8 +1212,8 @@ class Body(NamedObject, Frame):
         dJ_pg = djac
         T_pg = twist
         for j in self.childrenjoints:
-            H_cn = j._frames[1].bpose
-            H_pr = j._frames[0].bpose
+            H_cn = j._frame1.bpose
+            H_pr = j._frame0.bpose
             H_rn = j.pose
             H_pc = dot(H_pr, dot(H_rn, Hg.inv(H_cn)))
             child_pose = dot(H_gp, H_pc)
@@ -1171,8 +1231,8 @@ class Body(NamedObject, Frame):
 
             child_djac = dot(dAd_cp, J_pg) + dot(Ad_cp, dJ_pg)
             child_djac[:,j.dof] += dot(Ad_cn, dJ_nr)
-            j._frames[1].body.update_dynamic(child_pose, child_jac, child_djac, 
-                                     child_twist)
+            j._frame1.body.update_dynamic(child_pose, child_jac, child_djac, 
+                                          child_twist)
 
 class ObservableWorld(World):
 

@@ -72,11 +72,8 @@ else:
     twist_c = array([1,1,1,0,0,0.])
 twist_b = dot(homogeneousmatrix.adjoint(H_bc), twist_c)
 freejoint = FreeJoint(gpos=homogeneousmatrix.inv(H_bc), gvel=twist_b)
-freejoint.attach(w.ground, body)
-w.register(body)
-w.register(freejoint)
-shape = Box(subframe, lengths)
-w.register(shape)
+w.add_link(w.ground, freejoint, body)
+w.register(Box(subframe, lengths))
 
 
 weightc = WeightController(w)       

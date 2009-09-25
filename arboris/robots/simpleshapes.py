@@ -26,10 +26,8 @@ def add_sphere(world, radius=1., mass=1., name=None):
     ball = Body(
         name=name,
         mass=massmatrix.sphere(radius, mass))
-    freejoint = FreeJoint(frames=(world.ground, ball))
-    s = Sphere(ball, radius)
-    world.register(freejoint)
-    world.register(s)
+    world.add_link(world.ground, FreeJoint(), ball)
+    world.register(Sphere(ball, radius))
     world.init()
  
 
@@ -47,11 +45,8 @@ def add_box(world, lengths=(1.,1.,1.), mass=1., name='Box'):
     box = Body(
         name=name,
         mass=massmatrix.box(lengths, mass))
-    freejoint = FreeJoint()
-    freejoint.attach(world.ground, box)
-    world.register(box)
-    s = Box(box, lengths)
-    world.register(freejoint)
+    world.add_link(world.ground, FreeJoint(), box)
+    world.register(Box(box, lengths))
     world.init()
 
 
@@ -69,15 +64,13 @@ def add_cylinder(world, length=1., radius=1., mass=1., name='Cylinder'):
     cylinder = Body(
         name=name,
         mass=massmatrix.cylinder(length, radius, mass))
-    freejoint = FreeJoint(frames=(world.ground, cylinder))
-    world.register(cylinder)
-    s = Cylinder(cylinder, length, radius)
-    world.register(s)
+    world.add_link(world.ground, FreeJoint(), cylinder)
+    world.register(Cylinder(cylinder, length, radius))
     world.init()
+    
     
 def add_groundplane(w, length=(1., .1, 1.) ):
     """Add a ground plane using a box shape.
     """
     frame = SubFrame(w.ground, transl(0., -length[1]/2., 0.) )
-    w.register(frame)
     w.register(Box(frame, length, 'Ground shape'))
