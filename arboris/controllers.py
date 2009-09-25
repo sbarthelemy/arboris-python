@@ -36,10 +36,18 @@ class WeightController(Controller):
     def update(self, dt=None):
         gforce = zeros(self._wndof)
         for b in self._bodies():
+            #TODO: improve efficiency
+            from arboris.massmatrix import principalframe
+            H_bc = principalframe(b.mass)
+            R_gb = b.pose[0:3,0:3] 
+            H_bc[0:3,0:3] = R_gb.T
+            wrench_c = array((0,0,0,0,-9.81*b.mass[3,3],0)) 
+            Ad_cb = homogeneousmatrix.iadjoint(H_bc)
+            wrench_b = dot(Ad_cb.T, wrench_c)
+            gforce += dot(b.jacobian.T, wrench_b )
             # gravity acceleration expressed in body frame
-            g = dot(homogeneousmatrix.iadjoint(b.pose), self._gravity)
-            gforce += dot(b.jacobian.T, dot(b.mass, g))
-
+            #g = dot(homogeneousmatrix.iadjoint(b.pose), self._gravity)
+            #gforce += dot(b.jacobian.T, dot(b.mass, g))
         impedance = zeros( (self._wndof, self._wndof) )
         return (gforce, impedance)
             
