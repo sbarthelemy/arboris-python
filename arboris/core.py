@@ -229,6 +229,7 @@ class LinearConfigurationSpaceJoint(Joint):
         self.gvel = gvel
         self.gpos += dt * self.gvel
 
+
 class JointsList(NamedObjectsList):
     def __init__(self, iterable):
         NamedObjectsList.__init__(self, iterable)

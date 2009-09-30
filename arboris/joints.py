@@ -52,7 +52,7 @@ class FreeJoint(Joint):
 
     def integrate(self, gvel, dt):
         from twistvector import exp
-        self.gvel = self.gvel
+        self.gvel = gvel
         self.gpos = dot(self.gpos, exp( dt*self.gvel))
 
 class RzRyRxJoint(LinearConfigurationSpaceJoint):
