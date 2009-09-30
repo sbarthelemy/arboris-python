@@ -62,6 +62,7 @@ def exp(tw):
         dsc = 1./6.
     
     R = eye(3) + sc*wx + cc*dot(wx,wx)
-    p = dot(sc*eye(3)+cc*wx+dsc*dot(w,w.T), v)
+    w_3x1 = w.copy().reshape(3,1) #TODO improve efficiency
+    p = dot(sc*eye(3)+cc*wx+dsc*dot(w_3x1,w_3x1.T), v)
     return vstack((hstack((R, p.reshape(3,1))),
                    array([[0., 0., 0., 1.]])))
