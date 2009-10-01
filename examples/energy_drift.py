@@ -1,6 +1,12 @@
 
 """
-This example shows that arboris creates energy. We do not know why
+This example shows that arboris creates energy.
+
+We can see it with four simulations, by toggling:
+
+- initial velocity,
+- gravity,
+- the free-floating or fixed base.
 
 """
 
@@ -8,19 +14,27 @@ This example shows that arboris creates energy. We do not know why
 import arboris.controllers
 from arboris.observers import EnergyMonitor, PerfMonitor#, MassMonitor
 from arboris.visu_osg import Drawer
-from arboris.core import World, ObservableWorld, Body, SubFrame
-from arboris.massmatrix import transport, cylinder
+from arboris.core import World, ObservableWorld, Body, SubFrame, simulate
+from arboris.massmatrix import transport, cylinder, box
 from arboris.homogeneousmatrix import transl
 from arboris.joints import *
+from numpy import arange
 
-def add_robot(w):
+def add_robot(w, free_floating=False):
     assert isinstance(w, World)
     
-    l   = [1., .9, .8 , .7 , .6, .5, .4 , .3, .2]
-    m   = [1., .9, .8 , .7 , .6, .5, .4 , .3, .2]
+    lengths   = [1., .9, .8 , .7 , .6, .5, .4 , .3, .2]
+    masses   = [1., .9, .8 , .7 , .6, .5, .4 , .3, .2]
 
-    frame = w.ground
-    for (length, mass) in zip(l, m):
+    if free_floating:
+        L = lengths[0]/2
+        body = Body(mass=box([L, L, L], masses[0]))
+        w.add_link(w.ground, FreeJoint(), body)
+        frame = body
+    else:
+        frame = w.ground
+        
+    for (length, mass) in zip(lengths, masses):
         radius = length/10.
         M = transport(cylinder(length, radius, mass), 
                       transl(0., -length/2., 0.))
@@ -32,8 +46,10 @@ def add_robot(w):
     w.init()
         
     # initial configuration
-    w.getjoints()[0].gpos = [3.14159/4.]
-
+    if free_floating:
+        w.getjoints()[1].gpos = [3.14159/4.]
+    else:
+        w.getjoints()[0].gpos = [3.14159/4.]
     
 from arboris.core import WorldObserver
 from numpy import linalg, where
@@ -82,40 +98,33 @@ class MassMonitor(WorldObserver):
         
         show()
 
-##### build section #####
+
+#with_weight = True
+with_weight = False
+free_floating = True
+
 w = ObservableWorld()       
-add_robot(w)
+add_robot(w, free_floating)
 
-##### controller section #####
-weightc = arboris.controllers.WeightController(w)       
-w.register(weightc)
+if with_weight:
+    w.register(arboris.controllers.WeightController(w))
+    t_end = 2.08
+else:
+    if free_floating:
+        joints = w.getjoints()[1:]
+    else:
+        joints = w.getjoints()
+    for j in joints:
+        j.gvel[:] = 2.
+    t_end = 1.430
 
-##### observers section #####
 nrj = EnergyMonitor(w)      
 w.observers.append(nrj)
-
-#perf = PerfMonitor(w)
-#w.observers.append(perf)
-
 mM = MassMonitor(w)
 w.observers.append(mM)
-
-##### dynamic section #####
-w.init()        
-
-##### simulation section #####
-t= 0.; dt = 0.005
-d = Drawer(w)
-d.init()
-#while not d.done():
-while t < 3.06:
-    t += dt
-    w.update_dynamic()
-    w.update_controllers(dt)
-    w.integrate(dt)
-    d.update(dt)
-
-w.finish()
+w.observers.append(Drawer(w))
+timeline = arange(0, t_end, 0.005)
+simulate(w, timeline)
 
 nrj.plot()
 mM.plot()
