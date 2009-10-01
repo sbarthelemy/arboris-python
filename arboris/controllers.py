@@ -20,18 +20,17 @@ class WeightController(Controller):
     >>> (gforce, impedance) = c.update()
 
     """
-    def __init__(self, world, gravity=None, name=None):
+    def __init__(self, world, gravity=-9.81, name=None):
         assert isinstance(world, World)
         self._bodies = world.ground.iter_descendant_bodies
-        if gravity is None:
-            self._gravity = zeros(6)
-            self._gravity[3:6] = -9.81*world.up
-        else:
-            self._gravity = array(gravity)
+        self.gravity = float(gravity)
         Controller.__init__(self, name=name)
+
 
     def init(self, world):
         self._wndof = world.ndof
+        self._gravity_dtwist = zeros(6)
+        self._gravity_dtwist[3:6] = float(self.gravity)*world.up
 
     def update(self, dt=None):
         gforce = zeros(self._wndof)
@@ -41,13 +40,13 @@ class WeightController(Controller):
             H_bc = principalframe(b.mass)
             R_gb = b.pose[0:3,0:3] 
             H_bc[0:3,0:3] = R_gb.T
-            wrench_c = array((0,0,0,0,-9.81*b.mass[3,3],0)) 
-            Ad_cb = homogeneousmatrix.iadjoint(H_bc)
-            wrench_b = dot(Ad_cb.T, wrench_c)
-            gforce += dot(b.jacobian.T, wrench_b )
+            #wrench_c = array((0,0,0,0,-9.81*b.mass[3,3],0))
+            #Ad_cb = homogeneousmatrix.iadjoint(H_bc)
+            #wrench_b = dot(Ad_cb.T, wrench_c)
+            #gforce += dot(b.jacobian.T, wrench_b )
             # gravity acceleration expressed in body frame
-            #g = dot(homogeneousmatrix.iadjoint(b.pose), self._gravity)
-            #gforce += dot(b.jacobian.T, dot(b.mass, g))
+            g = dot(homogeneousmatrix.iadjoint(b.pose), self._gravity_dtwist)
+            gforce += dot(b.jacobian.T, dot(b.mass, g))
         impedance = zeros( (self._wndof, self._wndof) )
         return (gforce, impedance)
             

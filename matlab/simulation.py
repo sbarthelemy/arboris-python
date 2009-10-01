@@ -61,12 +61,12 @@ def run_py(nb_bd, w0, v0, dq0, with_gravity, dt, tend, name):
     gvel.extend(v0)
     gvel.extend(dq0)
     if with_gravity:
-        gravity = [0,0,0,0,0,-9.81]
+        gravity = -9.81
     else:
-        gravity = [0,0,0,0,0,0]
+        gravity = 0.
     
     world = ObservableWorld()
-    
+    world._up = array([0., 0., 1.])
     import robot_generic
     robot_generic.add_robot(world)
     obs = RobotObserver(world)

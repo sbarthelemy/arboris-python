@@ -9,7 +9,7 @@ __author__ = ("Joseph SALINI <joseph.salini@gmail.com>",
 
 from arboris.core import Body, SubFrame, Joint, World
 from arboris import joints, shapes
-from numpy import zeros, eye, array, arange
+from numpy import zeros, eye, array, arange, hstack
 
 
 
@@ -188,19 +188,16 @@ class MatlabSimulationGenerator(object):
         if len(world._constraints) > 0:
             raise GenerationError('constraints are not handled yet')
             
-        with_gravity = False
+        gravity = 0.
         for a in world._controllers:
             if isinstance(a, WeightController):
-                if with_gravity:
+                if gravity:
                     raise GenerationError('the world can only have one WeightController')
                 else:
-                    with_gravity = True
+                    gravity = a.gravity
             else:
                 raise GenerationError('the world cannot have controllers, except one WeightController')
-        if with_gravity:
-            gravity_acc = hstack([-9.81*world.up, zeros(3)]) # TODO: avoid hardcoding -9.81
-        else:
-            gravity_acc = zeros(6)
+        gravity_acc = hstack([gravity*world.up, zeros(3)])
         robot_name = "robot"
         text = """
 function [rs cs time] = simulate(t_start, t_end, dt)
@@ -292,7 +289,6 @@ tree.name = '{name}';
         self.stream.write(text) 
     
     def _finish(self):
-        from numpy import hstack
         gvel = [self._gvel[0][3:6], self._gvel[0][0:3]] + self._gvel[1:]
         text="""
 robot = arb_robot(arb_treestructtree(tree));
