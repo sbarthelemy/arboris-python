@@ -441,6 +441,11 @@ class SoftFingerContact(PointContact):
                 -self._frames[0].jacobian[2:6,:])
 
 
+    def update(self):
+        self._force[:] = 0.
+        PointContact.update(self)
+    
+    
     def solve(self, vel, admittance, dt):
         r"""
 
