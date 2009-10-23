@@ -28,7 +28,7 @@ help:
 clean:
 	-rm -rf .build/*
 
-html: $(PNG)
+html:
 	mkdir -p .build/html .build/doctrees
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) .build/html
 	@echo
@@ -51,7 +51,7 @@ htmlhelp:
 	@echo "Build finished; now you can run HTML Help Workshop with the" \
 	      ".hhp project file in .build/htmlhelp."
 
-latex: img/*.pdf
+latex:
 	mkdir -p .build/latex .build/doctrees
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) .build/latex
 	@echo
@@ -77,6 +77,10 @@ doctest:
 	$(SPHINXBUILD) -b doctest . .build/doctests
 	@echo
 	@echo "Doctests passed"
+
+png: $(PNG)
+
+pdf: $(PDF)
 
 img/%.png:img/%.svg
 	inkscape --export-png=$@ $<

@@ -7,5 +7,3 @@ src/*.c
 build/
 dist/
 /doc/.build/
-/doc/img/*.png
-/doc/img/*.pdf
