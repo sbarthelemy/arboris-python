@@ -4,17 +4,6 @@ Visualization of a simulation
 
 This module is based on the openscenegraph (osg) python wrappers.
 
-It can be used in four ways:
-
-    - *offline*: during the simulation, graphics are saved by an 
-      :class:`OsgSavePlugin` plugin and played later (offline), 
-      (TODO: not available yet)
-    
-    - *during simulation*: graphics are drawn and updated from the main
-      simulation loop by a the :class:`DrawerPlugin` plugin,
-    
-    - *interactive GUI*: TODO
-
 Scene graph basics
 ------------------
 
@@ -52,18 +41,8 @@ window(s) and graphics context(s) based on the underlying graphics system
 capabilities, so a single Viewer-based application executable runs on 
 single or multiple display systems.
 
-Internals
----------
-
-The :class:`WorldDrawer` class creates a graphic representation of an
-arboris world as an OSG graph. Several properties of the world are 
-represented (shapes, inertia ellispoids,...), and the graphics can be 
-tuned with a dict of options, whose default values are given by the 
-:func:`graphic_option` function. The object stores a ref to the arboris
-world in order to update the representation when the bodies move.
-
 """
-__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
+__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>",
               "Joseph SALINI <joseph.salini@gmail.com>")
 
 import osg, osgDB, osgGA, osgViewer, osgText, osgUtil

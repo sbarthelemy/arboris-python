@@ -1,10 +1,9 @@
 # coding=utf-8
-"""
-Collision solvers...
+"""Collision solvers...
 
 """
 
-__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
+__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from numpy.linalg import norm
 from numpy import zeros, eye, dot, absolute, argsort, cross, argmin,\
@@ -189,7 +188,7 @@ def _sphere_sphere_collision(p_g0, radius0, p_g1, radius1):
 
 def _box_sphere_collision(H_g0, lengths0, p_g1, radius1):
     """
-    :param H_g0: pose of the box `\Hg[g]_1`
+    :param H_g0: pose of the box `H_{g1}`
     :type H_g0: (4,4) array
     :param lengths0: lengths of the box
     :type lengths0: (3,) array

@@ -4,7 +4,6 @@ Development
 
 This is a small page to help hacking arboris-python.
   
-
 Using Git
 =========
 
@@ -16,6 +15,8 @@ Install and set up git::
   sudo aptitude install git-gui gitk
   git config --global user.name "Your Name Comes Here"
   git config --global user.email you@yourdomain.example.com
+  git config --global --add color.diff always
+  git config --global --add color.interacive always
 
 Then, run ``git help tutorial`` for help.
 
@@ -66,32 +67,6 @@ Then he sends the patch to Seb by email, who applies it and push the result back
 Eventually, when Joe issues a new pull, everything gets merged gracefully::
 
   joe@joe-laptop$ git pull
-
-
-Python Development tools
-========================
-
-Debugging
----------
-
-with IPython
-~~~~~~~~~~~~
-
-A quite easy way to debug without breakpoints is to embed an ipython shell in te program. For instance, the following program computes an IK motion::
-
-  TODO
-
-You can examine the context at t==10::
-
-        if 10< t <= 11:
-            from IPython.Shell import IPShellEmbed
-            ipshell = IPShellEmbed()
-            ipshell()
-
-with winpdb
-~~~~~~~~~~~
-
-TODO
 
 
 Design choices

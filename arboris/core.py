@@ -1,5 +1,5 @@
 # coding=utf-8
-"""
+"""The core of the simulator.
 
 A world (instance of the :class:`World` class) consists of bodies (instances of the :class:`Body` class) interlinked by joints (instances of :class:`Joint` subclasses). Joints serve two purposes in arboris: 
     
@@ -14,7 +14,7 @@ of the tree (which is body called "ground")).
 One or more frames (instances of the :class:`SubFrame` class) can be associated to bodies and serve as anchor points to the joints.
 
 """
-__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
+__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from numpy import array, zeros, eye, dot
 import numpy
@@ -313,10 +313,10 @@ class World(NamedObject):
         self.ground = Body('ground')
         self._current_time = 0.
         self._up = array((0., 1., 0.))
-        self._controllers = []
-        self._constraints = []
-        self._subframes = []
-        self._shapes = []
+        self._controllers = [] #TODO: should be a Set?
+        self._constraints = [] #TODO: should be a Set?
+        self._subframes = [] #TODO: should be a Set?
+        self._shapes = [] #TODO: should be a Set?
         self._ndof = 0
         self._gvel = array([])
         self._mass =  array([])# updated by self.update_dynamic()
@@ -465,8 +465,7 @@ class World(NamedObject):
             # and old_joint is still somewhere in body0.childrenjoint
             # let's fix that
             i = body0.childrenjoints.index(old_joint)
-            body0.childrenjoints[i] = body0.childrenjoints.pop()
-            
+            body0.childrenjoints[i] = body0.childrenjoints.pop()            
             self.init() #TODO
         
     def register(self, obj):
@@ -495,20 +494,16 @@ class World(NamedObject):
         """
         if isinstance(obj, Body):
             pass
-        
         elif isinstance(obj, Joint):
             self.register(obj.frames[0])
             self.register(obj.frames[1])
-
         elif isinstance(obj, SubFrame):
             if not obj in self._subframes:
                 self._subframes.append(obj)
-
         elif isinstance(obj, Shape):
             if not obj in self._shapes:
                 self._shapes.append(obj)
             self.register(obj.frame)
-
         elif isinstance(obj, Constraint):
             if not obj in self._constraints:
                 self._constraints.append(obj)
@@ -517,12 +512,9 @@ class World(NamedObject):
                     #TODO: World should not know about PointContact!
                     self.register(obj._frames[0])
                     self.register(obj._frames[1])
-
-
         elif isinstance(obj, Controller):
             if not obj in self._controllers:
                 self._controllers.append(obj)
-
         else:
             raise ValueError(
                 'I do not know how to register objects of type {0}'.format(type(obj)))
@@ -1076,7 +1068,7 @@ class Body(NamedObject, Frame):
             j._frame1.body.update_geometric(child_pose)
         
     def update_dynamic(self, pose, jac, djac, twist):
-        r"""Sets
+        r"""Sets the body ``pose, jac, djac, twist`` and computes its children ones.
 
         This method (1) sets the body dynamical model (pose, jacobian, 
         hessian and twist) to the values given as argument, (2) computes 
@@ -1086,7 +1078,7 @@ class Body(NamedObject, Frame):
         As a result, the dynamical model of all the bodies is computed 
         recursively.
        
-        :param pose: the body pose relative to the ground: `\Hg[g]_b`
+        :param pose: the body pose relative to the ground: `H_{gb}`
         :type pose: 4x4 ndarray
         :param jac: the body jacobian relative to the world (in body frame):
             `\J[b]_{b/g}`
@@ -1110,16 +1102,16 @@ class Body(NamedObject, Frame):
         
         .. image:: img/body_model.png
 
-        One can notice that `\Hg[n]_c` and `\Hg[p]_r` are constant.
+        One can notice that `H_{nc}` and `H_{pr}` are constant.
         
         The child body pose can be computed as
 
         .. math::
 
-            \Hg[g]_c &= \Hg[g]_p \; \Hg[p]_c \\
-                     &= \Hg[g]_p \; (\Hg[p]_r \; \Hg[r]_n \; \Hg[n]_c)
+            H_{gc} &= H_{gp} \; H_{pc} \\
+                   &= H_{gp} \; (H_{pr} \; H_{rn} \; H_{nc})
 
-        where `\Hg[r]_n` depends on the joint generalized configuration and is 
+        where `H_{rn}` depends on the joint generalized configuration and is 
         given by its :attr:`~arboris.core.Joint.pose` attribute.
 
         The chil body twist is given as

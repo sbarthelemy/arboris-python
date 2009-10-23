@@ -2,40 +2,53 @@
 Modules
 =========
 
-:mod:`core` -- Dead parrot access
-====================================
+:mod:`core` -- The core of the simulator
+========================================
 
 .. inheritance-diagram:: arboris.core
 
 .. automodule:: arboris.core
    :members:
+   :undoc-members:
 
 
-:mod:`human36` -- Dead parrot access
-====================================
+
+:mod:`human36`
+==============
 
 .. automodule:: arboris.robots.human36
    :members:
+   :undoc-members:
 
 
-:mod:`homogeneousmatrix` -- Dead parrot access
-==============================================
+:mod:`homogeneousmatrix`
+========================
 
 .. automodule:: arboris.homogeneousmatrix
    :members:
+   :undoc-members:
 
 
-:mod:`adjointmatrix` -- Dead parrot access
-==========================================
+:mod:`adjointmatrix`
+====================
 
 .. automodule:: arboris.adjointmatrix
    :members:
+   :undoc-members:
 
 
-:mod:`twistvector` -- Dead parrot access
-========================================
+:mod:`twistvector`
+==================
 
 .. automodule:: arboris.twistvector
    :members:
+   :undoc-members:
 
-j
+
+:mod:`massmatrix`
+=================
+
+.. automodule:: arboris.massmatrix
+   :members:
+   :undoc-members:
+

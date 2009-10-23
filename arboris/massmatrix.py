@@ -1,10 +1,8 @@
 # coding=utf-8
-"""
-Functions for working with mass matrices.
-
+"""Functions for working with mass matrices.
 """
 
-__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
+__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 import homogeneousmatrix as Hg
 from numpy import diag, eye, dot, array
@@ -24,17 +22,16 @@ def checkismassmatrix(M, tol=tol):
 
 def transport(M, H):
     """Transport (express) the mass matrix into another frame.
-   
-    **Parameters:**
-    :param M: the mass matrix expressed in the original frame 
-        (say, `a`)
+        
+    :param M: the mass matrix expressed in the original frame (say, `a`)
     :type M: (6,6)-shaped array
     :param H: homogeneous matrix from the new frame (say `b`) to the
-        original one: `\Hg[a]_b`
+              original one: `H_{ab}`
     :type H: (4,4)-shaped array
     :rtype: (6,6)-shaped array
-
+    
     **Example:**
+    
     >>> M_a = diag((3.,2.,4.,1.,1.,1.))
     >>> H_ab = Hg.transl(1., 3., 0.)
     >>> M_b = transport(M_a, H_ab)
@@ -56,15 +53,15 @@ def transport(M, H):
 def principalframe(M):
     """Find the principal frame of inertia of a mass matrix.
 
-    **Parameters:**
     :param M: mass matrix expressed in any frame (say `a`)
     :type M: (6,6)-shaped array
     :rtype: (4,4)-shaped array
 
-    Returns the homogeneous matrix `\Hg[a]_m` to the principal inertia
+    Returns the homogeneous matrix `H_{am}` to the principal inertia
     frame `m`
 
     **Example:**
+    
     >>> M_a = diag((3.,2.,4.,1.,1.,1.))
     >>> H_ab = Hg.transl(1., 3., 0.)
     >>> M_b = transport(M_a, H_ab)
@@ -93,6 +90,8 @@ def principalframe(M):
 def box(lengths, mass):
     """Mass matrix of an homogeneous parallelepiped.
     
+    **Example:**
+    
     >>> box((4.,8.,12.), 3.)
     array([[ 52.,   0.,   0.,   0.,   0.,   0.],
            [  0.,  40.,   0.,   0.,   0.,   0.],
@@ -100,7 +99,7 @@ def box(lengths, mass):
            [  0.,   0.,   0.,   3.,   0.,   0.],
            [  0.,   0.,   0.,   0.,   3.,   0.],
            [  0.,   0.,   0.,   0.,   0.,   3.]])
-
+    
     """
     (x, y, z) = lengths
     Ix = mass/12.*(y**2+z**2)

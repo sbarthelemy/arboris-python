@@ -10,8 +10,8 @@ What we use...
 ---------------------
 
 The program is written in python 2.6. See the documentation 
-`online <http://docs.python.org/>` 
-(or `locally <file:///usr/share/doc/python2.6-doc/html/index.html>` 
+`online <http://docs.python.org/>`_
+(or `locally <file:///usr/share/doc/python2.6-doc/html/index.html>`_
 on linux)
 and start with the tutorial. 
 
@@ -143,4 +143,38 @@ Don't worry about the hundreds of warnings during the compilation.
 Install osgswig from http://code.google.com/p/osgswig/. The current 
 installer is named "osgPython-2.6.1-0-py26.exe". The install process is 
 detailed `here <http://code.google.com/p/osgswig/wiki/InstallationWindows>`_.
+
+Installing h5py
+===============
+
+...for ubuntu jaunty and karmic
+-------------------------------
+
+Install hdf5 library and headers::
+
+    sudo aptitude install libhdf5-dev
+
+Download, compile and install the python bindings (h5py)::
+
+    wget http://h5py.googlecode.com/files/h5py-1.2.1.tar.gz
+    tar -xzf h5py-1.2.1.tar.gz
+    cd h5py-1.2.1
+    python setup.py build
+    python setup.py install --prefix=/home/seb/.local
+
+=======
+Installing cvxmod
+=================
+
+...for ubuntu karmic
+--------------------
+
+install cvxopt from ubuntu and cvxmod from sources::
+
+  sudo aptitude install python-cvxopt
+  cd /tmp/
+  wget http://cvxmod.net/dist/cvxmod-0.4.6.tar.gz
+  tar xzf cvxmod-0.4.6.tar.gz
+  cd cvxmod-0.4.6/
+  sudo python setup.py install
 

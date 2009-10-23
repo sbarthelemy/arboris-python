@@ -1,6 +1,7 @@
 # coding=utf-8
+"""Different kinds of joints"""
 
-__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
+__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from numpy import array, zeros, eye, sin, cos, dot
 import homogeneousmatrix
@@ -58,7 +59,7 @@ class FreeJoint(Joint):
 class RzRyRxJoint(LinearConfigurationSpaceJoint):
     """Ball and socket (3-dof) joint implemented with 3 serial hinges
 
-    the resulting homogeneous matrix is given by `\Hg[0]_1 = Rz Ry Rx`
+    the resulting homogeneous matrix is given by `H_{01} = Rz Ry Rx`
     """
     def __init__(self, gpos=[0.,0.,0.], gvel=[0.,0.,0.], name=None):
         self.gpos = array(gpos).reshape((3))

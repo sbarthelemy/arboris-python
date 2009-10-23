@@ -83,10 +83,12 @@ png: $(PNG)
 pdf: $(PDF)
 
 img/%.png:img/%.svg
-	inkscape --export-png=$@ $<
+	echo "skipping svg conversion due to bug https://bugs.launchpad.net/inkscape/+bug/398221"
+	#inkscape --export-png=$@ $<
 
 img/%.pdf:img/%.svg
-	inkscape --export-pdf=$@ $<
+	echo "skipping svg conversion due to bug https://bugs.launchpad.net/inkscape/+bug/398221"
+	#inkscape --export-pdf=$@ $<
 
 
 

@@ -30,7 +30,7 @@ matrices of the world model in generalized coordinates. We'll denote
 respectively `M`, `B` and `N` the mass, viscosity and non-linear effects 
 matrices.
 
-At this step, the world "free" model is 
+At this step, the world "unactuated" model is 
 
 .. math::
     M(t) \dGVel(t+dt) + \left( N(t) + B(t) \right) \GVel(t+dt) = 0,
@@ -45,7 +45,7 @@ Note that there is no contact, actuation or even gravity involved yet.
 ==============================================
 
 The :meth:`~arboris.core.World.update_controllers` method completes the 
-model with "actuation" forces provide by the controllers. Actuation is 
+model with "actuation" forces provided by the controllers. Actuation is 
 here taken in a broaden meaning and may actually include weight (from 
 :class:`arboris.controllers.WeightController`).
 
@@ -57,13 +57,13 @@ Considering the following integration scheme
 we get this first order free model
         
 .. math::
-    \left( \frac{M(t)}{dt}+N(t)+B(t) \right) \GVel(t+dt) &= 
+    \left( \frac{M(t)}{dt} + N(t) + B(t) \right) \GVel(t+dt) &= 
     \frac{M(t)}{dt} \GVel(t)
 
 which is then completed by the controllers first-order actuation force:
 
 .. math::
-    \GForce_a(t) &= \GForce_{0a}(t) + Z_a(t) \GVel(t+td)
+    \GForce_a(t) &= \GForce_{0a}(t) + Z_a(t) \GVel(t+dt)
 
 It is the responsability of each controller to provide both `\GForce_{0a}` and
 `Z_a(t)` when its :meth:`~arboris.core.Controller.update` method is called by
@@ -72,14 +72,14 @@ It is the responsability of each controller to provide both `\GForce_{0a}` and
 The actuated model is then
 
 .. math::
-    \left( \frac{M(t)}{dt}+N(t)+B(t) - \sum_a Z_a(t) \right) 
+    \left( \frac{M(t)}{dt} + N(t) + B(t) - \sum_a Z_a(t) \right) 
     \GVel(t+dt) &= 
     \frac{M(t)}{dt} \GVel(t) + \sum_a \GForce_{0a}(t)
 
 Introducing the world impedance `Z` and admittance `Y`.
 
 .. math::
-    Z(t) &= \frac{M(t)}{dt}+N(t)+B(t)- sum_a Z_a(t) \\
+    Z(t) &= \frac{M(t)}{dt} + N(t) + B(t)- \sum_a Z_a(t) \\
     Y(t) &= Z^{-1}(t)
 
 leads to a more compact expression:

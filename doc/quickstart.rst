@@ -18,8 +18,9 @@ That world has 3 degrees of freedom.
 
 .. doctest::
 
-  >>> from arboris.robots.simplearm import simplearm
-  >>> w = simplearm()
+  >>> from arboris.all import *
+  >>> w = World()
+  >>> add_simplearm(w)
   >>> w.ndof
   3
 
@@ -45,7 +46,7 @@ One can get a list of the bodies[1]_:
   >>> joints['Elbow'].gpos
   array([ 0.])
 
-.. _[1] this is not a raw python list, but instance of 
+.. [1] this is not a raw python list, but an instance of 
   :class:`arboris.core.NamedObjectsList` which allows to index elements
   by the object name in addition to integers.
 
@@ -116,9 +117,10 @@ method.
 
 .. doctest::
 
-  >>> from arboris.robots.simplearm import simplearm
+  >>> from arboris.all import *
   >>> from numpy import dot, pi
-  >>> w = simplearm(lengths=(1., 1., 0.2))
+  >>> w = World()
+  >>> add_simplearm(w,lengths=(1., 1., 0.2))
   >>> joints = w.getjoints()
   >>> joints['Shoulder'].gpos[0] = pi/3
   >>> joints['Elbow'].gpos[0] = -2*pi/3
@@ -146,41 +148,6 @@ method.
          [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00]])
   >>> dot(frames['EndEffector'].jacobian, w.gvel)
   array([ 0.        ,  0.        ,  0.17453293, -0.03490659,  0.        ,  0.        ])
-
-
-Drawing a robot
-===============
-
-The simplest way to have a graphic representation of a world is to use :class:`DrawableWorld` objects instead of :class:`World` ones. The :class:`DrawableWorld` class inherits form the :class:`World` one, thus everything we've learnt before  still holds. It adds 3 methods :meth:`init_graphic:`, :meth:`update_graphic` and :meth:`graphic_is_done`.
-
-
-
-.. doctest::
-
-  >>> from arboris.robots.simplearm import simplearm
-  >>> from arboris.visu_osg import DrawableWorld
-  >>> w = simplearm(DrawableWorld())
-  >>> joints = w.getjoints()
-  >>> t = 0.
-  >>> dt = 1./100.
-  >>> w.init_graphic()
-  >>> while(not(w.graphic_is_done())):
-  >>>     t += dt
-  >>>     joints['Shoulder'].gpos[0] = t
-  >>>     joints['Elbow'].gpos[0] = -2*t
-  >>>     joints['Wrist'].gpos[0] = t
-  >>>     w.update_geometric()
-  >>>     w.update_graphic()
-
-
-Inverse kinematics
-==================
-
-A dynamic simulation
-====================
-
-.. doctest::
-
   >>> w.mass
   array([[ 1.24417333,  0.20000667,  0.02267333],
          [ 0.20000667,  0.49000667,  0.01267333],
@@ -193,15 +160,69 @@ A dynamic simulation
   array([[ -1.57361875e-18,  -3.52139031e-18,  -5.19433541e-20],
          [ -3.02299894e-03,  -3.02299894e-03,  -3.02299894e-03],
          [ -1.38334127e-19,   0.00000000e+00,   0.00000000e+00]])
-  >>> 
 
+
+A dynamic simulation
+====================
+
+.. doctest::
+
+  >>> from arboris.all import *
+  >>> w = World()
+  >>> add_simplearm(w,lengths=(1., 1., 0.2))
+  >>> timeline = arange(0.,.1,1e-3)
+  >>> simulate(w, timeline)
+
+
+...with visualization
+=====================
+
+To get informations about the world, we can use an
+:class:`arboris.core.ObservableWorld` instead of a 
+plain :class:`arboris.core.World`, and "plug"
+:class:`arboris.core.WorldObservers` to it.
+
+One of these observers gives a graphic representation of the world:
+the class :class:`arboris.visu_osg.Drawer`.
+
+.. doctest::
+
+  >>> from arboris.all import *
+  >>> from numpy import arange
+  >>> from arboris.visu_osg import Drawer
+  >>> w = ObservableWorld()
+  >>> w.observers.append(Drawer(w))
+  >>> add_simplearm(w)
+  >>> timeline = arange(0.,.1,1e-3)
+  >>> simulate(w, timeline)
 
 Using a controller
 ==================
 
+.. doctest::
+
+  >>> from arboris.all import *
+  >>> from numpy import arange, diag, sqrt
+  >>> from arboris.visu_osg import Drawer
+  >>> from arboris.controllers import ProportionalDerivativeController
+  >>> w = ObservableWorld()
+  >>> w.observers.append(Drawer(w))
+  >>> add_simplearm(w)
+  >>> joints = w.getjoints()
+  >>> w.register(ProportionalDerivativeController(
+  ...     joints,
+  ...     gpos_des=(3.14/4,3.14/4,3.14/4),
+  ...     kp=diag((1.,1.,1.)),
+  ...     kd=diag((1.,1.,1.))/sqrt(2)))
+  >>> timeline = arange(0.,3,1e-3)
+  >>> simulate(w, timeline)
+
 Writing a controller
 ====================
+
+TODO
 
 Adding contacts
 ===============
 
+TODO

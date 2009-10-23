@@ -1,7 +1,7 @@
 #coding=utf-8
 """A set of WorldObservers.
 """
-__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>",
+__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>",
               "Joseph SALINI <joseph.salini@gmail.com>")
 
 from core import WorldObserver

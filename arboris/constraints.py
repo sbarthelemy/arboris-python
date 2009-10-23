@@ -1,10 +1,8 @@
 # coding=utf-8
 
-__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
+"""Constraints solvers, used in the Gauss-Seidel solver."""
 
-"""
-
-"""
+__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from abc import ABCMeta, abstractmethod
 from numpy import array, zeros, eye, dot, hstack, diag
@@ -105,13 +103,13 @@ class BallAndSocketConstraint(Constraint):
 
     .. math::
         
-        \Hg[0]_1 = 
+        H_{01} = 
         \begin{bmatrix}
-            \pre[0]R_1 & 0\\
-            0          & 1
+            R_{01} & 0\\
+            0      & 1
         \end{bmatrix}
         \Leftrightarrow 
-        \pre[0]p_1 = 0
+        p_{01} = 0
 
     Solving the constraint means computing the right constraint force that will
     ensure that the kinematic condition will be met.
@@ -121,7 +119,7 @@ class BallAndSocketConstraint(Constraint):
 
     .. math::
 
-        v &= S \; \twist[0]_{1/0} = \pre[0]{\dot{p}}_1 \\
+        v &= S \; \twist[0]_{1/0} = \dot{p}_{01} \\
         \wrench[0]_{0/1} &= S^T \; f  \\
         S &= 
         \begin{bmatrix}
@@ -144,12 +142,12 @@ class BallAndSocketConstraint(Constraint):
         &= f^{k-1}(t) + \Delta f\\
         v^k(t+dt)
         &= v^*(t+dt) + Y(t) \Delta f  \\
-        \Hg[0]_{1/0}^k(t+dt)
+        H_{01}^k(t+dt)
         &= \exp( dt \; S^T \; ( v^*(t+dt) + Y(t) \; \Delta f ) ) \;
-        \Hg[0]_{1/0}(t)
+        H_{01}(t)
         \\
-        \pre[0]p_1^k(t+dt)
-        &= \pre[0]p_1(t) + dt \; (v^*(t+dt) +  Y(t) \; \Delta f) 
+        p_{01}^k(t+dt)
+        &= p_{01}(t) + dt \; (v^*(t+dt) +  Y(t) \; \Delta f) 
 
     """
    
@@ -169,16 +167,16 @@ class BallAndSocketConstraint(Constraint):
     def update(self):
         r"""
         Compute the predicted relative position error between the socket and
-        ball centers, `\pre[0]p_1(t)` and save it in ``self._pos0``.
+        ball centers, `p_{01}(t)` and save it in ``self._pos0``.
 
         .. math::
 
-            \Hg[0]_1(t) 
-            &= \left(\Hg[g]_0(t)\right)^{-1} \; \Hg[g]_1(t) \\
-            \Hg[0]_1(t) 
+            H_{01}(t) 
+            &= \left(H_{g0}(t)\right)^{-1} \; H_{g1}(t) \\
+            H_{01}(t) 
             &=
             \begin{bmatrix}
-            \pre[0]R_1(t) & \pre[0]p_1(t) \\
+            R_{01}(t) & p_{01}(t) \\
             0             & 1
             \end{bmatrix}
 
@@ -201,15 +199,15 @@ class BallAndSocketConstraint(Constraint):
         from this equation
         
         .. math::
-            \pre[0]p_1^k(t+dt) 
-             &= \pre[0]p_1(t) + dt \; ( v^* +  Y \; \Delta f) 
+            p_{01}^k(t+dt) 
+             &= p_{01}(t) + dt \; ( v^* +  Y \; \Delta f) 
 
-        given that we want `\pre[0]p_1(t+dt) = 0`, we return 
+        given that we want `p_{01}(t+dt) = 0`, we return 
 
         .. math::
             \Delta f = -Y^{-1} \; 
             \left(
-                \frac{\pre[0]p_1(t)}{dt} + v^* 
+                \frac{p_{01}(t)}{dt} + v^* 
             \right)
 
         and update the constraint force adjustment `\Delta f` 
@@ -307,6 +305,7 @@ class SoftFingerContact(PointContact):
 
     Let's consider two convex objects (shapes) and attach a frame to each of
     them in such a way that:
+    
         - their origin are chosen on the object surface, where the 
           (signed) distance between the objects is minimal,
         - the two frames are aligned,
@@ -316,8 +315,7 @@ class SoftFingerContact(PointContact):
     change matrix has the following form:
     
     .. math::
-
-        \Hg[0]_1 &=
+        H_{01} &=
         \begin{bmatrix}
         1 & 0 & 0 & 0 \\
         0 & 1 & 0 & 0 \\
@@ -348,11 +346,9 @@ class SoftFingerContact(PointContact):
         d &\ge 0 \\
         d \cdot f_z &=0
 
-    which are often sumarized as `0 \le d \perp f_z \ge 0`.
+    which are often summarized as `0 \le d \perp f_z \ge 0`.
 
-    .. todo:: 
-        check the contact rupture condition is good. (Duindam, in his phd, 
-        chose a very specific one).
+    TODO: check the contact rupture condition is good. (Duindam, in his phd, chose a very specific one).
     
     Additionnaly, the Coulomb law of friction with the elliptic friction 
     model states that the contact is in static friction mode and only 

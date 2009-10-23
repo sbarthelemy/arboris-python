@@ -23,7 +23,9 @@ sys.path.append(os.path.abspath('..'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.pngmath',
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.doctest',
+              'sphinx.ext.pngmath',
               'sphinx.ext.inheritance_diagram']
 
 # Add any paths that contain templates here, relative to this directory.
@@ -181,7 +183,6 @@ latex_preamble = r"""\providecommand{\SO}{\text{SO}}
 \providecommand{\dJ}[1][{}]{\vphantom{J}^{#1}\!\dot{J}}
 \providecommand{\wrench}[1][{}]{\vphantom{W}^{#1}\!W}
 \providecommand{\vect}[2]{\vphantom{#2}^{#1}#2}
-\providecommand{\Hg}[1][{}]{\vphantom{H}^{#1}H}
 \providecommand{\Ad}[1][{}]{\,\vphantom{Ad}^{#1}\!\!Ad}
 \providecommand{\dAd}[1][{}]{\,\vphantom{Ad}^{#1}\!\!\dot{Ad}}
 \providecommand{\GPos}{Q}
@@ -189,7 +190,7 @@ latex_preamble = r"""\providecommand{\SO}{\text{SO}}
 \providecommand{\GVel}{\nu}
 \providecommand{\dGVel}{\dot{\nu}}
 \providecommand{\GAcc}{\dot{\nu}}
-\providecommand{\GForce}{\tau}
+\providecommand{\GForce}{\gamma}
 """
 
 # Documents to append as an appendix to all manuals.

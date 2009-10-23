@@ -1,10 +1,6 @@
 # coding=utf-8
-"""
-TODO: add doc here
-TODO: add doctests
-TODO: add support for FreeMotion
-"""
-__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
+
+__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 from numpy import dot 
 import homogeneousmatrix as Hg
 import twistvector as T

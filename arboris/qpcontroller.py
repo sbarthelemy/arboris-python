@@ -1,4 +1,7 @@
-"""This module is still work in progress.
+# coding=utf-8
+"""A controller using QP
+
+TODO: This module is still work in progress.
 """
 __author__ = ("Joseph Salini <joseph.salini@gmail.com>")
 

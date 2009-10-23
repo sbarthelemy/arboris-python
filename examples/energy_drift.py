@@ -126,7 +126,7 @@ w.observers.append(mM)
 timeline = arange(0, t_end, 0.005)
 simulate(w, timeline)
 
-#nrj.plot()
+nrj.plot()
 #mM.plot()
     
 

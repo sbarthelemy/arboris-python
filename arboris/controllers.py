@@ -1,3 +1,6 @@
+# coding=utf-8
+__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
+
 from abc import ABCMeta, abstractmethod, abstractproperty
 from core import NamedObject, Controller, World
 from numpy import array, zeros, dot, ix_
@@ -5,8 +8,9 @@ import homogeneousmatrix
 from joints import LinearConfigurationSpaceJoint
 
 class WeightController(Controller):
-    """
+    """A contoller which applies weight to joints.
 
+    **Test:**: 
     >>> from arboris.core import simplearm
     >>> w = simplearm()
     >>> joints = w.getjoints()
@@ -17,8 +21,8 @@ class WeightController(Controller):
     >>> w.register(c)
     >>> w.init()
     >>> w.update_dynamic() #TODO change for update_kinematic
-    >>> (gforce, impedance) = c.update()
-
+    >>> (gforce, impedance) = c.update() #TODO: test!
+    
     """
     def __init__(self, world, gravity=-9.81, name=None):
         assert isinstance(world, World)

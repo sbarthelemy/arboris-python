@@ -1,6 +1,5 @@
 # coding=utf-8
 
-
 """
 Functions for working with adjoint matrices
 
@@ -9,7 +8,7 @@ H = [ R p
 Ad(H) = [  R   0
           pxR  R ]
 """
-__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
+__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 
 import numpy as np

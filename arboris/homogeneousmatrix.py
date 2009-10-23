@@ -1,9 +1,8 @@
 # coding=utf-8
-"""
-Functions for working with homogeneous matrices.
+"""Functions for working with homogeneous matrices."""
 
-"""
-__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
+__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
+
 from numpy import array, zeros, sin, cos, dot, hstack, vstack
 import numpy
 
