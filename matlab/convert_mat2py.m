@@ -1,6 +1,7 @@
-function convert_robot(robot, filename)
-% given an arboris-matlab robot (described in a tree-sctruct), generates a python 
-% file that would the arboris-python equivalent.
+function convert_mat2py(robot, filename)
+% given an arboris-matlab robot, generates a python script that would
+% build the arboris-python equivalent.
+
 
 tree = robot.tree.tree;
 

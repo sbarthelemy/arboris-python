@@ -130,4 +130,33 @@ max computation time (s): {3}""".format(
     max(self._computation_time))
 
 
+class Hdf5Logger(WorldObserver):
+    """An observer that logs what we need and saves it in an hdf5 file.
+    """
+    def __init__(self, world):
+        self._world = world
+    
+    def init(self):
+        self.time = []
+        self.gpos = []
+        self.gvel = []
+        self.mass = []
+        self.nleffects = []
+    
+    def update(self, dt):
+        self.time.append(self._world.current_time)
+        self.gpos.append(self._world.ground.childrenjoints[0].frames[1].pose)
+        self.gvel.append(self._world.gvel)
+        self.mass.append(self._world.mass.copy())
+        self.nleffects.append(self._world.nleffects.copy())
+        
+    def write(self, filename):
+        import h5py
+        f = h5py.File(filename, 'w')
+        f.create_dataset('time', data=self.time)
+        f.create_dataset('gpos', data=self.gpos)
+        f.create_dataset('gvel', data=self.gvel)
+        f.create_dataset('mass', data=self.mass)
+        f.create_dataset('nleffects', data=self.nleffects)
+        f.close()
 

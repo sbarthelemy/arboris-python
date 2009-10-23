@@ -1,55 +1,50 @@
-
+# coding=utf-8
 """
 This example shows that arboris creates energy.
 
-We can see it with four simulations, by toggling:
+We can see it many simulations, by toggling:
 
 - initial velocity,
 - gravity,
 - the free-floating or fixed base.
 
 """
-
+__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
 import arboris.controllers
-from arboris.observers import EnergyMonitor, PerfMonitor#, MassMonitor
+from arboris.observers import EnergyMonitor, PerfMonitor
 from arboris.visu_osg import Drawer
 from arboris.core import World, ObservableWorld, Body, SubFrame, simulate
 from arboris.massmatrix import transport, cylinder, box
 from arboris.homogeneousmatrix import transl
 from arboris.joints import *
 from numpy import arange
+from arboris.robots.snake import add_snake
 
-def add_robot(w, free_floating=False):
+def add_robot(w, gpos, gvel, is_fixed=True):
     assert isinstance(w, World)
     
-    lengths   = [1., .9, .8 , .7 , .6, .5, .4 , .3, .2]
-    masses   = [1., .9, .8 , .7 , .6, .5, .4 , .3, .2]
-
-    if free_floating:
-        L = lengths[0]/2
+    
+    if is_fixed:
+        frame = w.ground
+    else:
+        L = lengths[0]/2.
         body = Body(mass=box([L, L, L], masses[0]))
         w.add_link(w.ground, FreeJoint(), body)
         frame = body
-    else:
-        frame = w.ground
         
-    for (length, mass) in zip(lengths, masses):
+        
+    for (length, mass, q, dq) in zip(lengths, masses, gpos, gvel):
         radius = length/10.
         M = transport(cylinder(length, radius, mass), 
                       transl(0., -length/2., 0.))
-        body = Body(mass= M)
-        joint = RzJoint()
+        body = Body(mass=M)
+        joint = RzJoint(gpos=q, gvel=dq)
         w.add_link(frame, joint, body)
         frame = SubFrame(body, transl(0., length, 0.))
     w.register(frame)
     w.init()
-        
-    # initial configuration
-    if free_floating:
-        w.getjoints()[1].gpos = [3.14159/4.]
-    else:
-        w.getjoints()[0].gpos = [3.14159/4.]
+
     
 from arboris.core import WorldObserver
 from numpy import linalg, where
@@ -101,32 +96,37 @@ class MassMonitor(WorldObserver):
 
 #with_weight = True
 with_weight = False
-free_floating = True
+is_fixed = False
+use_snake = True
+w = ObservableWorld()
+njoints = 9
+lengths   = [1., .9, .8 , .7 , .6, .5, .4 , .3, .2]
+masses   = [1., .9, .8 , .7 , .6, .5, .4 , .3, .2]
+gvel = gvel=[2.]*njoints
+gpos = [0, 3.14159/4., 0, 0, 0, 0, 0, 0, 0]
+#gpos = [0.]*njoints
+if use_snake:
+    add_snake(w, njoints, lengths=lengths, masses=masses, gpos=gpos, gvel=gvel, is_fixed=False)
+else:
+    assert njoints == 9
+    add_robot(w, gpos=gpos, gvel=gvel, is_fixed=is_fixed)
 
-w = ObservableWorld()       
-add_robot(w, free_floating)
 
 if with_weight:
     w.register(arboris.controllers.WeightController(w))
     t_end = 2.08
 else:
-    if free_floating:
-        joints = w.getjoints()[1:]
-    else:
-        joints = w.getjoints()
-    for j in joints:
-        j.gvel[:] = 2.
     t_end = 1.430
 
 nrj = EnergyMonitor(w)      
 w.observers.append(nrj)
 mM = MassMonitor(w)
 w.observers.append(mM)
-w.observers.append(Drawer(w))
+#w.observers.append(Drawer(w))
 timeline = arange(0, t_end, 0.005)
 simulate(w, timeline)
 
-nrj.plot()
-mM.plot()
+#nrj.plot()
+#mM.plot()
     
 

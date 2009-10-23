@@ -9,10 +9,12 @@ __author__ = ("Joseph SALINI <joseph.salini@gmail.com>",
 
 from arboris.core import Body, SubFrame, Joint, World
 from arboris import joints, shapes
-from numpy import zeros, eye, array, arange, hstack
+from numpy import zeros, eye, array, arange, hstack 
+from numpy.core import array2string
 
-
-
+def a2s(a):
+    """Convert an array to a matlab-like string."""
+    return array2string(a, max_line_width=3*73, precision=14)
 
 class GenerationError(RuntimeError):
     pass
@@ -53,7 +55,7 @@ class MatlabConverter(object):
         self.base_lengths = [0.5/2, 0.5/5, 0.5/10]
         self.contact_radius = 0.05
         self.friction_coeff = 0.05
-        
+
     def convert_root_joint(self, world, root_joint):
         assert isinstance(root_joint, Joint)
         assert isinstance(world, World)
@@ -88,13 +90,12 @@ class MatlabConverter(object):
                 world.register(sh)
                 contact = SoftFingerContact((ground_plane, sh), self.friction_coeff)
                 world.register(contact)
-                
-                
+              
     def convert_robot(self, world, root_joint):
         child_body = root_joint.frames[1].body
         self.convert_root_joint(world, root_joint)
         self._traverse(world, child_body)
-        
+
     def _traverse(self, world, body):
         """Recurse through the tree."""
         assert isinstance(world, World)
@@ -173,7 +174,7 @@ class MatlabSimulationGenerator(object):
     def __init__(self):
         pass
         
-    def generate_simulation(self, world, timeline, stream):
+    def generate_simulation(self, world, timeline, stream, simu_name):
         from arboris.controllers import WeightController
         
         t_start = timeline[0]
@@ -181,7 +182,7 @@ class MatlabSimulationGenerator(object):
         t_end = timeline[-1]+dt
         if not (arange(t_start, t_end, dt) == array(timeline)).all(): 
             raise GenerationError('timeline elements should be equally spaced.')
-        
+        t_end -= 1.5*dt
         if len(world.ground.childrenjoints) != 1:
             raise GenerationError('the ground can only have one child joint. (multiple robots are not supported yet.)')
         
@@ -212,14 +213,21 @@ if (nargin < 1)
     t_start = {t_start};
 end
 
-r = create_{name}();
-r(1).model.GravityAcceleration = {gravity_acc}';
-c = cell(0);
-[rs cs time] = simulate(r, c, t_start, t_end, dt);
+global globs; 
+init_globs();
 
+r = create_{rname}();
+r(1).model.GravityAcceleration = {gravity_acc}';
+r(1).controller = arb_h5controller();
+c = cell(0, 0);
+[rs cs time] = simulate(r, c, t_start, t_end, dt);
+st = snapshot2struct(rs);
+st = convert_matpy(st);
+struct2h5(st, ['{sname}' '_mat.h5']);
+
+exit; % quit matlab!
 end
-""".format(t_start=t_start, t_end=t_end, dt=dt, 
-           name=robot_name, gravity_acc=gravity_acc)
+""".format(t_start=t_start, t_end=t_end, dt=dt, rname=robot_name, sname=simu_name, gravity_acc=gravity_acc)
         stream.write(text)
         MatlabRobotGenerator(world).make_robot(
             root_joint = world.ground.childrenjoints[0],
@@ -349,10 +357,10 @@ tree.br({br}).bd({bd}).M = ...
         bd=num_bd,
         name=joint.name,
         name2=body.name,
-        mass=_flip(body.mass),
+        mass=a2s(_flip(body.mass)),
         jtype=jtype,
-        H0 = H00L1,
-        H1 = H11L0
+        H0 = a2s(H00L1),
+        H1 = a2s(2H11L0)
         )
         self.stream.write(text)
        
@@ -378,7 +386,7 @@ tree.br({br}).bd({bd}).shape({num}).dims = {dims};
 tree.br({br}).bd({bd}).shape({num}).H = {H};
 tree.br({br}).bd({bd}).shape({num}).gr_props = {visu};
 """.format(br=br, bd=bd, num=num_in_bd[body.name], stype=stype,
-           dims=dims, H=Hpose,
+           dims=dims, H=a2s(Hpose),
            visu="")
             self.stream.write(text)
 
