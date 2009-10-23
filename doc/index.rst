@@ -18,6 +18,7 @@ Contents:
    collisions
    modules
    notations
+   install
    devel
    quirks
 
