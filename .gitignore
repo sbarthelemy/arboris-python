@@ -6,4 +6,3 @@
 src/*.c
 build/
 dist/
-/doc/.build/

@@ -7,24 +7,6 @@ import os
 from os.path import splitext, basename, join as pjoin, walk, sep
 import doctest
 
-
-class SphinxCommand(Command):
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        os.chdir('doc')
-        pid = os.fork()
-        if not pid:
-            os.execvp("make",['', 'html'])
-        os.wait()
-
-
 class TestCommand(Command):
     user_options = []
 
@@ -60,17 +42,16 @@ class TestCommand(Command):
         for rst in glob(pjoin('tests', '*.rst')):
             doctest.testfile(rst)
 
-version = '0.1.0pre3'
 
-cmdclass = {'test': TestCommand, 
-            'sphinx': SphinxCommand}
-
+cmdclass = {'test': TestCommand}
 
 try:
     from sphinx.setup_command import BuildDoc
-    cmdclass['build_sphinx'] = BuildDoc
+    cmdclass['build_doc'] = BuildDoc
 except ImportError:
     pass
+
+version = '0.1.0pre3'
 
 setup(
     name='arboris',
