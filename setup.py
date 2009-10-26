@@ -2,45 +2,11 @@
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
 from distutils.core import setup, Command
-from distutils.extension import Extension
 from glob import glob
 import os
 from os.path import splitext, basename, join as pjoin, walk, sep
 import doctest
-import inspect
 
-
-def _from_module(module, object):
-    """
-    Return true if the given object is defined in the given
-    module.
-    """
-    if module is None:
-        return True
-    elif inspect.getmodule(object) is not None:
-        return module is inspect.getmodule(object)
-    elif inspect.isfunction(object):
-        return module.__dict__ is object.func_globals
-    elif inspect.isclass(object):
-        return module.__name__ == object.__module__
-    elif hasattr(object, '__module__'):
-        return module.__name__ == object.__module__
-    elif isinstance(object, property):
-        return True # [XX] no way not be sure.
-    else:
-        raise ValueError("object must be a class or function")
-
-def fix_module_doctests(module):
-    """
-    Copy __doc__ to __test__ to workaround doctest failure with pyx files
-    """
-    module.__test__ = {}
-    for name in dir(module):
-       value = getattr(module, name)
-       if inspect.isbuiltin(value) and \
-          isinstance(value.__doc__, str) and \
-          _from_module(module, value):
-           module.__test__[name] = value.__doc__
 
 class SphinxCommand(Command):
     user_options = []
@@ -98,24 +64,8 @@ version = '0.1.0pre3'
 
 cmdclass = {'test': TestCommand, 
             'sphinx': SphinxCommand}
-ext_modules = []
 
 
-try: 
-    from Cython.Distutils import build_ext
-    do_use_cython = True
-except ImportError:
-    do_use_cython = False
-
-if do_use_cython:
-    cmdclass['build_ext'] = build_ext
-    ext_modules.extend([
-       Extension("arboris.misc_c",
-                 ["arboris/misc_c.pyx"]),
-       Extension("arboris.homogeneousmatrix",
-                 ["arboris/homogeneousmatrix.pyx"]),
-       Extension("arboris.twistvector",
-                 ["arboris/twistvector.pyx"])])
 try:
     from sphinx.setup_command import BuildDoc
     cmdclass['build_sphinx'] = BuildDoc
@@ -129,7 +79,6 @@ setup(
     packages=['arboris',
               'arboris.robots'],
     cmdclass=cmdclass,
-    ext_modules=ext_modules,
     package_data = {'arboris':['doc/']}
 )
 
