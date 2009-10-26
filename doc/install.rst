@@ -144,6 +144,7 @@ Install osgswig from http://code.google.com/p/osgswig/. The current
 installer is named "osgPython-2.6.1-0-py26.exe". The install process is 
 detailed `here <http://code.google.com/p/osgswig/wiki/InstallationWindows>`_.
 
+
 Installing h5py
 ===============
 
@@ -162,7 +163,7 @@ Download, compile and install the python bindings (h5py)::
     python setup.py build
     python setup.py install --prefix=/home/seb/.local
 
-=======
+
 Installing cvxmod
 =================
 
