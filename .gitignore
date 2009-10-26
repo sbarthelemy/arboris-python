@@ -1,0 +1,8 @@
+*~
+*.swp
+*.pyc
+*.c
+*.so
+src/*.c
+build/
+dist/
