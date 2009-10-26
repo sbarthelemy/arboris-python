@@ -51,7 +51,7 @@ try:
 except ImportError:
     pass
 
-version = '0.1.0pre3'
+version = '0.1.0pre4'
 
 setup(
     name='arboris',
