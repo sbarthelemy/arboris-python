@@ -133,30 +133,93 @@ max computation time (s): {3}""".format(
 class Hdf5Logger(WorldObserver):
     """An observer that logs what we need and saves it in an hdf5 file.
     """
-    def __init__(self, world):
+    def __init__(self, world, save_dynamical_model = True):
         self._world = world
+        self._save_dynamical_model = save_dynamical_model
+        self._save_arborisViewer_data = True
+    
     
     def init(self):
-        self.time = []
-        self.gpos = []
-        self.gvel = []
-        self.mass = []
-        self.nleffects = []
+        self.timeline = []
+        
+        if self._save_arborisViewer_data:
+            self.wbodies = self._world.getbodies()
+            self.bodies = {}
+            for b in self.wbodies:
+                self.bodies[b] = []
+            self.wpoints = [] #TODO: how to extract points in the simulation
+            self.points = {}
+            self.wwrenches = [] #TODO: how to get wrenches in the simulation
+            self.wrenches = {}
+            
+        if self._save_dynamical_model:
+            self.gpos = []
+            self.gvel = []
+            self.mass = []
+            self.nleffects = []
+    
     
     def update(self, dt):
-        self.time.append(self._world.current_time)
-        self.gpos.append(self._world.ground.childrenjoints[0].frames[1].pose)
-        self.gvel.append(self._world.gvel)
-        self.mass.append(self._world.mass.copy())
-        self.nleffects.append(self._world.nleffects.copy())
+        self.timeline.append(self._world._current_time)
         
-    def write(self, filename):
+        if self._save_arborisViewer_data:
+            for b in self.wbodies:
+                self.bodies[b].append(b.pose)
+            for p in self.wpoints:
+                pass #TODO: self._bodies[p].append(p.position)
+            for w in self.wwrenches:
+                pass #TODO: self._bodies[w].append(w.position)
+                
+        if self._save_dynamical_model:
+            self.gpos.append(self._world.ground.childrenjoints[0].frames[1].pose) #TODO: maybe chage this
+            self.gvel.append(self._world.gvel)
+            self.mass.append(self._world.mass.copy())
+            self.nleffects.append(self._world.nleffects.copy())
+        
+        
+    def write_file(self, filename, dest_in_file = "xp", file_access = 'a'):
         import h5py
-        f = h5py.File(filename, 'w')
-        f.create_dataset('time', data=self.time)
-        f.create_dataset('gpos', data=self.gpos)
-        f.create_dataset('gvel', data=self.gvel)
-        f.create_dataset('mass', data=self.mass)
-        f.create_dataset('nleffects', data=self.nleffects)
+        f = h5py.File(filename, file_access)
+        group = self._get_group(f, dest_in_file)
+        group.attrs["timeline"] = self.timeline
+        if self._save_arborisViewer_data:
+            for b in self.wbodies:
+                dset = group.create_dataset(b.name, data=array(self.bodies[b]))
+                dset.attrs["arborisViewerType"] = "matrix"
+                dset.attrs["arborisViewerParent"] = "ground"
+            for p in self.wpoints:
+                dset = group.create_dataset(p.name, data=array(self.points[p]))
+                dset.attrs["arborisViewerType"] = "translate"
+                dset.attrs["arborisViewerParent"] = "ground"
+            for w in self.wwrenches:
+                print "WARNING: CONSTRAINT has to be update!!!!!"
+                dset = group.create_dataset(w.name, data=array(self.wrenches[w]))
+                dset.attrs["arborisViewerType"] = "wrench"
+                dset.attrs["arborisViewerParent"] = c.name #????
+        
+        if self._save_dynamical_model:
+            f.create_dataset('gpos', data=self.gpos)
+            f.create_dataset('gvel', data=self.gvel)
+            f.create_dataset('mass', data=self.mass)
+            f.create_dataset('nleffects', data=self.nleffects)
         f.close()
+    
+    def _get_group(self, f, dest): #TODO: maybe this code could be optimize
+        inter_groups = []
+        _dest = dest
+        if _dest[0] is not '/':
+            _dest = '/' + _dest
+        if _dest[-1] is not '/':
+            _dest =  _dest + '/'
+        slash_list = []
+        for i in range(len(_dest)):
+            if _dest[i] is '/':
+                slash_list.append(i)
+        for i in range(len(slash_list)-1):
+            inter_groups.append(_dest[(slash_list[i]+1):(slash_list[i+1])])
+        
+        group = f
+        for ig in inter_groups:
+            group = group.require_group(ig)
+        return group
 
