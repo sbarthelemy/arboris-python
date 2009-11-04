@@ -24,8 +24,8 @@ matrices (built with ``numpy.matrix``) which are 2-d matrices with special
 behavior, similar to the matlab one. In arboris-python we never uses 
 matrices, they are evil.
 
-We also optionally use `h5py <http://h5py.alfven.org/>`_ to store 
-simulation results in the `HDF5 format <http://www.hdfgroup.org/HDF5/>`_.
+We also use `h5py <http://h5py.alfven.org/>`_ to store simulation 
+results in the `HDF5 format <http://www.hdfgroup.org/HDF5/>`_.
 
 
 ...for the documentation
@@ -51,35 +51,47 @@ On linux, we use OSG version 2.8. On Windows, we use version 2.6 because
 there is no installer for the 2.8 series.
 
 
-Installing Python, Numpy and IPyton
-===================================
+Installation on Ubuntu Karmic Koala (9.10)
+==========================================
 
-...for Ubuntu Jaunty & Karmic
------------------------------
+Installing Python, Numpy and IPython
+------------------------------------
 
 Install the packaged stuff::
 
-  sudo aptitude install python2.6-doc python-numpy ipython
+  sudo aptitude install python2.6-doc python-numpy python-numpy-doc ipython
 
-...for Windows
---------------
+Installing h5py
+---------------
 
-Install...
+Install hdf5 library and headers::
 
-- python 2.6 from http://www.python.org/download/. The current installer 
-  is named "Python 2.6.3 Windows installer".
-- numpy from http://numpy.scipy.org/. Ensure to choose a version 
-  compatible with python 2.6. The current installer is named 
-  "numpy-1.3.0-win32-superpack-python2.6.exe".
-- pyreadline from http://ipython.scipy.org/moin/PyReadline/Intro
-- IPython from http://ipython.scipy.org
+    sudo aptitude install libhdf5-dev
 
+Download, compile and install the python bindings (h5py)::
 
-Installing OpenSceneGraph 2.8
-=============================
+    wget http://h5py.googlecode.com/files/h5py-1.2.1.tar.gz
+    tar -xzf h5py-1.2.1.tar.gz
+    cd h5py-1.2.1
+    python setup.py build
+    python setup.py install --prefix=/home/seb/.local
 
-...for Ubuntu Karmic
---------------------
+Installing arboris-python
+-------------------------
+
+unzip, go in the new directory, then run::
+
+  sudo python setup.py install 
+
+or, if you prefer to install it in your home::
+
+  python setup.py install --user
+
+Installing OpenSceneGraph
+-------------------------
+
+...as a package
+~~~~~~~~~~~~~~~
 
 OpenSceneGraph 2.8 is packaged::
 
@@ -90,10 +102,8 @@ OpenSceneGraph 2.8 is packaged::
   ubuntu (2.8.1-1). You might install the 2.8.2 from source instead, 
   as explained in the following section.
 
-...for Ubuntu Jaunty
---------------------
-
-OpenSceneGraph 2.8 is not packaged.
+...from source
+~~~~~~~~~~~~~~
 
 Install OpenSceneGraph 2.8.2 from source::
 
@@ -111,17 +121,9 @@ compile and install (warning, the compilation takes lots of memory and time)::
   sudo make install
   TODO: how to check everything was fine?
 
-...for Windows
---------------
-
-It will be installed together with osgswig, see next section.
-
 
 Installing osgswig
-==================
-
-...for Unbuntu Jaunty & Karmic
-------------------------------
+------------------
 
 Install OpenSceneGraph python bindings from sources (inspired by 
 `this wiki page <http://code.google.com/p/osgswig/wiki/BuildInstructions>`_)::
@@ -137,38 +139,8 @@ Install OpenSceneGraph python bindings from sources (inspired by
 
 Don't worry about the hundreds of warnings during the compilation.
 
-...for Windows
---------------
-
-Install osgswig from http://code.google.com/p/osgswig/. The current 
-installer is named "osgPython-2.6.1-0-py26.exe". The install process is 
-detailed `here <http://code.google.com/p/osgswig/wiki/InstallationWindows>`_.
-
-
-Installing h5py
-===============
-
-...for ubuntu jaunty and karmic
--------------------------------
-
-Install hdf5 library and headers::
-
-    sudo aptitude install libhdf5-dev
-
-Download, compile and install the python bindings (h5py)::
-
-    wget http://h5py.googlecode.com/files/h5py-1.2.1.tar.gz
-    tar -xzf h5py-1.2.1.tar.gz
-    cd h5py-1.2.1
-    python setup.py build
-    python setup.py install --prefix=/home/seb/.local
-
-
 Installing cvxmod
-=================
-
-...for ubuntu karmic
---------------------
+-----------------
 
 install cvxopt from ubuntu and cvxmod from sources::
 
@@ -179,34 +151,58 @@ install cvxopt from ubuntu and cvxmod from sources::
   cd cvxmod-0.4.6/
   sudo python setup.py install
 
-...for Windows
---------------
 
-cvxmod is available as an installer for windows and python 2.6. However,
-it depends on cvxopt, which is only has a Windows installer for 
-python2.5. We have no solution for this yet.
+For windows
+===========
 
-Note that cvxmod and cvxopt are not required by arboris itself but by 
-a controller, which you may not need.
+Installing Python, Numpy, IPython and h5py
+------------------------------------------
+
+...manually
+~~~~~~~~~~~
+
+Install...
+
+- python 2.6 from http://www.python.org/download/. The current installer 
+  is named "Python 2.6.3 Windows installer".
+- numpy from http://numpy.scipy.org/. Ensure to choose a version 
+  compatible with python 2.6. The current installer is named 
+  "numpy-1.3.0-win32-superpack-python2.6.exe".
+- pyreadline from http://ipython.scipy.org/moin/PyReadline/Intro
+- IPython from http://ipython.scipy.org
+- h5py from http://code.google.com/p/h5py/downloads/list
+
+...from Python(x,y)
+~~~~~~~~~~~~~~~~~~~
+
+All these programs (and many others) are conveniently packaged by the
+`Python(x,y) <http://www.pythonxy.com>`_ project, you may install them 
+from there.
 
 
 Installing arboris-python
-=========================
-
-...for Ubuntu
--------------
-
-unzip, go in the new directory, then run::
-
-  sudo python setup.py install 
-
-or, if you prefer to install it in your home::
-
-  python setup.py install --user
-
-...for Windows
---------------
+-------------------------
 
 unzip, go in the new directory, then run::
 
   C:\python26\python.exe setup.py install
+
+
+Installing osgswig and OpenSceneGraph
+-------------------------------------
+
+Install osgswig from http://code.google.com/p/osgswig/. The current 
+installer is named "osgPython-2.6.1-0-py26.exe". The install process is 
+detailed `here <http://code.google.com/p/osgswig/wiki/InstallationWindows>`_.
+
+
+Installing cvxmod
+-----------------
+
+No Windows installer compatible with python 2.6 is available on 
+`cvxopt's website <http://abel.ee.ucla.edu/cvxopt>`_ yet. However,
+one is available from another place:
+http://abel.ee.ucla.edu/smcp/download/smcp-0.2a.win32-py2.6.zip
+
+Then install cvxmod from http://cvxmod.net/install.html
+
