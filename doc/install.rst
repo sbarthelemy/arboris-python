@@ -127,7 +127,7 @@ Install OpenSceneGraph python bindings from sources (inspired by
 `this wiki page <http://code.google.com/p/osgswig/wiki/BuildInstructions>`_)::
 
   sudo aptitude install swig
-  svn checkout http://osgswig.googlecode.com/svn/trunk/ osgswig
+  svn checkout -r207 http://osgswig.googlecode.com/svn/trunk/ osgswig
   cd osgswig
   mkdir build
   cd build
@@ -179,3 +179,34 @@ install cvxopt from ubuntu and cvxmod from sources::
   cd cvxmod-0.4.6/
   sudo python setup.py install
 
+...for Windows
+--------------
+
+cvxmod is available as an installer for windows and python 2.6. However,
+it depends on cvxopt, which is only has a Windows installer for 
+python2.5. We have no solution for this yet.
+
+Note that cvxmod and cvxopt are not required by arboris itself but by 
+a controller, which you may not need.
+
+
+Installing arboris-python
+=========================
+
+...for Ubuntu
+-------------
+
+unzip, go in the new directory, then run::
+
+  sudo python setup.py install 
+
+or, if you prefer to install it in your home::
+
+  python setup.py install --user
+
+...for Windows
+--------------
+
+unzip, go in the new directory, then run::
+
+  C:\python26\python.exe setup.py install
