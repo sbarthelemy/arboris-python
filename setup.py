@@ -60,6 +60,6 @@ setup(
     packages=['arboris',
               'arboris.robots'],
     cmdclass=cmdclass,
-    package_data = {'arboris':['doc/']}
+    package_data = {'arboris':['doc']}
 )
 
