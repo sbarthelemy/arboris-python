@@ -144,6 +144,7 @@ class Hdf5Logger(WorldObserver):
         
         if self._save_arborisViewer_data:
             self.wbodies = self._world.getbodies()
+            self.wbodies.remove( self.wbodies["ground"] )
             self.bodies = {}
             for b in self.wbodies:
                 self.bodies[b] = []
