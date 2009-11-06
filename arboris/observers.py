@@ -13,6 +13,7 @@ from massmatrix import principalframe
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
+import h5py
 
 class EnergyMonitor(WorldObserver):
     """Compute and store the world energy at each time step.
@@ -133,77 +134,66 @@ max computation time (s): {3}""".format(
 class Hdf5Logger(WorldObserver):
     """An observer that logs what we need and saves it in an hdf5 file.
     """
-    def __init__(self, world, save_dynamical_model = True):
+    def __init__(self, world, nb_steps, filename, dest_in_file = "xp", file_access = 'a', save_dynamical_model = True):
         self._world = world
+        self._nb_steps = nb_steps
         self._save_dynamical_model = save_dynamical_model
         self._save_arborisViewer_data = True
+        self._file_handler = h5py.File( filename, file_access)
+        self._root = self._get_group(self._file_handler, dest_in_file)
     
     
-    def init(self):
-        self.timeline = []
+    def init(self): #TODO: maybe delete dtype=f8??? (represente doublei n c++)
+        self._actual_step = 0
+        self._root.require_dataset("timeline", (self._nb_steps,), dtype = 'f8')
         
         if self._save_arborisViewer_data:
-            self.wbodies = self._world.getbodies()
-            self.wbodies.remove( self.wbodies["ground"] )
-            self.bodies = {}
-            for b in self.wbodies:
-                self.bodies[b] = []
-            self.wpoints = [] #TODO: how to extract points in the simulation
-            self.points = {}
-            self.wwrenches = [] #TODO: how to get wrenches in the simulation
-            self.wrenches = {}
+            self._matrix = self._world.getbodies()[1:]
+            for m in self._matrix:
+                d = self._root.require_dataset(m.name, (self._nb_steps, 4,4), dtype ='f8')
+                d.attrs["arborisViewerType"] = "matrix"
+            
+            self._translate = [] #TODO: how to extract points in the simulation
+            for t in self._translate:
+                d = self._root.require_dataset(t.name, (self._nb_steps, 3), dtype ='f8')
+                d.attrs["arborisViewerType"] = "translate"
+            
+            self._wrench = [] #TODO: how to get wrenches in the simulation
+            for w in self._wrench:
+                d = self._root.require_dataset(w.name, (self._nb_steps, 6), dtype ='f8')
+                d.attrs["arborisViewerType"] = "wrench"
+                dset.attrs["arborisViewerParent"] = w.parent.name
             
         if self._save_dynamical_model:
-            self.gpos = []
-            self.gvel = []
-            self.mass = []
-            self.nleffects = []
+            ndof = self._world.ndof
+            self._root.require_dataset("gpos", (self._nb_steps, 4, 4), dtype ='f8')
+            self._root.require_dataset("gvel", (self._nb_steps, ndof), dtype ='f8')
+            self._root.require_dataset("mass", (self._nb_steps, ndof, ndof), dtype ='f8')
+            self._root.require_dataset("nleffects", (self._nb_steps, ndof, ndof), dtype ='f8')
     
     
     def update(self, dt):
-        self.timeline.append(self._world._current_time)
+        self._root["timeline"][self._actual_step] = self._world._current_time
         
         if self._save_arborisViewer_data:
-            for b in self.wbodies:
-                self.bodies[b].append(b.pose)
-            for p in self.wpoints:
-                pass #TODO: self._bodies[p].append(p.position)
-            for w in self.wwrenches:
-                pass #TODO: self._bodies[w].append(w.position)
+            for m in self._matrix:
+                self._root[m.name][self._actual_step,:,:] = m.pose
+            for t in self._translate:
+                self._root[t.name][self._actual_step,:] = t.position #TODO: check if position?!?
+            for w in self._wrench:
+                self._root[w.name][self._actual_step,:] = w.value #TODO: check if value?!?
                 
         if self._save_dynamical_model:
-            self.gpos.append(self._world.ground.childrenjoints[0].frames[1].pose) #TODO: maybe chage this
-            self.gvel.append(self._world.gvel)
-            self.mass.append(self._world.mass.copy())
-            self.nleffects.append(self._world.nleffects.copy())
+            self._root["gpos"][self._actual_step,:,:] = self._world.ground.childrenjoints[0].frames[1].pose
+            self._root["gvel"][self._actual_step,:] = self._world.gvel
+            self._root["mass"][self._actual_step,:,:] = self._world.mass.copy()
+            self._root["nleffects"][self._actual_step,:,:] = self._world.nleffects.copy()
         
+        self._actual_step += 1
         
-    def write_file(self, filename, dest_in_file = "xp", file_access = 'a'):
-        import h5py
-        f = h5py.File(filename, file_access)
-        group = self._get_group(f, dest_in_file)
-        group.attrs["timeline"] = self.timeline
-        if self._save_arborisViewer_data:
-            for b in self.wbodies:
-                dset = group.create_dataset(b.name, data=array(self.bodies[b]))
-                dset.attrs["arborisViewerType"] = "matrix"
-                dset.attrs["arborisViewerParent"] = "ground"
-            for p in self.wpoints:
-                dset = group.create_dataset(p.name, data=array(self.points[p]))
-                dset.attrs["arborisViewerType"] = "translate"
-                dset.attrs["arborisViewerParent"] = "ground"
-            for w in self.wwrenches:
-                print "WARNING: CONSTRAINT has to be update!!!!!"
-                dset = group.create_dataset(w.name, data=array(self.wrenches[w]))
-                dset.attrs["arborisViewerType"] = "wrench"
-                dset.attrs["arborisViewerParent"] = c.name #????
-        
-        if self._save_dynamical_model:
-            f.create_dataset('gpos', data=self.gpos)
-            f.create_dataset('gvel', data=self.gvel)
-            f.create_dataset('mass', data=self.mass)
-            f.create_dataset('nleffects', data=self.nleffects)
-        f.close()
+    
+    def finish(self):
+        self._file_handler.close()
     
     def _get_group(self, f, dest): #TODO: maybe this code could be optimize
         inter_groups = []
