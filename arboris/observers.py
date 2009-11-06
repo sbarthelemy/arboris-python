@@ -134,48 +134,52 @@ max computation time (s): {3}""".format(
 class Hdf5Logger(WorldObserver):
     """An observer that logs what we need and saves it in an hdf5 file.
     """
-    def __init__(self, world, nb_steps, filename, dest_in_file = "xp", file_access = 'a', save_dynamical_model = True):
+    def __init__(self, world, nb_steps, filename, dest_in_file = "xp",
+                    file_access = 'a', save_viewer_data = True , save_dyn_model = False):
+        # sim data
         self._world = world
         self._nb_steps = nb_steps
-        self._save_dynamical_model = save_dynamical_model
-        self._save_arborisViewer_data = True
+        # hdf5 file handlers
         self._file_handler = h5py.File( filename, file_access)
         self._root = self._get_group(self._file_handler, dest_in_file)
+        # what to save
+        self._save_viewer_data = save_viewer_data
+        self._save_dyn_model = save_dyn_model
     
     
-    def init(self): #TODO: maybe delete dtype=f8??? (represente doublei n c++)
+    def init(self):
         self._actual_step = 0
-        self._root.require_dataset("timeline", (self._nb_steps,), dtype = 'f8')
+        self._root.require_dataset("timeline", (self._nb_steps,), 'f8')
         
-        if self._save_arborisViewer_data:
+        if self._save_viewer_data:
             self._matrix = self._world.getbodies()[1:]
             for m in self._matrix:
-                d = self._root.require_dataset(m.name, (self._nb_steps, 4,4), dtype ='f8')
+                d = self._root.require_dataset(m.name, (self._nb_steps, 4,4), 'f8')
                 d.attrs["arborisViewerType"] = "matrix"
             
             self._translate = [] #TODO: how to extract points in the simulation
             for t in self._translate:
-                d = self._root.require_dataset(t.name, (self._nb_steps, 3), dtype ='f8')
+                d = self._root.require_dataset(t.name, (self._nb_steps, 3), 'f8')
                 d.attrs["arborisViewerType"] = "translate"
             
             self._wrench = [] #TODO: how to get wrenches in the simulation
             for w in self._wrench:
-                d = self._root.require_dataset(w.name, (self._nb_steps, 6), dtype ='f8')
+                d = self._root.require_dataset(w.name, (self._nb_steps, 6), 'f8')
                 d.attrs["arborisViewerType"] = "wrench"
                 dset.attrs["arborisViewerParent"] = w.parent.name
             
-        if self._save_dynamical_model:
+        if self._save_dyn_model:
             ndof = self._world.ndof
-            self._root.require_dataset("gpos", (self._nb_steps, 4, 4), dtype ='f8')
-            self._root.require_dataset("gvel", (self._nb_steps, ndof), dtype ='f8')
-            self._root.require_dataset("mass", (self._nb_steps, ndof, ndof), dtype ='f8')
-            self._root.require_dataset("nleffects", (self._nb_steps, ndof, ndof), dtype ='f8')
+            self._root.require_dataset("gpos", (self._nb_steps, 4, 4), 'f8') #TODO: change the allocated space
+            self._root.require_dataset("gvel", (self._nb_steps, ndof), 'f8')
+            self._root.require_dataset("mass", (self._nb_steps, ndof, ndof), 'f8')
+            self._root.require_dataset("nleffects", (self._nb_steps, ndof, ndof), 'f8')
     
     
     def update(self, dt):
         self._root["timeline"][self._actual_step] = self._world._current_time
         
-        if self._save_arborisViewer_data:
+        if self._save_viewer_data:
             for m in self._matrix:
                 self._root[m.name][self._actual_step,:,:] = m.pose
             for t in self._translate:
@@ -183,8 +187,8 @@ class Hdf5Logger(WorldObserver):
             for w in self._wrench:
                 self._root[w.name][self._actual_step,:] = w.value #TODO: check if value?!?
                 
-        if self._save_dynamical_model:
-            self._root["gpos"][self._actual_step,:,:] = self._world.ground.childrenjoints[0].frames[1].pose
+        if self._save_dyn_model:
+            self._root["gpos"][self._actual_step,:,:] = self._world.ground.childrenjoints[0].frames[1].pose # gpos is NOT that
             self._root["gvel"][self._actual_step,:] = self._world.gvel
             self._root["mass"][self._actual_step,:,:] = self._world.mass.copy()
             self._root["nleffects"][self._actual_step,:,:] = self._world.nleffects.copy()
