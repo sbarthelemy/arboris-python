@@ -132,89 +132,65 @@ max computation time (s): {3}""".format(
 
 
 class Hdf5Logger(WorldObserver):
-    """An observer that logs what we need and saves it in an hdf5 file.
+    """An observer that saves the simulation data in an hdf5 file.
     """
-    def __init__(self, world, nb_steps, filename, dest_in_file = "xp",
-                    file_access = 'a', save_viewer_data = True , save_dyn_model = False):
-        # sim data
+    def __init__(self, world, nb_steps, filename, group = "/",
+                    mode = 'a', save_viewer_data = True , 
+		    save_dyn_model = False):
+        # simulation data
         self._world = world
         self._nb_steps = nb_steps
         # hdf5 file handlers
-        self._file_handler = h5py.File( filename, file_access)
-        self._root = self._get_group(self._file_handler, dest_in_file)
+        self._file = h5py.File(filename, mode)
+        self._root = self._file
+	for g in group.split('/'):
+            if len(g) > 0:
+                self._root = self._root.require_group(g)
         # what to save
         self._save_viewer_data = save_viewer_data
         self._save_dyn_model = save_dyn_model
-    
-    
+ 
     def init(self):
-        self._actual_step = 0
+        """Create the datasets.
+        """
+        self._current_step = 0
         self._root.require_dataset("timeline", (self._nb_steps,), 'f8')
         
         if self._save_viewer_data:
             self._matrix = self._world.getbodies()[1:]
             for m in self._matrix:
-                d = self._root.require_dataset(m.name, (self._nb_steps, 4,4), 'f8')
-                d.attrs["arborisViewerType"] = "matrix"
-            
-            self._translate = [] #TODO: how to extract points in the simulation
-            for t in self._translate:
-                d = self._root.require_dataset(t.name, (self._nb_steps, 3), 'f8')
-                d.attrs["arborisViewerType"] = "translate"
-            
-            self._wrench = [] #TODO: how to get wrenches in the simulation
-            for w in self._wrench:
-                d = self._root.require_dataset(w.name, (self._nb_steps, 6), 'f8')
-                d.attrs["arborisViewerType"] = "wrench"
-                dset.attrs["arborisViewerParent"] = w.parent.name
-            
+                d = self._root.require_dataset(m.name, 
+				               (self._nb_steps, 4,4),
+					       'f8')
+                d.attrs["ArborisViewerType"] = "matrix"
+            #self._wrench = [] #TODO: how to get wrenches in the simulation
+            #for w in self._wrench:
+            #    d = self._root.require_dataset(w.name, (self._nb_steps, 6), 'f8')
+            #    d.attrs["ArborisViewerType"] = "wrench"
+            #    dset.attrs["ArborisViewerParent"] = w.parent.name
         if self._save_dyn_model:
             ndof = self._world.ndof
-            self._root.require_dataset("gpos", (self._nb_steps, 4, 4), 'f8') #TODO: change the allocated space
+            #self._root.require_dataset("gpos", (self._nb_steps, 4, 4), 'f8') #TODO: change the allocated space
             self._root.require_dataset("gvel", (self._nb_steps, ndof), 'f8')
             self._root.require_dataset("mass", (self._nb_steps, ndof, ndof), 'f8')
             self._root.require_dataset("nleffects", (self._nb_steps, ndof, ndof), 'f8')
-    
-    
+
     def update(self, dt):
-        self._root["timeline"][self._actual_step] = self._world._current_time
-        
+        """Save the current data (state...).
+        """
+	assert self._current_step <= self._nb_steps
+        self._root["timeline"][self._current_step] = self._world._current_time
         if self._save_viewer_data:
             for m in self._matrix:
-                self._root[m.name][self._actual_step,:,:] = m.pose
-            for t in self._translate:
-                self._root[t.name][self._actual_step,:] = t.position #TODO: check if position?!?
-            for w in self._wrench:
-                self._root[w.name][self._actual_step,:] = w.value #TODO: check if value?!?
-                
+                self._root[m.name][self._current_step,:,:] = m.pose
+            #for w in self._wrench:
+            #    self._root[w.name][self._current_step,:] = w.value #TODO: check if value?!?
         if self._save_dyn_model:
-            self._root["gpos"][self._actual_step,:,:] = self._world.ground.childrenjoints[0].frames[1].pose # gpos is NOT that
-            self._root["gvel"][self._actual_step,:] = self._world.gvel
-            self._root["mass"][self._actual_step,:,:] = self._world.mass.copy()
-            self._root["nleffects"][self._actual_step,:,:] = self._world.nleffects.copy()
-        
-        self._actual_step += 1
-        
-    
-    def finish(self):
-        self._file_handler.close()
-    
-    def _get_group(self, f, dest): #TODO: maybe this code could be optimize
-        inter_groups = []
-        _dest = dest
-        if _dest[0] is not '/':
-            _dest = '/' + _dest
-        if _dest[-1] is not '/':
-            _dest =  _dest + '/'
-        slash_list = []
-        for i in range(len(_dest)):
-            if _dest[i] is '/':
-                slash_list.append(i)
-        for i in range(len(slash_list)-1):
-            inter_groups.append(_dest[(slash_list[i]+1):(slash_list[i+1])])
-        
-        group = f
-        for ig in inter_groups:
-            group = group.require_group(ig)
-        return group
+            #self._root["gpos"][self._current_step,:,:] = self._world.ground.childrenjoints[0].frames[1].pose # gpos is NOT that
+            self._root["gvel"][self._current_step,:] = self._world.gvel
+            self._root["mass"][self._current_step,:,:] = self._world.mass.copy()
+            self._root["nleffects"][self._current_step,:,:] = self._world.nleffects.copy()
+        self._current_step += 1
 
+    def finish(self):
+        self._file.close()
