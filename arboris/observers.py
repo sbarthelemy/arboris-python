@@ -13,6 +13,7 @@ from massmatrix import principalframe
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
+import h5py
 
 class EnergyMonitor(WorldObserver):
     """Compute and store the world energy at each time step.
@@ -131,32 +132,65 @@ max computation time (s): {3}""".format(
 
 
 class Hdf5Logger(WorldObserver):
-    """An observer that logs what we need and saves it in an hdf5 file.
+    """An observer that saves the simulation data in an hdf5 file.
     """
-    def __init__(self, world):
+    def __init__(self, world, nb_steps, filename, group = "/",
+                    mode = 'a', save_viewer_data = True , 
+		    save_dyn_model = False):
+        # simulation data
         self._world = world
-    
+        self._nb_steps = nb_steps
+        # hdf5 file handlers
+        self._file = h5py.File(filename, mode)
+        self._root = self._file
+	for g in group.split('/'):
+            if len(g) > 0:
+                self._root = self._root.require_group(g)
+        # what to save
+        self._save_viewer_data = save_viewer_data
+        self._save_dyn_model = save_dyn_model
+ 
     def init(self):
-        self.time = []
-        self.gpos = []
-        self.gvel = []
-        self.mass = []
-        self.nleffects = []
-    
-    def update(self, dt):
-        self.time.append(self._world.current_time)
-        self.gpos.append(self._world.ground.childrenjoints[0].frames[1].pose)
-        self.gvel.append(self._world.gvel)
-        self.mass.append(self._world.mass.copy())
-        self.nleffects.append(self._world.nleffects.copy())
+        """Create the datasets.
+        """
+        self._current_step = 0
+        self._root.require_dataset("timeline", (self._nb_steps,), 'f8')
         
-    def write(self, filename):
-        import h5py
-        f = h5py.File(filename, 'w')
-        f.create_dataset('time', data=self.time)
-        f.create_dataset('gpos', data=self.gpos)
-        f.create_dataset('gvel', data=self.gvel)
-        f.create_dataset('mass', data=self.mass)
-        f.create_dataset('nleffects', data=self.nleffects)
-        f.close()
+        if self._save_viewer_data:
+            self._matrix = self._world.getbodies()[1:]
+            for m in self._matrix:
+                d = self._root.require_dataset(m.name, 
+				               (self._nb_steps, 4,4),
+					       'f8')
+                d.attrs["ArborisViewerType"] = "matrix"
+            #self._wrench = [] #TODO: how to get wrenches in the simulation
+            #for w in self._wrench:
+            #    d = self._root.require_dataset(w.name, (self._nb_steps, 6), 'f8')
+            #    d.attrs["ArborisViewerType"] = "wrench"
+            #    dset.attrs["ArborisViewerParent"] = w.parent.name
+        if self._save_dyn_model:
+            ndof = self._world.ndof
+            #self._root.require_dataset("gpos", (self._nb_steps, 4, 4), 'f8') #TODO: change the allocated space
+            self._root.require_dataset("gvel", (self._nb_steps, ndof), 'f8')
+            self._root.require_dataset("mass", (self._nb_steps, ndof, ndof), 'f8')
+            self._root.require_dataset("nleffects", (self._nb_steps, ndof, ndof), 'f8')
 
+    def update(self, dt):
+        """Save the current data (state...).
+        """
+	assert self._current_step <= self._nb_steps
+        self._root["timeline"][self._current_step] = self._world._current_time
+        if self._save_viewer_data:
+            for m in self._matrix:
+                self._root[m.name][self._current_step,:,:] = m.pose
+            #for w in self._wrench:
+            #    self._root[w.name][self._current_step,:] = w.value #TODO: check if value?!?
+        if self._save_dyn_model:
+            #self._root["gpos"][self._current_step,:,:] = self._world.ground.childrenjoints[0].frames[1].pose # gpos is NOT that
+            self._root["gvel"][self._current_step,:] = self._world.gvel
+            self._root["mass"][self._current_step,:,:] = self._world.mass.copy()
+            self._root["nleffects"][self._current_step,:,:] = self._world.nleffects.copy()
+        self._current_step += 1
+
+    def finish(self):
+        self._file.close()
