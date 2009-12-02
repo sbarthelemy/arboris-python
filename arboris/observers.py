@@ -132,8 +132,8 @@ class Hdf5Logger(WorldObserver):
     """An observer that saves the simulation data in an hdf5 file.
     """
     def __init__(self, world, nb_steps, filename, group = "/",
-                    mode = 'a', save_viewer_data = True , 
-		    save_dyn_model = False):
+                 mode = 'a', save_viewer_data = True , 
+                 save_dyn_model = False):
         import h5py
         # simulation data
         self._world = world
@@ -141,9 +141,10 @@ class Hdf5Logger(WorldObserver):
         # hdf5 file handlers
         self._file = h5py.File(filename, mode)
         self._root = self._file
-	for g in group.split('/'):
+        for g in group.split('/'):
             if g:
                 self._root = self._root.require_group(g)
+        self._transforms = self._root.require_group('transforms')
         # what to save
         self._save_viewer_data = save_viewer_data
         self._save_dyn_model = save_dyn_model
@@ -157,10 +158,9 @@ class Hdf5Logger(WorldObserver):
         if self._save_viewer_data:
             self._matrix = self._world.getbodies()[1:]
             for m in self._matrix:
-                d = self._root.require_dataset(m.name, 
-				               (self._nb_steps, 4,4),
-					       'f8')
-                d.attrs["ArborisViewerType"] = "matrix"
+                d = self._transforms.require_dataset(m.name, 
+				               (self._nb_steps, 4,4), 'f8')
+                #d.attrs["ArborisViewerType"] = "matrix"
             #self._wrench = []
             #for w in self._wrench:
             #    d = self._root.require_dataset(w.name, 
@@ -185,7 +185,7 @@ class Hdf5Logger(WorldObserver):
         self._root["timeline"][self._current_step] = self._world._current_time
         if self._save_viewer_data:
             for m in self._matrix:
-                self._root[m.name][self._current_step,:,:] = m.pose
+                self._transforms[m.name][self._current_step,:,:] = m.pose
             #for w in self._wrench:
             #    self._root[w.name][self._current_step,:] = w.value
         if self._save_dyn_model:

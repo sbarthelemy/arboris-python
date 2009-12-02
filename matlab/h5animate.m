@@ -20,8 +20,7 @@ function axes = h5animate(filename, groupname, fig)
 if nargin < 2
     groupname = '/';
 end
-group = findgroup(filename, groupname);
-datasets = load_scene_datasets(group);
+[transforms_data, timeline] = load_scene_datasets(filename, groupname);
 if nargin < 3
     fig = figure('Position',[100 100 600 600]);    
 end
@@ -31,20 +30,14 @@ H = [0, 0, 1, 0;
      0, 1, 0, 0;
      0, 0, 0, 1];
 parent = hgtransform('Parent', axes, 'Matrix', H, 'Tag', 'Ground');
-transforms = init_scene_transforms(datasets, parent);
-nb_steps = numel(datasets.timeline);
+transforms_handles = init_scene_transforms(fieldnames(transforms_data), parent);
+nb_steps = numel(timeline);
 
     function update_callback(i)
-    %MAJ_FIG Callback function which updates poses at step i
-        names = fieldnames(datasets.matrices);
+    %Callback function which updates poses at step i
+        names = fieldnames(transforms_data);
         for n = 1:numel(names)
-            set(transforms.(names{n}), 'Matrix', datasets.matrices.(names{n})(:,:,i));
-        end
-        names = fieldnames(datasets.translates);
-        for n = 1:numel(names)
-            H = eye(4);
-            H(1:3,4) = datasets.translates.(names{n})(:,i);
-            set(transforms.(names{n}), 'Matrix', H);
+            set(transforms_handles.(names{n}), 'Matrix', transforms_data.(names{n})(:,:,i));
         end
     end
 
@@ -53,7 +46,24 @@ arb_guislider(nb_steps, @update_callback, fig);
 
 end
 
-function transforms = init_scene_transforms(datasets, arg2)
+function p1p2 = joinpath(p1, p2)
+%JOINPATH join two paths, taking care of leading/trailing slashes
+%
+%  Examples:
+%     '/foo/bar' == joinpath('/foo', 'bar')
+%                == joinpath('/foo/', 'bar')
+%                == joinpath('/foo/', '/bar')
+
+if (numel(p1) > 0) && (p1(end) == '/')
+    p1 = p1(1:(end-1));
+end
+if (numel(p2) > 0) && (p2(1) == '/')
+    p2 = p2(2:end);
+end
+p1p2 = [p1 '/' p2];
+end
+
+function transforms = init_scene_transforms(names, arg2)
 %INIT_SCENE_TRANSFORMS create htransforms for each dataset in the datasets struct
 %
 %  transforms = INIT_SCENE_TRANSFORMS(datasets, parent)
@@ -73,7 +83,6 @@ else
         parent = arg2;
     end
 end
-names = fieldnames(datasets.matrices);
 for n = 1:numel(names)
     if ~isfield(transforms, names{n})
         h = hgtransform('Tag',  names{n}, 'Parent', parent);
@@ -81,64 +90,47 @@ for n = 1:numel(names)
         draw_frame(h);
     end
 end
-names = fieldnames(datasets.translates);
-for n = 1:numel(names)
-    if ~isfield(transforms,  names{n})
-        transforms.(names{n}) = hgtransform('Tag',  names{n}, 'Parent', parent);
-    end
-end
 end
 
-function datasets = load_scene_datasets(group)
+function [transforms, timeline] = load_scene_datasets(filename, groupname)
 %LOAD_SCENE_DATASETS load matrix, translate and wrench datasets and from an hdf5 group
 %
 %  datasets = LOAD_SCENE_DATASETS(group)
 %
 %  INPUT:
-%    group: a struct describing the group, as given by hdf5info.
+%    cf. main function
 %    Within the actual hdf5 group, the data should be laid of as in this
 %    example:
-%      group/timeline (nb_steps)
-%      group/Arm (nb_steps x 4 x 4)
-%      group/ForeArm (nb_steps x 4 x 4)
-%      group/CenterOfMasses (nb_steps x 3)
-%      group/Contact0 (nb_steps x 6)
+%      groupname/timeline (nb_steps)
+%      groupname/transforms/Arm (nb_steps x 4 x 4)
+%      groupname/transforms/ForeArm (nb_steps x 4 x 4)
+%      groupname/transforms/CenterOfMasses (nb_steps x 3)
 %
 %  OUTPUT:
 %    a struct with the following structure:
-%      datasets.timelines (1 x nb_steps)
-%      datasets.matrices.Arm (4 x 4 x nb_steps)
-%      datasets.matrices.ForeArm (4 x 4 x nb_steps)
-%      datasets.translates.CenterOfMasses (3 x nb_steps)
-%      datasets.wrenches.Contact0 (6 x nb_steps)
+%      transforms.Arm (4 x 4 x nb_steps)
+%      transforms.ForeArm (4 x 4 x nb_steps)
+%      transforms.CenterOfMasses (3 x nb_steps)
+%    timeline (1 x nb_steps)
 
+timeline = hdf5read(filename, joinpath(groupname, '/timeline'));
+nb_steps = numel(timeline);
+group = findgroup(filename, joinpath(groupname, '/transforms'));
 data = group.Datasets;
-datasets = struct();
-datasets.matrices = struct();
-datasets.translates = struct();
-datasets.wrenches = struct();
-
+transforms = struct();
 for i = 1:numel(data)
-    [d, attributes] = hdf5read(data(i),...
-        'ReadAttributes', true,...
-        'V71Dimensions', true);
+    d = hdf5read(data(i),...
+                 'V71Dimensions', true);
     name = endname(data(i).Name);
-    if strcmp(name, 'timeline')
-        datasets.timeline = d;
+    if all(size(d) == [4, 4, nb_steps])
+        transforms.(name) = d;
+    elseif all(size(d) == [3, nb_steps])
+        % this is a translation
+        H = repmat(eye(4), [1,1,nb_steps]);
+        H(1:3,4,:) = d;
+        transforms.(name) = d;
     else
-        for a=attributes
-            if strcmp(endname(a.Name),'ArborisViewerType')
-                if strcmp(a.Value.Data, 'matrix')
-                    datasets.matrices.(name) = d;
-                end
-                if strcmp(a.Value.Data, 'translate')
-                    datasets.translate.(name) = d;
-                end
-                if strcmp(a.Value.Data, 'wrench')
-                    datasets.wrench.(name) = d;
-                end
-            end
-        end
+        warning(['skipping dataset "' data.Name '" which has wron dimensions']);
     end
 end
 end
