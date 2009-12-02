@@ -9,11 +9,8 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from numpy import dot, array, eye, linalg, vstack, hstack, zeros, diag
 from time import time as _time
 from massmatrix import principalframe
-
 import logging
 logging.basicConfig(level=logging.DEBUG)
-
-import h5py
 
 class EnergyMonitor(WorldObserver):
     """Compute and store the world energy at each time step.
@@ -137,6 +134,7 @@ class Hdf5Logger(WorldObserver):
     def __init__(self, world, nb_steps, filename, group = "/",
                     mode = 'a', save_viewer_data = True , 
 		    save_dyn_model = False):
+        import h5py
         # simulation data
         self._world = world
         self._nb_steps = nb_steps
@@ -144,7 +142,7 @@ class Hdf5Logger(WorldObserver):
         self._file = h5py.File(filename, mode)
         self._root = self._file
 	for g in group.split('/'):
-            if len(g) > 0:
+            if g:
                 self._root = self._root.require_group(g)
         # what to save
         self._save_viewer_data = save_viewer_data
@@ -163,17 +161,22 @@ class Hdf5Logger(WorldObserver):
 				               (self._nb_steps, 4,4),
 					       'f8')
                 d.attrs["ArborisViewerType"] = "matrix"
-            #self._wrench = [] #TODO: how to get wrenches in the simulation
+            #self._wrench = []
             #for w in self._wrench:
-            #    d = self._root.require_dataset(w.name, (self._nb_steps, 6), 'f8')
+            #    d = self._root.require_dataset(w.name, 
+            #        (self._nb_steps, 6), 'f8')
             #    d.attrs["ArborisViewerType"] = "wrench"
             #    dset.attrs["ArborisViewerParent"] = w.parent.name
         if self._save_dyn_model:
             ndof = self._world.ndof
-            #self._root.require_dataset("gpos", (self._nb_steps, 4, 4), 'f8') #TODO: change the allocated space
-            self._root.require_dataset("gvel", (self._nb_steps, ndof), 'f8')
-            self._root.require_dataset("mass", (self._nb_steps, ndof, ndof), 'f8')
-            self._root.require_dataset("nleffects", (self._nb_steps, ndof, ndof), 'f8')
+            #self._root.require_dataset("gpos", 
+            #        (self._nb_steps, 4, 4), 'f8')
+            self._root.require_dataset("gvel", 
+                    (self._nb_steps, ndof), 'f8')
+            self._root.require_dataset("mass", 
+                    (self._nb_steps, ndof, ndof), 'f8')
+            self._root.require_dataset("nleffects", 
+                    (self._nb_steps, ndof, ndof), 'f8')
 
     def update(self, dt):
         """Save the current data (state...).
@@ -184,9 +187,10 @@ class Hdf5Logger(WorldObserver):
             for m in self._matrix:
                 self._root[m.name][self._current_step,:,:] = m.pose
             #for w in self._wrench:
-            #    self._root[w.name][self._current_step,:] = w.value #TODO: check if value?!?
+            #    self._root[w.name][self._current_step,:] = w.value
         if self._save_dyn_model:
-            #self._root["gpos"][self._current_step,:,:] = self._world.ground.childrenjoints[0].frames[1].pose # gpos is NOT that
+            #self._root["gpos"][self._current_step,:,:] = \
+            #        self._world.ground.childrenjoints[0].frames[1].pose
             self._root["gvel"][self._current_step,:] = self._world.gvel
             self._root["mass"][self._current_step,:,:] = self._world.mass.copy()
             self._root["nleffects"][self._current_step,:,:] = self._world.nleffects.copy()
