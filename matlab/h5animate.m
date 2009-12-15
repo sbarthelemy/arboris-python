@@ -130,7 +130,7 @@ for i = 1:numel(data)
         H(1:3,4,:) = d;
         transforms.(name) = d;
     else
-        warning(['skipping dataset "' data.Name '" which has wron dimensions']);
+        warning(['skipping dataset "' data.Name '" which has wrong dimensions']);
     end
 end
 end
