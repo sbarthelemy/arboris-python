@@ -25,7 +25,7 @@ class ConversionError(RuntimeError):
 class MatlabConverter(object):
     """Convert an arboris-python joint to another one that is compatible with arboris-matlab.
     
-    This works around two caveats of arboris-python:
+    This works around two caveats of arboris-matlab:
     
     - the first joint should always be a FreeJoint
     
