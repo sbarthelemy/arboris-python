@@ -7,8 +7,8 @@ __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 from abc import ABCMeta, abstractmethod
 from numpy import array, zeros, eye, dot, hstack, diag
 from numpy.linalg import solve, eigvals
-import homogeneousmatrix as Hg
-from core import SubFrame, Constraint, Shape, NamedObject
+import arboris.homogeneousmatrix as Hg
+from arboris.core import SubFrame, Constraint, Shape, NamedObject, World
 
 point_contact_proximity = 0.02
 joint_limits_proximity = 0.01
@@ -839,3 +839,45 @@ class SoftFingerContact(PointContact):
                 dforce = self._force - prev_force
                 return dforce
         
+
+def get_all_contacts(world, contact_class=None, **args):
+    """Init all the possible collisions in world.
+
+    :param world: the world where the contacts will be looked for.
+    :type world: arboris.core.World
+    :param contact_class: a class describing the contacts that will be
+         created. Defaults to arboris.constraints.SoftFingerContact
+    :type contact_class: a subclass of arboris.constraints.PointContact
+    :rparam: a list of the new contacts.
+    :rtype: list
+
+    All additionnal input arguments are passed to the ``contact_class``
+    constructor.
+
+    Note: it is your responsability to register these new contact to the
+    world.
+
+    """
+    assert isinstance(world, World)
+    if contact_class is None:
+        import arboris.constraints
+        contact_class = arboris.constraints.SoftFingerContact
+    else:
+        assert issubclass(contact_class, arboris.constraints.PointContact)
+    contacts = []
+    shapes = tuple(world.itershapes())
+    for i in range(len(shapes)):
+        s0 = shapes[i]
+        for j in range(i+1, len(shapes)):
+            s1 = shapes[j]
+            if s0.frame.body is s1.frame.body:
+                # Contact between two rigidly linked bodies would be 
+                # pointless.
+                pass 
+            else:
+                try:
+                    contacts.append(contact_class((s0, s1), **args))
+                except NotImplementedError:
+                    #The collison detection is impossible.
+                    pass 
+    return contacts

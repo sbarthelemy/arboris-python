@@ -30,7 +30,7 @@ def choose_solver(shape0, shape1):
             shapes = (shape1, shape0)
             solver = box_sphere_collision
         else:
-            raise NotImplemented()
+            raise NotImplementedError()
     elif isinstance(shape0, Point):
         if isinstance(shape1, Sphere):
             shapes = (shape1, shape0)
@@ -39,7 +39,7 @@ def choose_solver(shape0, shape1):
             shapes = (shape1, shape0)
             solver = box_point_collision
         else:
-            raise NotImplemented()
+            raise NotImplementedError()
     elif isinstance(shape0, Box):
         if isinstance(shape1, Sphere):
             shapes = (shape0, shape1)
@@ -48,14 +48,11 @@ def choose_solver(shape0, shape1):
             shapes = (shape0, shape1)
             solver = box_point_collision
         else:
-            raise NotImplemented()
+            raise NotImplementedError()
     else:
-        raise NotImplemented()
+        raise NotImplementedError()
     return (shapes, solver)
 
-def all_collisions(world):
-    """
-    """
 
 def _normal_to_frame(vec):
     """Builds a direct frame whose z-axis is vec.
