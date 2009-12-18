@@ -7,7 +7,6 @@ from numpy import array, zeros, dot, ix_
 from numpy.linalg import norm
 import homogeneousmatrix
 from joints import LinearConfigurationSpaceJoint
-from itertools import ifilter
 
 class WeightController(Controller):
     """A contoller which applies weight to joints.
@@ -28,7 +27,7 @@ class WeightController(Controller):
     """
     def __init__(self, world, gravity=-9.81, name=None):
         assert isinstance(world, World)
-        self._bodies = ifilter(lambda x: norm(x.mass>0.),
+        self._bodies = filter(lambda x: norm(x.mass>0.),
                 world.ground.iter_descendant_bodies())
         self.gravity = float(gravity)
         Controller.__init__(self, name=name)
