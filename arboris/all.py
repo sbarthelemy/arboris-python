@@ -7,7 +7,7 @@ This is meant for interactive use.
 __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from arboris import *
-from controllers import WeightController
+from controllers import WeightController, ProportionalDerivativeController
 from core import World, ObservableWorld, Body, Joint, JointsList,\
     NamedObjectsList, Frame, SubFrame, simulate, Constraint,\
     Controller, WorldObserver
