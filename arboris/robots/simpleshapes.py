@@ -69,8 +69,8 @@ def add_cylinder(world, length=1., radius=1., mass=1., name='Cylinder'):
     world.init()
     
     
-def add_groundplane(w, length=(1., .1, 1.) ):
+def add_groundplane(w, lengths=(1., .1, 1.) ):
     """Add a ground plane using a box shape.
     """
-    frame = SubFrame(w.ground, transl(0., -length[1]/2., 0.) )
-    w.register(Box(frame, length, 'Ground shape'))
+    frame = SubFrame(w.ground, transl(0., -lengths[1]/2., 0.) )
+    w.register(Box(frame, lengths, 'Ground shape'))
