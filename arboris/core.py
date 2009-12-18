@@ -921,17 +921,14 @@ class SubFrame(NamedObject, Frame):
         >>> f = SubFrame(b, ones((4,4)))
         Traceback (most recent call last):
             ...
-        ValueError: [[ 1.  1.  1.  1.]
-         [ 1.  1.  1.  1.]
-         [ 1.  1.  1.  1.]
-         [ 1.  1.  1.  1.]] is not an homogeneous matrix
+        AssertionError
 
         """
         if bpose is None:
             bpose = eye(4)
         
         NamedObject.__init__(self, name)
-        Hg.checkishomogeneousmatrix(bpose)
+        assert Hg.ishomogeneousmatrix(bpose)
         self._bpose = bpose
         if not(isinstance(body,Body)):
             raise ValueError("The ``body`` argument must be an instance of the ``Boby`` class")

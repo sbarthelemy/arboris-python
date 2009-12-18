@@ -206,13 +206,6 @@ def ishomogeneousmatrix(H, tol=tol):
         and (numpy.abs(numpy.linalg.det(H[0:3,0:3])-1)<=tol) \
         and (H[3,0:4]==[0,0,0,1]).all()
 
-def checkishomogeneousmatrix(H, tol=tol):
-    """
-    Raise an error if input is not an homogeneous matrix
-    """
-    if not ishomogeneousmatrix(H, tol):
-        raise ValueError("{H} is not an homogeneous matrix".format(H=H))
-
 def pdot(H, point):
     """Frame change for a point.
     """
