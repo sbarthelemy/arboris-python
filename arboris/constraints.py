@@ -252,18 +252,13 @@ class PointContact(Constraint):
       Gauss-Seidel algorithm computes contact forces compatible 
       with the contact model.
 
-    The :class:`PointContact` implements the first step by calling a
+    The :class:`PointContact` class implements the first step by calling a
     ``collision_solver`` function. Implementing the second one is the 
     responsability of a daughter class.
 
     """
 
     def __init__(self, shapes, collision_solver, proximity):
-        r"""
-        .. todo:
-            find the good ``collision_solver`` automatically according
-            to the ``shapes`` pair
-        """
         assert isinstance(shapes[0], Shape)
         assert isinstance(shapes[1], Shape)
         if collision_solver is None:
@@ -328,7 +323,7 @@ class SoftFingerContact(PointContact):
     penetrate each other.
 
     We consider here point contacts with a Coulomb friction model,
-    extended to involve moment resisting to torsion, as described in 
+    extended to involve torque resisting to torsion, as described in 
     Liu2003_ and Trinkle2001_ and often denoted as "soft finger
     contact". The contact wrench can be decomposed as:
 
@@ -779,7 +774,7 @@ class SoftFingerContact(PointContact):
             b &= \frac{\mu}{y_n} Y_c
 
         .. note::
-            the full math is available as a pdf, within this document, `\beta`
+            the full math is available as a pdf, within that document, `\beta`
             is denoted `\hat{\alpha}`.
 
         """

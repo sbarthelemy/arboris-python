@@ -820,7 +820,7 @@ class World(NamedObject):
           `\pre[c]f`. At each iteration the force is 
           updated by `\Delta\pre[c]f`
 
-        - envetually add each active constraint generalized force to
+        - eventually add each active constraint generalized force to
           world :attr:`~arboros.core.World._gforce` property.
         
         TODO: add an example.
@@ -835,10 +835,9 @@ class World(NamedObject):
                 c._dol = slice(ndol, ndol+c.ndol)
                 ndol = ndol + c.ndol
                 constraints.append(c)
-
         jac = zeros((ndol, self._ndof))
-        admittance = zeros((ndol, ndol))
         for c in constraints:
+            assert (c._force == 0).all()
             jac[c._dol,:] = c.jacobian
         vel = dot(jac, dot(self._admittance, 
                            dot(self._mass, self._gvel/dt) + self._gforce))
