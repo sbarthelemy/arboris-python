@@ -59,11 +59,11 @@ if True:
     H_bc = transl(1,1,1)
 else:
     H_bc = eye(4)
-lengths = (1.,1.,1.)
+half_extents = (.5,.5,.5)
 mass = 1.
 body = Body(
         name='box_body',
-        mass=massmatrix.transport(massmatrix.box(lengths, mass), H_bc))
+        mass=massmatrix.transport(massmatrix.box(half_extents, mass), H_bc))
 subframe = SubFrame(body, H_bc, name="box_com")
 
 if True:
@@ -73,7 +73,7 @@ else:
 twist_b = dot(homogeneousmatrix.adjoint(H_bc), twist_c)
 freejoint = FreeJoint(gpos=homogeneousmatrix.inv(H_bc), gvel=twist_b)
 w.add_link(w.ground, freejoint, body)
-w.register(Box(subframe, lengths))
+w.register(Box(subframe, half_extents))
 
 
 weightc = WeightController(w)       

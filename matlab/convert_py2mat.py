@@ -79,8 +79,8 @@ class MatlabConverter(object):
                                 root_joint.frames[1])
             # add a ground plane
             r = self.contact_radius
-            ground_lengths = [ d+4*r for d in self.base_lengths]
-            ground_plane = Box(world.ground, ground_lengths)
+            ground_half_extents = [ d/2.+2*r for d in self.base_lengths]
+            ground_plane = Box(world.ground, ground_half_extents)
             world.register(ground_plane)
             # put 4 spheres at the bottom of the base
             (x, y, z) = self.base_lengths

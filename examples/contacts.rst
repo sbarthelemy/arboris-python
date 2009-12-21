@@ -82,7 +82,7 @@ Sphere-box with gravity
 >>> world.register(WeightController(world))
 >>> add_sphere(world, name='ball0')
 >>> bodies = world.getbodies()
->>> bodies['ball0'].parentjoint.gpos[1,3] = 1.55
+>>> bodies['ball0'].parentjoint.gpos[1,3] = 2.05
 >>> bodies['ball0'].parentjoint.gvel[4] = -1.
 >>> collision_solver = box_sphere_collision
 >>> c = SoftFingerContact(world._shapes, 0.1)

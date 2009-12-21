@@ -17,9 +17,9 @@ class Box(Shape):
     """
     A box.
     """
-    def __init__(self, frame, lengths=(1.,1.,1.), name=None):
+    def __init__(self, frame, half_extents=(1.,1.,1.), name=None):
         Shape.__init__(self, frame, name)
-        self.lengths = lengths
+        self.half_extents = half_extents
 
 
 class Cylinder(Shape):

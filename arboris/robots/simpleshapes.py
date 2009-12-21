@@ -31,7 +31,7 @@ def add_sphere(world, radius=1., mass=1., name=None):
     world.init()
  
 
-def add_box(world, lengths=(1.,1.,1.), mass=1., name='Box'):
+def add_box(world, half_extents=(1.,1.,1.), mass=1., name='Box'):
     """Build a box robot.
 
     Example:
@@ -44,9 +44,9 @@ def add_box(world, lengths=(1.,1.,1.), mass=1., name='Box'):
     assert isinstance(world, World)
     box = Body(
         name=name,
-        mass=massmatrix.box(lengths, mass))
+        mass=massmatrix.box(half_extents, mass))
     world.add_link(world.ground, FreeJoint(), box)
-    world.register(Box(box, lengths))
+    world.register(Box(box, half_extents))
     world.init()
 
 
@@ -69,8 +69,8 @@ def add_cylinder(world, length=1., radius=1., mass=1., name='Cylinder'):
     world.init()
     
     
-def add_groundplane(w, lengths=(1., .1, 1.) ):
+def add_groundplane(w, half_extents=(1., .1, 1.) ):
     """Add a ground plane using a box shape.
     """
-    frame = SubFrame(w.ground, transl(0., -lengths[1]/2., 0.) )
-    w.register(Box(frame, lengths, 'Ground shape'))
+    frame = SubFrame(w.ground, transl(0., -half_extents[1], 0.) )
+    w.register(Box(frame, half_extents, 'Ground shape'))

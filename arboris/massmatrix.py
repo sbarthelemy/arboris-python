@@ -97,12 +97,12 @@ def principalframe(M):
     H[0:3,0:3] = R
     return H
 
-def box(lengths, mass):
+def box(half_extents, mass):
     """Mass matrix of an homogeneous parallelepiped.
     
     **Example:**
     
-    >>> box((4.,8.,12.), 3.)
+    >>> box((2.,4.,6.), 3.)
     array([[ 52.,   0.,   0.,   0.,   0.,   0.],
            [  0.,  40.,   0.,   0.,   0.,   0.],
            [  0.,   0.,  20.,   0.,   0.,   0.],
@@ -111,10 +111,10 @@ def box(lengths, mass):
            [  0.,   0.,   0.,   0.,   0.,   3.]])
     
     """
-    (x, y, z) = lengths
-    Ix = mass/12.*(y**2+z**2)
-    Iy = mass/12.*(x**2+z**2)
-    Iz = mass/12.*(x**2+y**2)
+    (x, y, z) = half_extents
+    Ix = mass/3.*(y**2+z**2)
+    Iy = mass/3.*(x**2+z**2)
+    Iz = mass/3.*(x**2+y**2)
     return diag( (Ix, Iy, Iz, mass, mass, mass) )
 
 

@@ -629,8 +629,8 @@ class Drawer(core.WorldObserver):
                                    self._options['point radius']))
                 elif isinstance(obj, shapes.Box):
                     shape = osg.ShapeDrawable(
-                        osg.Box(osg.Vec3(0.,0.,0.), obj.lengths[0], 
-                                obj.lengths[1], obj.lengths[2]))
+                        osg.Box(osg.Vec3(0.,0.,0.), obj.half_extents[0]*2., 
+                                obj.half_extents[1]*2, obj.half_extents[2]*2))
                 elif isinstance(obj, shapes.Cylinder):
                     shape = osg.ShapeDrawable(
                         osg.Cylinder(osg.Vec3(0.,0.,0.),

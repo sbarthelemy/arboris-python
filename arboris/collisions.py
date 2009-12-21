@@ -118,7 +118,7 @@ def box_sphere_collision(shapes):
     assert isinstance(shapes[0], Box)
     assert isinstance(shapes[1], Sphere)
     return _box_sphere_collision(shapes[0].frame.pose, 
-                                    shapes[0].lengths,
+                                    shapes[0].half_extents,
                                     shapes[1].frame.pose[0:3,3],
                                     shapes[1].radius)
 
@@ -129,7 +129,7 @@ def box_point_collision(shapes):
     assert isinstance(shapes[0], Box)
     assert isinstance(shapes[1], Point)
     return _box_sphere_collision(shapes[0].frame.pose, 
-                                    shapes[0].lengths,
+                                    shapes[0].half_extents,
                                     shapes[1].frame.pose[0:3,3],
                                     0.)
 
@@ -183,7 +183,7 @@ def _sphere_sphere_collision(p_g0, radius0, p_g1, radius1):
 
 
 
-def _box_sphere_collision(H_g0, lengths0, p_g1, radius1):
+def _box_sphere_collision(H_g0, half_extents0, p_g1, radius1):
     """
     :param H_g0: pose of the box `H_{g1}`
     :type H_g0: (4,4) array
@@ -203,7 +203,7 @@ def _box_sphere_collision(H_g0, lengths0, p_g1, radius1):
     >>> lengths0 = array([1., 2., 3.])
     >>> r1 = 0.1
     >>> p_g1 = array([0., 3., 1.])
-    >>> (sdist, H_gc0, H_gc1) = _box_sphere_collision(H_g0, lengths0, p_g1, r1)
+    >>> (sdist, H_gc0, H_gc1) = _box_sphere_collision(H_g0, lengths0/2, p_g1, r1)
     >>> print(sdist)
     1.9
     >>> print(H_gc0)
@@ -217,7 +217,7 @@ def _box_sphere_collision(H_g0, lengths0, p_g1, radius1):
      [ 1.  -0.   0.   1. ]
      [ 0.   0.   0.   1. ]]
     >>> p_g1 = array([0.55, 0., 0.])
-    >>> (sdist, H_gc0, H_gc1) = _box_sphere_collision(H_g0, lengths0, p_g1, r1)
+    >>> (sdist, H_gc0, H_gc1) = _box_sphere_collision(H_g0, lengths0/2, p_g1, r1)
     >>> print(sdist)
     -0.05
     >>> print(H_gc0)
@@ -231,7 +231,7 @@ def _box_sphere_collision(H_g0, lengths0, p_g1, radius1):
      [ 1.    0.    0.    0.  ]
      [ 0.    0.    0.    1.  ]]
     >>> p_g1 = array([0.45, 0., 0.])
-    >>> (sdist, H_gc0, H_gc1) = _box_sphere_collision(H_g0, lengths0, p_g1, r1)
+    >>> (sdist, H_gc0, H_gc1) = _box_sphere_collision(H_g0, lengths0/2, p_g1, r1)
     >>> print(sdist)
     -0.15
     >>> print(H_gc0)
@@ -248,18 +248,16 @@ def _box_sphere_collision(H_g0, lengths0, p_g1, radius1):
     """
     assert Hg.ishomogeneousmatrix(H_g0)
     p_01 = Hg.pdot(Hg.inv(H_g0), p_g1)
-    if (-lengths0[0]/2. <= p_01[0] and p_01[0] <= lengths0[0]/2.) and\
-       (-lengths0[1]/2. <= p_01[1] and p_01[1] <= lengths0[1]/2.) and\
-       (-lengths0[2]/2. <= p_01[2] and p_01[2] <= lengths0[2]/2.):
+    if (abs(p_01) <= half_extents0).all():
         # p_01 is inside the box, we need to find the nearest face
-        i = argmin(hstack((lengths0 - p_01, lengths0 + p_01)))
+        i = argmin(hstack((half_extents0 - p_01, half_extents0 + p_01)))
         f_0 = p_01.copy()
         normal = zeros(3)
         if i < 3:
-            f_0[i] = lengths0[i]/2.
+            f_0[i] = half_extents0[i]
             normal[i] = 1
         else:
-            f_0[i-3] = -lengths0[i-3]/2.
+            f_0[i-3] = -half_extents0[i-3]
             normal[i-3] = -1 #TODO check this line is correct
         f_g = Hg.pdot(H_g0, f_0)
         sdist = -norm(f_g - p_g1)-radius1
@@ -268,7 +266,7 @@ def _box_sphere_collision(H_g0, lengths0, p_g1, radius1):
         # the sphere center:
         f_0 = zeros(3)
         for i in range(3):
-            f_0[i] = max(min(lengths0[i]/2., p_01[i]), -lengths0[i]/2.)
+            f_0[i] = max(min(half_extents0[i], p_01[i]), -half_extents0[i])
         f_g = Hg.pdot(H_g0, f_0)
         vec = p_g1 - f_g
         normal = vec/norm(vec)
