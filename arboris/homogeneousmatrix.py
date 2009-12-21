@@ -210,7 +210,7 @@ def pdot(H, point):
     """Frame change for a point.
     """
     assert ishomogeneousmatrix(H)
-    return dot(H[0:3,0:3], point) + H[3,0:3]
+    return dot(H[0:3,0:3], point) + H[0:3, 3]
 
 def vdot(H, vec):
     """Frame change for a vector.
