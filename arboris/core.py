@@ -830,15 +830,15 @@ class World(NamedObject):
         constraints = []
         ndol = 0
         for c in self._constraints:
-            c.update()
+            c.update(dt)
             if c.is_active():
                 c._dol = slice(ndol, ndol+c.ndol)
                 ndol = ndol + c.ndol
                 constraints.append(c)
         jac = zeros((ndol, self._ndof))
         for c in constraints:
-            assert (c._force == 0).all()
             jac[c._dol,:] = c.jacobian
+            self._gforce += c.gforce
         vel = dot(jac, dot(self._admittance, 
                            dot(self._mass, self._gvel/dt) + self._gforce))
         admittance = dot(jac, dot(self._admittance, jac.T))

@@ -64,7 +64,7 @@ class JointLimits(Constraint):
     def ndol(self):
         return 1
 
-    def update(self):
+    def update(self, dt):
         self._pos0 = self._joint.gpos
     
     def is_active(self):
@@ -164,7 +164,7 @@ class BallAndSocketConstraint(Constraint):
     def ndol(self):
         return 3
 
-    def update(self):
+    def update(self, dt):
         r"""
         Compute the predicted relative position error between the socket and
         ball centers, `p_{01}(t)` and save it in ``self._pos0``.
@@ -274,7 +274,7 @@ class PointContact(Constraint):
     def init(self, world):
         pass
 
-    def update(self):
+    def update(self, dt):
         r"""
         This method calls the collision solver and updates the constraint
         status and the contact frames poses accordingly.
@@ -288,7 +288,11 @@ class PointContact(Constraint):
         H_b1g = Hg.inv(self._shapes[1].frame.body.pose)
         self._frames[0]._bpose = dot(H_b0g, H_gc0) #TODO: use a set method?
         self._frames[1]._bpose = dot(H_b1g, H_gc1)
-        self._is_active = (sdist < self._proximity)
+
+        H_c0c1 = dot(Hg.inv(H_gc0), H_gc1)
+        dsdist = (dot(Hg.adjoint(H_c0c1)[5,:], self._frames[1].twist)
+                  -self._frames[0].twist[5])
+        self._is_active = (sdist + dsdist*dt < self._proximity)
         self._sdist = sdist
 
     def is_active(self):
@@ -432,9 +436,9 @@ class SoftFingerContact(PointContact):
                 -self._frames[0].jacobian[2:6,:])
 
 
-    def update(self):
+    def update(self, dt):
         self._force[:] = 0.
-        PointContact.update(self)
+        PointContact.update(self, dt)
     
     
     def solve(self, vel, admittance, dt):
