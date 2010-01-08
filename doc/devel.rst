@@ -102,4 +102,7 @@ blender with game engine:
   A visualization framework built around TVTK. It is more suited to vector fields visualization than to scene viewing. 
 
 `matplotlib <http://matplotlib.sourceforge.net/>`_:
-  A 2D viewing library, which used to have limited 3D support. The 3D part was eventually removed.
+  A 2D viewing library, which used to have limited 3D support. The 3D part was removed then restored.
+
+`Soya3D <http://home.gna.org/oomadness/en/soya3d/index.html>`_:
+  A high level 3D/game engine. It does not seem very used. 
