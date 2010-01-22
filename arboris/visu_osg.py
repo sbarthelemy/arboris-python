@@ -15,31 +15,8 @@ parent apparent to all its child nodes. For instance, a geometrical
 transformation matrix node would move all its children.
 
 In some cases, a single (child) node may be shared between several 
-parents, for instance when the same geometry is displayed several times
-simultaneously (this saves memory).
-
-OSG in 20"
-----------
-
-TODO: finish
-
-Classes:
-    - Node
-    - Group
-    - Geode (*geometry node*)
-    - MatrixTransform
-    - Switch
-
-A geode can contain:
-    - DrawableShape
-    - Geometry
-    - 
-
-The Viewer class can manage multiple synchronized cameras to
-render a single view spanning multiple monitors. Viewer creates its own
-window(s) and graphics context(s) based on the underlying graphics system
-capabilities, so a single Viewer-based application executable runs on 
-single or multiple display systems.
+parents, for instance when the same geometry is displayed at several places
+(this saves memory).
 
 """
 __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>",
@@ -102,8 +79,17 @@ def hsv_to_rgb(hsv):
         rgb = (v, p, q)
     return rgb
 
+_MASK = {
+        'name': 1<<1,
+        'frame': 1<<2,
+        'link': 1<<3,
+        'shape':1<<4,
+        'inertia ellipsoid':1<<5,
+        'constraint force':1<<6,
+        'active constraint':1<<7}
+
 def pose2mat(pose):
-    """Convert an homogeneous transform matrix from python to osg. 
+    """Convert an homogeneous transform matrix from numpy to osg.
     
     The conversion handles the transposition required by osg.
 
@@ -228,7 +214,7 @@ def draw_line(start, end, radius=0.04, color=None):
         return line
     else:
         return None
-       
+
 def draw_text(label, size=1.):
     """Create a text geode.
 
@@ -270,39 +256,34 @@ def draw_force(length=1., radius=0.03, alpha=1.):
     geode.addDrawable(cyl)
     return geode
 
-class SwitcherVisitor(osg.NodeVisitor):
-    def __init__(self, root, node_name, on):
-        assert isinstance(root, osg.Node)
-        osg.NodeVisitor.__init__(self, osg.NodeVisitor.NODE_VISITOR,
-                                 osg.NodeVisitor.TRAVERSE_ALL_CHILDREN)
-        self._root = root
-        self._node_name = node_name
-        self._on = on
-
-    def toggle(self):
-        self._on = not(self._on)
-        self._root.accept(self)
-
-    def apply_Switch(self, node):
-        if self._node_name == node.getName():
-            if self._on:
-                node.setAllChildrenOn()
-            else:
-                node.setAllChildrenOff()
-        else:
-            self.traverse(node)
-
 
 class SwitcherHandler(osgGA.GUIEventHandler):
     """Switches parts of the display on/off according to keys pressed.
     """
-    def __init__(self):
+    def __init__(self, camera):
         osgGA.GUIEventHandler.__init__(self)
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._actions = {}
+        self._categories = {}
+        self._camera = camera
 
-    def add_action(self, key, callback):
-        self._actions[key] = callback
+    def add_category(self, key, category, on=True):
+        self._categories[key] = category
+        self._turn(category, on)
+
+    def _toggle(self, category):
+        """Toggle display of a category."""
+        mask = self._camera.getCullMask()
+        mask = mask ^ _MASK[category]
+        self._camera.setCullMask(mask)
+ 
+    def _turn(self, category, on):
+        """Turn the display of a category on/off."""
+        mask = self._camera.getCullMask()
+        if on:
+            mask = mask | _MASK[category]
+        else:
+            mask = mask & ~_MASK[category]
+        self._camera.setCullMask(mask)
 
     def handle(self, ea, aa, obj, nv):
         eventtype = ea.getEventType()
@@ -310,11 +291,13 @@ class SwitcherHandler(osgGA.GUIEventHandler):
             key = ea.getKey()
             self._logger.info('key %d pressed', key)
             try:
-                self._actions[key]()
+                category = self._categories[key]
             except KeyError:
-                pass
+                return False
+            mask = self._camera.getCullMask()
+            mask = mask ^ _MASK[category]
+            self._camera.setCullMask(mask)
         return False
-
 
 def graphic_options(scale=1.):
     """Default dictionnary of graphic options.
@@ -385,6 +368,7 @@ class Drawer(core.WorldObserver):
             length=self._options['frame length'],
             radius=self._options['frame radius'],
             alpha=self._options['frame alpha'])
+        self._generic_frame.setNodeMask(_MASK['frame'])
         self._generic_force = draw_force(
             length= self._options['force length'],
             radius = self._options['force radius'])
@@ -418,8 +402,11 @@ class Drawer(core.WorldObserver):
             self.viewer.home()
         else:
             self.viewer = viewer
+        camera = self.viewer.getCamera()
+            #inheritanceMask = (~(osg.CullSettings.CULL_MASK) & osg.CullSettings.ALL_VARIABLES)
+            #camera.setInheritanceMask(inheritanceMask)
         # add an handler for GUI Events (will toggle display on/off):
-        self.handler = SwitcherHandler()
+        self.handler = SwitcherHandler(camera)
         self.viewer.addEventHandler(self.handler.__disown__())
 
     def _choose_color(self, body, alpha=1.):
@@ -437,34 +424,15 @@ class Drawer(core.WorldObserver):
         return color
 
     def _register(self, obj):
-        """Given an arboris obect ``obj`` as input, this method
-        return a dictionnary of OSG nodes for the rendering of 
-        ``obj``. I also returns a dictionary of osg switches, in
-        order to make it possible to disable the rendering of some nodes.
-        Each node is the child of its corresponding switch.
+        """Add the given arboris object ``obj`` to the scene.
 
-        If the optional ``parent`` argument is given, the switches are its
-        children
+        For a single arboris object, several OSG nodes may be added,
+        belonging to different categories. For instance,
+        registering an object of the :class:`Body` class returns nodes
+        belonging to the ``frame``, ``name`` and ``inertia ellispoid``
+        categories.
 
-        for instance, if ``obj`` is an instance of 
-        :class:`arboris.core.SubFrame`, and ``parent`` is given, it will 
-        result in the following tree::
-
-            parent
-              |
-              +-----------------+------------------+
-              |                 |                  |
-            switches['name']  switches['frame']  switches['link']
-              |                 |                  |
-            nodes['name']     nodes['frame']     nodes['link']
-
-        - ``name`` for any instance of the :class:`arboris.core.NamedObject` class
-        - ``frame`` for objects of the :class:`arboris.core.Frame` class
-        - ``link`` lines for skeletton-like view
-        - ``shapes`` the basic shapes (:class:`arboris.core.Shape`) 
-          used in the simulation for contact detection
-        - ``geometry``
-        - ``cog``
+        The categories a node belongs to is specified using node masks.
 
         """
         if obj in self.registered:
@@ -472,22 +440,17 @@ class Drawer(core.WorldObserver):
         else:
             self.registered.append(obj)
             opts = self._options
-
-            def _add_switch(parent, child, name):
-                switch = osg.Switch()
-                parent.addChild(switch)
-                switch.addChild(child)
-                switch.setName(name)
-
             if isinstance(obj, core.Frame):
                 # create a transform for the frames (instances of 
                 # the Body and Subframe classes)
                 t = osg.MatrixTransform()
                 self.frames[obj] = t
                 # draw the frame name:
-                _add_switch(t, draw_text(obj.name, opts['text size']), 'name')
+                name = draw_text(obj.name, opts['text size'])
+                name.setNodeMask(_MASK['name'])
+                t.addChild(name)
                 # draw the frame basis:
-                _add_switch(t, self._generic_frame, 'frame')
+                t.addChild(self._generic_frame)
                 if isinstance(obj, core.Body):
                     self.root.addChild(t)
                     if obj.mass[5,5] != 0:
@@ -519,8 +482,8 @@ class Drawer(core.WorldObserver):
                         pos_node = osg.MatrixTransform()
                         pos_node.setMatrix(pose2mat(bHg))
                         pos_node.addChild(gen_scale_node)
-                        _add_switch(self.frames[obj], pos_node, 
-                                    'inertia ellipsoid')
+                        pos_node.setNodeMask(_MASK['inertia ellipsoid'])
+                        self.frames[obj].addChild(pos_node)
                 elif isinstance(obj, core.SubFrame):
                     self.frames[obj.body].addChild(t)
                     # draw a line between the subframe and its parent:
@@ -528,11 +491,13 @@ class Drawer(core.WorldObserver):
                     nl = draw_line((0,0,0),
                                -dot(obj.bpose[0:3,0:3].T, obj.bpose[0:3,3]),
                                opts['link radius'], color)
-                    _add_switch(self.frames[obj], nl, 'link')
+                    nl.setNodeMask(_MASK['link'])
+                    self.frames[obj]. addChild(nl)
             elif isinstance(obj, constraints.SoftFingerContact):
                 t = osg.PositionAttitudeTransform()
                 self.constraint_forces[obj] = t
-                _add_switch(self.frames[obj._frames[0]],t,"constraint force")
+                t.setNodeMask(_MASK['constraint force'])
+                self.frames[obj._frames[0]].assChild(t)
                 t.addChild(self._generic_force)
             elif isinstance(obj, core.Shape):
                 color = self._choose_color(obj.frame.body)
@@ -555,11 +520,10 @@ class Drawer(core.WorldObserver):
                     raise NotImplemented("Cannot draw this shape")
                 shape.setColor(color)
                 switch = osg.Switch()
-                self.frames[obj.frame].addChild(switch)
                 geode =  osg.Geode()
                 geode.addDrawable(shape)
-                switch.addChild(geode)
-                switch.setName('shape')
+                geode.setNodeMask(_MASK['shape'])
+                self.frames[obj.frame].addChild(geode)
             elif isinstance(obj, core.Joint) or \
                 isinstance(obj, core.Constraint) or \
                 isinstance(obj, core.Controller):
@@ -582,10 +546,9 @@ class Drawer(core.WorldObserver):
             (ord('i'), 'inertia ellipsoid', False),
             (ord('l'), 'link', True),
             (ord('n'), 'name', False),
+            (ord('w'), 'constraint force', True),
             (ord('g'), 'shape', True)):
-            visitor = SwitcherVisitor(self.root, name, on)
-            self.root.accept(visitor)
-            self.handler.add_action(key, visitor.toggle)
+            self.handler.add_category(key, name, on)
 
     def update(self, dt=None):
         for obj in self._world.itersubframes():
@@ -593,12 +556,8 @@ class Drawer(core.WorldObserver):
         for obj in self._world.iterbodies():
             self.frames[obj].setMatrix(pose2mat(obj.pose))
         for obj in self._world.iterconstraints():
-            sw = self.constraint_forces[obj].getParent(0)
-            sw = sw.asSwitch()
             if obj.is_active():
                 from numpy.linalg import norm
-
- 
                 # scale the generic_force according to the force
                 # norm. We constraint the scaling to be in [0.1, 10]
                 scale = min(10., max(0.1, norm(obj._force[1:4])/100))
@@ -606,10 +565,10 @@ class Drawer(core.WorldObserver):
                     osg.Vec3d(scale,scale,scale))
                 align_z_with_vector(obj._force[1:4],
                                     self.constraint_forces[obj])
-                sw.setAllChildrenOn()
+                self.constraint_forces[obj].setNodeMask(
+                        _MASK['constraint force'])
             else:
-                sw.setAllChildrenOff()
-                
+                self.constraint_forces[obj].setNodeMask(0)
         self.viewer.frame()
 
     def done(self):
