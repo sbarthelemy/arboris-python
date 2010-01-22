@@ -194,26 +194,21 @@ def draw_line(start, end, radius=0.04, color=None):
     >>> draw_line((1.,2.,3.), (4.,5.,6.), radius=.5) #doctest: +ELLIPSIS
     <osg.PositionAttitudeTransform; proxy of <Swig Object of type 'osg::PositionAttitudeTransform *' at 0x...> >
 
-    TODO: raise an exception when start==end?
-
     """
     v = array((end[0] - start[0], end[1] - start[1], end[2] - start[2]))
     length = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
-    if length != 0.:
-        v = v/length
-        # create the cylinder
-        cyl = osg.ShapeDrawable(
-            osg.Cylinder(osg.Vec3(0., 0., length/2), radius, length))
-        if color is not None:
-            cyl.setColor(color)
-        geode = osg.Geode()
-        geode.addDrawable(cyl)
-        line = osg.PositionAttitudeTransform()
-        align_z_with_vector(v, line)
-        line.addChild(geode)
-        return line
-    else:
-        return None
+    v = v/length
+    # create the cylinder
+    cyl = osg.ShapeDrawable(
+        osg.Cylinder(osg.Vec3(0., 0., length/2), radius, length))
+    if color is not None:
+        cyl.setColor(color)
+    geode = osg.Geode()
+    geode.addDrawable(cyl)
+    line = osg.PositionAttitudeTransform()
+    align_z_with_vector(v, line)
+    line.addChild(geode)
+    return line
 
 def draw_text(label, size=1.):
     """Create a text geode.
@@ -497,7 +492,7 @@ class Drawer(core.WorldObserver):
                 t = osg.PositionAttitudeTransform()
                 self.constraint_forces[obj] = t
                 t.setNodeMask(_MASK['constraint force'])
-                self.frames[obj._frames[0]].assChild(t)
+                self.frames[obj._frames[0]].addChild(t)
                 t.addChild(self._generic_force)
             elif isinstance(obj, core.Shape):
                 color = self._choose_color(obj.frame.body)
