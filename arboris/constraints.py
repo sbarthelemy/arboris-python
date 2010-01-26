@@ -5,8 +5,8 @@
 __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from abc import ABCMeta, abstractmethod
-from numpy import array, zeros, eye, dot, hstack, diag
-from numpy.linalg import solve, eigvals
+from numpy import array, zeros, eye, dot, hstack, diag, logical_and
+from numpy.linalg import solve, eigvals, pinv
 import arboris.homogeneousmatrix as Hg
 from arboris.core import SubFrame, Constraint, Shape, NamedObject, World
 
@@ -386,7 +386,7 @@ class SoftFingerContact(PointContact):
         \frac{m_z}{e_p^2} \\ \frac{f_x}{e_x^2} \\ \frac{f_y}{e_y^2}
         \end{bmatrix}
         \text{ and }
-        s = \frac{
+        s = -\frac{
             \sqrt{e_p^2 \cdot \omega_z + e_x^2 \cdot v_x + e_y^2 \cdot v_y}}{
             \mu \cdot f_z}
 
@@ -739,7 +739,7 @@ class SoftFingerContact(PointContact):
             \end{bmatrix}
             \begin{bmatrix}
             I_{3 \times 3} & -Y_c/y_n \\
-            0_{1 \times 3} & y_n
+            0_{1 \times 3} & y_n^{-1}
             \end{bmatrix}
         
         injecting this last expression into, it can be shown that `s` is
@@ -767,22 +767,27 @@ class SoftFingerContact(PointContact):
                     & Y_t - Y_c\;Y_c^T/y_n
             \end{bmatrix}
 
-        where the following values has been introduced
+        where the following values have been introduced
 
         .. math::
             \beta &= 
             \begin{bmatrix}
                 I_{3 \times 3} & -Y_c/y_n \\
                 \end{bmatrix} \alpha \\
-            a &= \mu y_n \alpha_3 \\
+            a &= \mu/y_n \alpha_3 \\
             b &= \frac{\mu}{y_n} Y_c
+
+        `s` should be real and negative (in order to ensure that the friction
+        force opposes motion). If `B` has several real negative eigen-values,
+        we choose the smallest, which leads to the smaller friction forces.
 
         .. note::
             the full math is available as a pdf, within that document, `\beta`
             is denoted `\hat{\alpha}`.
 
         """
-        if self._sdist + dt*vel[3]>0:
+        vel_no_force = vel - dot(admittance, self._force)
+        if self._sdist + dt*vel_no_force[3] > 0:
             # if there is no contact, the contact force should be 0
             dforce = -self._force
             self._force[:] = 0.
@@ -796,11 +801,12 @@ class SoftFingerContact(PointContact):
             # friction model. 
             
             # First, try with static friction: zero tangent velocity
-            dforce = solve(-admittance, 
+            admittance_pinv = pinv(admittance)
+            dforce = dot(-admittance_pinv, 
                            hstack((vel[0:3], vel[3]+self._sdist/dt)))
             force = self._force + dforce
 
-            if sum((force[0:3]/self._eps)**2) <= (force[3]/self._mu)**2:
+            if sum((force[0:3]/self._eps)**2) <= (force[3]*self._mu)**2:
                 # the elliptic dry friction law is respected.
                 self._force = force
                 return dforce
@@ -812,25 +818,26 @@ class SoftFingerContact(PointContact):
                 alpha[3] += self._sdist/dt
                 Y_c = admittance[0:3,3]
                 y_n = admittance[3,3]
-                Y_t = admittance[0:3,0:3] - dot(Y_c, Y_c.T)/y_n
+                Y_t = admittance[0:3,0:3]
                 beta = alpha[0:3] - alpha[3]/y_n*Y_c
-                a = self._mu * y_n * alpha[3]
+                a = self._mu/y_n * alpha[3]
                 b = self._mu/y_n * Y_c
                 B = zeros((6,6))
                 E = diag(self._eps**2)
-                B[3:6,3:6] = dot(E, Y_t - dot(Y_c, Y_c.T)/y_n)
-                B[0:3,0:3] = dot(E, B[3:6,3:6] + 2/a*dot(beta,b.T))
-                B[0:3,3:6] = dot(E ,dot(beta,beta.T)/(a**2))
-                B[3:6,0:3] = dot(b,b.T)- dot(E, diag(self._eps**-2))
+                Y_that = Y_t - dot(Y_c, Y_c.T)/y_n
+                B[3:6,3:6] = dot(E, Y_that)
+                B[0:3,0:3] = dot(E, Y_that + 2/a*dot(beta,b.T))
+                B[0:3,3:6] = -dot(E ,dot(beta,beta.T)/(a**2))
+                B[3:6,0:3] = dot(E, dot(b,b.T)) - eye(3)
 
                 # s is the real part of the eigenvalue with the smallest 
                 # imaginary par within those with a positive real part
                 S = eigvals(B)
-                S = S[S.real >= 0]
-                ind = S.imag.argsort()
-                s = S[ind[0]].real
-                s = min(s, 1e10) #TODO: throw exception when s>=1e10
-
+                S = S[logical_and(S.imag == 0, S.real <= 0)]
+                if len(S)==0:
+                    s = -1e10 #TODO: log when len(S)==0
+                else:
+                    s = max(min(S), -1e10) #TODO: log when |s|>=1e10
                 prev_force = self._force.copy()
                 A = admittance.copy()
                 A[0:3,0:3] -= s*diag(self._eps**-2)
