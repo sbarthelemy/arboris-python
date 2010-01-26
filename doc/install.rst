@@ -73,7 +73,7 @@ Installing h5py
 
 Install hdf5 library and headers::
 
-  sudo aptitude install libhdf5-serial-dev
+  sudo aptitude install libhdf5-serial-dev python2.6-dev
 
 Download, compile and install the python bindings (h5py)::
 
@@ -101,11 +101,6 @@ OpenSceneGraph 2.8 is packaged::
 
   sudo aptitude install libopenscenegraph-dev openscenegraph openscenegraph-doc
 
-.. note::
-  It seems that osgswig is incompatible with the version shiped with 
-  ubuntu (2.8.1-1). You might install the 2.8.2 from source instead, 
-  as explained in the following section.
-
 ...from source
 ~~~~~~~~~~~~~~
 
@@ -124,7 +119,6 @@ compile and install (warning, the compilation takes lots of memory and time)::
   make
   sudo make install
   TODO: how to check everything was fine?
-
 
 Installing osgswig
 ------------------
