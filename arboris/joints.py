@@ -61,11 +61,6 @@ class RzRyRxJoint(LinearConfigurationSpaceJoint):
 
     the resulting homogeneous matrix is given by `H_{01} = Rz Ry Rx`
     """
-    def __init__(self, gpos=[0.,0.,0.], gvel=[0.,0.,0.], name=None):
-        self.gpos = array(gpos).reshape((3))
-        self.gvel = array(gvel).reshape((3))
-        Joint.__init__(self, name)
-
     @property
     def ndof(self):
         return 3
@@ -114,11 +109,6 @@ class RzRyJoint(LinearConfigurationSpaceJoint):
 
     the resulting homogeneous matrix is given by H = Rz*Ry
     """
-    def __init__(self, gpos=[0.,0.], gvel=[0.,0.], name=None):
-        self.gpos = array(gpos).reshape((2))
-        self.gvel = array(gvel).reshape((2))
-        Joint.__init__(self,  name)
-
     @property
     def ndof(self):
         return 2
@@ -161,11 +151,6 @@ class RzRxJoint(LinearConfigurationSpaceJoint):
 
     the resulting homogeneous matrix is given by H = Rz*Rx
     """
-    def __init__(self, gpos=[0.,0.], gvel=[0.,0.], name=None):
-        self.gpos = array(gpos).reshape((2))
-        self.gvel = array(gvel).reshape((2))
-        Joint.__init__(self, name)
-
     @property
     def ndof(self):
         return 2
@@ -176,9 +161,6 @@ class RzRxJoint(LinearConfigurationSpaceJoint):
 
     @property
     def jacobian(self):
-        """
-        T_n/r = 
-        """   
         sx = sin(self.gpos[1])
         cx = cos(self.gpos[1])
         return array(
@@ -208,11 +190,6 @@ class RyRxJoint(LinearConfigurationSpaceJoint):
 
     the resulting homogeneous matrix is given by H = Rz*Ry
     """
-    def __init__(self, gpos=[0.,0.], gvel=[0.,0.], frames=None, name=None):
-        self.gpos = array(gpos).reshape((2))
-        self.gvel = array(gvel).reshape((2))
-        Joint.__init__(self, name)
-
     @property
     def ndof(self):
         return 2
@@ -223,9 +200,6 @@ class RyRxJoint(LinearConfigurationSpaceJoint):
 
     @property
     def jacobian(self):
-        """
-        T_n/r = 
-        """   
         sx = sin(self.gpos[1])
         cx = cos(self.gpos[1])
         return array(
@@ -251,22 +225,17 @@ class RyRxJoint(LinearConfigurationSpaceJoint):
              
 
 class RzJoint(LinearConfigurationSpaceJoint):
-
     """Hinge (1-dof) with axis in the z-direction
+    
+    example:
+    
+    >>> j = RzJoint(gpos = 3.14/2., gvel = 1.)
+    >>> j.gpos
+    array([ 1.57])
+    >>> j.gvel
+    array([ 1.])
+   
     """
-    def __init__(self, gpos=0., gvel=0., name=None):
-        """
-        example:
-        >>> j = RzJoint(gpos = 3.14/2., gvel = 1.)
-        >>> j.gpos
-        array([ 1.57])
-        >>> j.gvel
-        array([ 1.])
-        """
-        self.gpos = array(gpos).reshape((1))
-        self.gvel = array(gvel).reshape((1))
-        Joint.__init__(self, name)
-
     @property
     def ndof(self):
         return 1
@@ -336,12 +305,6 @@ class RzJoint(LinearConfigurationSpaceJoint):
 class RyJoint(LinearConfigurationSpaceJoint):
     """Hinge (1-dof) with axis in the y-direction.
     """
-
-    def __init__(self, gpos=0., gvel=0., name=None):
-        self.gpos = array(gpos).reshape((1))
-        self.gvel = array(gvel).reshape((1))
-        Joint.__init__(self, name)
-        
     @property
     def ndof(self):
         return 1
@@ -365,11 +328,6 @@ class RyJoint(LinearConfigurationSpaceJoint):
 class RxJoint(LinearConfigurationSpaceJoint):
     """Hinge (1-dof) with axis in the x-direction
     """
-    def __init__(self, gpos=0., gvel=0., frames=None, name=None):
-        self.gpos = array(gpos).reshape((1))
-        self.gvel = array(gvel).reshape((1))
-        Joint.__init__(self, name)
-        
     @property
     def ndof(self):
         return 1
@@ -389,3 +347,38 @@ class RxJoint(LinearConfigurationSpaceJoint):
     @property
     def djacobian(self):
         return zeros((6,1))
+
+
+class TxTyTzJoint(LinearConfigurationSpaceJoint):
+    """Triple prismatic joint (3-dof).
+
+    the resulting homogeneous matrix is given by H = Tx*Ty*Tz.
+    """
+    @property
+    def ndof(self):
+        return 3
+
+    @property
+    def pose(self):
+        return homogeneousmatrix.transl(
+                self.gpos[0], self.gpos[1], self.gpos[2])
+
+    @property
+    def jacobian(self):
+        return array(
+            [[  0. , 0. , 0. ],
+             [  0. , 0. , 0. ],
+             [  0. , 0. , 0. ],
+             [  1. , 0. , 0. ],
+             [  0. , 1. , 0. ],
+             [  0. , 0. , 1. ]])
+
+    @property
+    def djacobian(self):
+        return array(
+            [[  0. , 0. , 0. ],
+             [  0. , 0. , 0. ],
+             [  0. , 0. , 0. ],
+             [  0. , 0. , 0. ],
+             [  0. , 0. , 0. ],
+             [  0. , 0. , 0. ]])

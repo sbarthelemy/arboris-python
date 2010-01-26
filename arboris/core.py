@@ -209,6 +209,16 @@ class LinearConfigurationSpaceJoint(Joint):
     """
     Joints whose configuration space is diffeomorph to R^ndof.
     """
+    def __init__(self, gpos=None, gvel=None, name=None):
+        if gpos is None:
+            self.gpos = zeros(self.ndof)
+        else:
+            self.gpos = array(gpos).reshape((self.ndof))
+        if gvel is None:
+            self.gvel = zeros(self.ndof)
+        else:
+            self.gvel = array(gvel).reshape((self.ndof))
+        Joint.__init__(self, name)
 
     def integrate(self, gvel, dt):
         self.gvel = gvel
