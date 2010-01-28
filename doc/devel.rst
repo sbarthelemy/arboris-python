@@ -15,8 +15,8 @@ Install and set up git::
   sudo aptitude install git-gui gitk
   git config --global user.name "Your Name Comes Here"
   git config --global user.email you@yourdomain.example.com
-  git config --global --add color.diff always
-  git config --global --add color.interacive always
+  git config --global --add color.diff auto
+  git config --global --add color.interactive always
 
 Then, run ``git help tutorial`` for help.
 
