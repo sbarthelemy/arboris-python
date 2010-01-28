@@ -488,7 +488,7 @@ class Drawer(core.WorldObserver):
                                opts['link radius'], color)
                     nl.setNodeMask(_MASK['link'])
                     self.frames[obj]. addChild(nl)
-            elif isinstance(obj, constraints.SoftFingerContact):
+            elif isinstance(obj, constraints.SoftFingerContact) or isinstance(obj, constraints.BallAndSocketConstraint):
                 t = osg.PositionAttitudeTransform()
                 self.constraint_forces[obj] = t
                 t.setNodeMask(_MASK['constraint force'])
@@ -555,10 +555,14 @@ class Drawer(core.WorldObserver):
                 from numpy.linalg import norm
                 # scale the generic_force according to the force
                 # norm. We constraint the scaling to be in [0.1, 10]
-                scale = min(10., max(0.1, norm(obj._force[1:4])/100))
+                if isinstance(obj,constraints.SoftFingerContact):
+                    force = obj._force[1:4]
+                elif isinstance(obj,constraints.BallAndSocketConstraint):
+                    force = obj._force[0:3]
+                scale = min(10., max(0.1, norm(force)/100))
                 self.constraint_forces[obj].setScale(
                     osg.Vec3d(scale,scale,scale))
-                align_z_with_vector(obj._force[1:4],
+                align_z_with_vector(force,
                                     self.constraint_forces[obj])
                 self.constraint_forces[obj].setNodeMask(
                         _MASK['constraint force'])
