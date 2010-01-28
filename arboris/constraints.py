@@ -76,12 +76,12 @@ class JointLimits(Constraint):
         # pos = self._pos0 + dt*(vel + admittance*dforce)
         if (pred <= self._min):
             # the min limit is violated, we want pos == min
-            dforce = solve(admittance, (self._min - pred)/dt)
+            dforce = dot(pinv(admittance), (self._min - pred)/dt)
             self._force += dforce
 
         elif (self._max <= pred):
             #the max limit is violated, we want pos == max
-            dforce = solve(admittance, (self._max - pred)/dt)
+            dforce = dot(pinv(admittance), (self._max - pred)/dt)
             self._force += dforce
 
         else:
@@ -801,8 +801,7 @@ class SoftFingerContact(PointContact):
             # friction model. 
             
             # First, try with static friction: zero tangent velocity
-            admittance_pinv = pinv(admittance)
-            dforce = dot(-admittance_pinv, 
+            dforce = dot(-pinv(admittance), 
                            hstack((vel[0:3], vel[3]+self._sdist/dt)))
             force = self._force + dforce
 
