@@ -235,7 +235,7 @@ class BallAndSocketConstraint(Constraint):
         array([ 0.,  0.,  0.])
 
         """
-        dforce = solve(-admittance, vel + self._pos0/dt)
+        dforce = dot(pinv(-admittance), vel + self._pos0/dt)
         self._force += dforce
         return dforce
 
