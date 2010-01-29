@@ -73,24 +73,22 @@ class JointLimits(Constraint):
                 (self._max-self._pos0<self._proximity)    
 
     def solve(self, vel, admittance, dt):
-        pred = self._pos0 + dt*vel
+        pred = self._pos0 + dt*(vel - dot(admittance,  self._force))
+        prev_force = self._force.copy()
         # pos = self._pos0 + dt*(vel + admittance*dforce)
         if (pred <= self._min):
             # the min limit is violated, we want pos == min
-            dforce = dot(pinv(admittance), (self._min - pred)/dt)
-            self._force += dforce
-
+            self._force = dot(pinv(admittance), (self._min - pred)/dt)
+            dforce = self._force - prev_force
         elif (self._max <= pred):
             #the max limit is violated, we want pos == max
-            dforce = dot(pinv(admittance), (self._max - pred)/dt)
-            self._force += dforce
-
+            self._force = dot(pinv(admittance), (self._max - pred)/dt)
+            dforce = self._force - prev_force
         else:
             # the joint is within its limits, we ensure the 
             # generalized force is zero
             dforce = -self._force
             self._force[:] = 0.
-
         return dforce
 
 class BallAndSocketConstraint(Constraint):
@@ -236,7 +234,7 @@ class BallAndSocketConstraint(Constraint):
         array([ 0.,  0.,  0.])
 
         """
-        dforce = dot(pinv(-admittance), vel + self._pos0/dt)
+        dforce = -dot(pinv(admittance), vel + self._pos0/dt)
         self._force += dforce
         return dforce
 
