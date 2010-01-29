@@ -293,6 +293,7 @@ class PointContact(Constraint):
                   -self._frames[0].twist[5])
         self._is_active = (sdist + dsdist*dt < self._proximity)
         self._sdist = sdist
+        self._force[:] = 0.
 
     def is_active(self):
         return self._is_active
@@ -433,12 +434,6 @@ class SoftFingerContact(PointContact):
         H_01 = dot(Hg.inv(self._frames[0].pose), self._frames[1].pose)
         return (dot(Hg.adjoint(H_01)[2:6,:], self._frames[1].jacobian)
                 -self._frames[0].jacobian[2:6,:])
-
-
-    def update(self, dt):
-        self._force[:] = 0.
-        PointContact.update(self, dt)
-    
     
     def solve(self, vel, admittance, dt):
         r"""
