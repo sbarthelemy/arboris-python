@@ -66,6 +66,7 @@ class JointLimits(Constraint):
 
     def update(self, dt):
         self._pos0 = self._joint.gpos
+        self._force[:] = 0.
     
     def is_active(self):
         return (self._pos0-self._min<self._proximity) or \
