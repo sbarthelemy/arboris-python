@@ -273,7 +273,7 @@ class Constraint(NamedObject):
     def ndol(self):
         """Number of degrees of "liaison" 
         
-        In french: *nombre de degrés de liaison*. This is equal to 6-ndof.
+        In french: *nombre de degrés de liaison*. This is equal to (6 - ndof).
         """
         pass
 
@@ -846,11 +846,12 @@ class World(NamedObject):
                 ndol = ndol + c.ndol
                 constraints.append(c)
         jac = zeros((ndol, self._ndof))
+        gforce = self._gforce.copy()
         for c in constraints:
             jac[c._dol,:] = c.jacobian
-            self._gforce += c.gforce
+            gforce += c.gforce
         vel = dot(jac, dot(self._admittance, 
-                           dot(self._mass, self._gvel/dt) + self._gforce))
+                           dot(self._mass, self._gvel/dt) + gforce))
         admittance = dot(jac, dot(self._admittance, jac.T))
 
         k=0
