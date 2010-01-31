@@ -505,8 +505,7 @@ class World(NamedObject):
         if isinstance(obj, Body):
             pass
         elif isinstance(obj, Joint):
-            self.register(obj.frames[0])
-            self.register(obj.frames[1])
+            raise ValueError('Joints should not be registered. Use add_link() instead.')
         elif isinstance(obj, SubFrame):
             if not obj in self._subframes:
                 self._subframes.append(obj)
