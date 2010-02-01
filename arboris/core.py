@@ -169,7 +169,7 @@ class Joint(RigidMotion, NamedObject):
 
     @abstractproperty
     def ndof(self):
-        """Number of degrees of freedom.
+        """Number of degrees of freedom of the joint.
         """
         pass
 
@@ -194,13 +194,20 @@ class Joint(RigidMotion, NamedObject):
 
     @abstractproperty
     def jacobian(self):
+        r"""Jacobian of the joint relative position.
+
+        Return the matrix `J` such that `\twist[1]_{1/0} = J \nu`.
+        Or, with numpy ntation, ``j.twist == dot(j.jacobian, j.gvel)``.
+
+        This matrix generally changes with the joint generalized position.
+        """
         pass
 
     @abstractproperty
     def djacobian(self):
         pass
 
-    @abstractproperty
+    @abstractmethod
     def integrate(self, gvel, dt):
         pass
 
