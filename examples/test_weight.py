@@ -3,7 +3,7 @@ A box falling under gravity. Its trajectory is compared against the
 theoric one.
 '''
 from arboris.controllers import WeightController 
-from arboris.core import ObservableWorld, simulate
+from arboris.core import World, simulate
 from pylab import plot, show, legend, xlabel, ylabel, title
 from arboris.core import WorldObserver
 from numpy import arange, dot, eye, array
@@ -23,7 +23,7 @@ class TrajLog(WorldObserver):
         self.frame = frame #origin of frame should be the com
         self.world = world
         
-    def init(self):
+    def init(self, world, timeline):
         pass
     
     def update(self, dt):
@@ -52,7 +52,7 @@ class TrajLog(WorldObserver):
              self.timeline, self.get_theoric())
         legend(('simulated', 'theoric'))
 
-w = ObservableWorld()
+w = World()
 
 if True:
     from arboris.homogeneousmatrix import transl
@@ -79,13 +79,11 @@ w.register(Box(subframe, half_extents))
 weightc = WeightController(w)       
 w.register(weightc)
 obs = TrajLog(w.getframes()['box_com'], w)
-w.observers.append(obs)
 
 from arboris.visu_osg import Drawer
-w.observers.append(Drawer(w))
 
 timeline = arange(0,1,5e-3)
-simulate(w, timeline)
+simulate(w, timeline, [obs, Drawer(w)])
     
 time = timeline[:-1]
 obs.plot_error()

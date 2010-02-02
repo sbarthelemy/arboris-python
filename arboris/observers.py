@@ -17,21 +17,18 @@ class EnergyMonitor(WorldObserver):
     
     **Example:**
 
-        >>> from arboris.core import ObservableWorld, simulate
+        >>> from arboris.core import World, simulate
         >>> from arboris.robots.simplearm import add_simplearm
-        >>> w = ObservableWorld()
-        >>> obs = EnergyMonitor(w)
-        >>> w.observers.append(obs)
+        >>> w = World()
+        >>> observers = [EnergyMonitor()]
         >>> add_simplearm(w)
-        >>> simulate(w, [0,1,2])
+        >>> simulate(w, [0,1,2], observers)
         >>> #obs.plot()
 
     """
     
-    def __init__(self, world):
+    def init(self, world, timeline):
         self._world = world
-
-    def init(self):
         self.time = []
         self.kinetic_energy = []
         self.potential_energy = []
@@ -54,6 +51,9 @@ class EnergyMonitor(WorldObserver):
         self.potential_energy.append(Ep)
         self.mechanichal_energy.append(Ec+Ep)
 
+    def finish(self):
+        pass
+
     def plot(self):
         """Plot the energy evolution.
         """
@@ -73,13 +73,12 @@ class PerfMonitor(WorldObserver):
 
     **Example:**
 
-        >>> from arboris.core import ObservableWorld, simulate
+        >>> from arboris.core import World, simulate
         >>> from arboris.robots.simplearm import add_simplearm
-        >>> w = ObservableWorld()
-        >>> obs = PerfMonitor(w)
-        >>> w.observers.append(obs)
+        >>> w = World()
+        >>> obs = PerfMonitor()
         >>> add_simplearm(w)
-        >>> simulate(w, [0,1,2])
+        >>> simulate(w, [0,1,2], [obs])
         >>> print obs.get_summary() #doctest: +ELLIPSIS
         total computation time (s): ...
         min computation time (s): ...
@@ -88,16 +87,16 @@ class PerfMonitor(WorldObserver):
         >>> #obs.plot()
 
     """
-    def __init__(self, world, log = False):
+    def __init__(self, log=False):
         if log:
             self._logger = logging.getLogger(self.__class__.__name__)
         else:
             self._logger = None
         self._last_time = None
         self._computation_time = []
-        self._world = world
 
-    def init(self):
+    def init(self, world, timeline):
+        self._world = world
         self._last_time = _time()
 
     def update(self, dt):
@@ -107,6 +106,9 @@ class PerfMonitor(WorldObserver):
         if self._logger is not None:
             self._logger.info('current time (s): %.3f', 
                               self._world.current_time)
+
+    def finish(self):
+        pass
 
     def plot(self):
         from pylab import plot, show, xlabel, ylabel, title
@@ -131,13 +133,10 @@ max computation time (s): {3}""".format(
 class Hdf5Logger(WorldObserver):
     """An observer that saves the simulation data in an hdf5 file.
     """
-    def __init__(self, world, nb_steps, filename, group = "/",
+    def __init__(self, filename, group = "/",
                  mode = 'a', save_viewer_data = True , 
                  save_dyn_model = False):
         import h5py
-        # simulation data
-        self._world = world
-        self._nb_steps = nb_steps
         # hdf5 file handlers
         self._file = h5py.File(filename, mode)
         self._root = self._file
@@ -149,9 +148,11 @@ class Hdf5Logger(WorldObserver):
         self._save_viewer_data = save_viewer_data
         self._save_dyn_model = save_dyn_model
  
-    def init(self):
+    def init(self, world, timeline):
         """Create the datasets.
         """
+        self._world = world
+        self._nb_steps = len(timeline)-1
         self._current_step = 0
         self._root.require_dataset("timeline", (self._nb_steps,), 'f8')
         

@@ -177,10 +177,8 @@ A dynamic simulation
 ...with visualization
 =====================
 
-To get informations about the world, we can use an
-:class:`arboris.core.ObservableWorld` instead of a 
-plain :class:`arboris.core.World`, and "plug"
-:class:`arboris.core.WorldObservers` to it.
+To get informations about the world, we can add
+:class:`arboris.core.WorldObservers` to the simulation.
 
 One of these observers gives a graphic representation of the world:
 the class :class:`arboris.visu_osg.Drawer`.
@@ -190,11 +188,10 @@ the class :class:`arboris.visu_osg.Drawer`.
   >>> from arboris.all import *
   >>> from numpy import arange
   >>> from arboris.visu_osg import Drawer
-  >>> w = ObservableWorld()
-  >>> w.observers.append(Drawer(w))
+  >>> w = World()
   >>> add_simplearm(w)
   >>> timeline = arange(0.,.1,1e-3)
-  >>> simulate(w, timeline)
+  >>> simulate(w, timeline, observers=[Drawer(w)])
 
 Using a controller
 ==================
@@ -205,8 +202,7 @@ Using a controller
   >>> from numpy import arange, diag, sqrt
   >>> from arboris.visu_osg import Drawer
   >>> from arboris.controllers import ProportionalDerivativeController
-  >>> w = ObservableWorld()
-  >>> w.observers.append(Drawer(w))
+  >>> w = World()
   >>> add_simplearm(w)
   >>> joints = w.getjoints()
   >>> w.register(ProportionalDerivativeController(
@@ -215,7 +211,7 @@ Using a controller
   ...     kp=diag((1.,1.,1.)),
   ...     kd=diag((1.,1.,1.))/sqrt(2)))
   >>> timeline = arange(0.,3,1e-3)
-  >>> simulate(w, timeline)
+  >>> simulate(w, timeline, [Drawer(w)])
 
 Writing a controller
 ====================

@@ -14,7 +14,7 @@ __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 import arboris.controllers
 from arboris.observers import EnergyMonitor, PerfMonitor
 from arboris.visu_osg import Drawer
-from arboris.core import World, ObservableWorld, Body, SubFrame, simulate
+from arboris.core import World, Body, SubFrame, simulate
 from arboris.massmatrix import transport, cylinder, box
 from arboris.homogeneousmatrix import transl
 from arboris.joints import *
@@ -98,7 +98,7 @@ class MassMonitor(WorldObserver):
 with_weight = False
 is_fixed = False
 use_snake = True
-w = ObservableWorld()
+w = World()
 njoints = 9
 lengths   = [1., .9, .8 , .7 , .6, .5, .4 , .3, .2]
 masses   = [1., .9, .8 , .7 , .6, .5, .4 , .3, .2]
@@ -119,12 +119,11 @@ else:
     t_end = 1.430
 
 nrj = EnergyMonitor(w)      
-w.observers.append(nrj)
 mM = MassMonitor(w)
 w.observers.append(mM)
 #w.observers.append(Drawer(w))
 timeline = arange(0, t_end, 0.005)
-simulate(w, timeline)
+simulate(w, timeline, (nrj, mM))
 
 nrj.plot()
 #mM.plot()

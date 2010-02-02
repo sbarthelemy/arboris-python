@@ -372,7 +372,7 @@ class Drawer(core.WorldObserver):
         self.frames = {}
         self.constraint_forces = {}
         self._world = world
-        self.register(self._world.ground)
+        self._register(self._world.ground)
         if viewer is None:
             # create the osg viewer:
             self.viewer = osgViewer.Viewer()
@@ -526,7 +526,7 @@ class Drawer(core.WorldObserver):
             else:
                 raise NotImplemented(obj)
 
-    def init(self):
+    def init(self, world, timeline):
         self._world.update_geometric() #TODO find a way to remove this
         for obj in self._world.iterbodies():
             self._register(obj)

@@ -913,9 +913,6 @@ class World(NamedObject):
             j.integrate(self._gvel[j.dof], dt)
         self._current_time += dt
 
-    def finish(self):
-        pass
-
 
 class SubFrame(NamedObject, Frame):
 
@@ -1239,46 +1236,10 @@ class Body(NamedObject, Frame):
             j._frame1.body.update_dynamic(child_pose, child_jac, child_djac, 
                                           child_twist)
 
-class ObservableWorld(World):
-
-    def __init__(self, *positional_args, 
-                 **keyword_args):
-        World.__init__(self, *positional_args, **keyword_args)
-        self.observers = []
-
-    def register(self, obj):
-        World.register(self, obj)
-        for obs in self.observers:
-            assert isinstance(obs, WorldObserver)
-            obs.register(obj)
-
-    def init(self):
-        World.init(self)
-        for obs in self.observers:
-            assert isinstance(obs, WorldObserver)
-            obs.init()
-
-    def _update_observers(self, dt):
-        for obs in self.observers:
-            assert isinstance(obs, WorldObserver)
-            obs.update(dt)
-
-    def integrate(self, dt):
-        self._update_observers(dt)
-        World.integrate(self, dt)
-
-    def finish(self):
-         for obs in self.observers:
-            assert isinstance(obs, WorldObserver)
-            obs.finish()
-
 
 class WorldObserver(object):
     __metaclass__ = ABCMeta
-
-    def register(self, obj):
-        pass
-
+    
     @abstractmethod
     def init(self):
         pass
@@ -1287,11 +1248,12 @@ class WorldObserver(object):
     def update(self):
         pass
 
+    @abstractmethod
     def finish(self):
         pass
 
 
-def simulate(world, timeline):
+def simulate(world, timeline, observers=()):
     """Run a full simulation, 
 
     :param world: the world to be simulated
@@ -1311,10 +1273,15 @@ def simulate(world, timeline):
         pass #TODO: use logger to warn user of possible problem
     world._current_time = timeline[0]
     world.init()
+    for obs in observers:
+        obs.init(world, timeline)
     for next_time in timeline[1:]:
         dt = next_time - world._current_time
         world.update_dynamic()
         world.update_controllers(dt)
         world.update_constraints(dt)
+        for obs in observers:
+            obs.update(dt)
         world.integrate(dt)
-    world.finish()
+    for obs in observers:
+        obs.finish()

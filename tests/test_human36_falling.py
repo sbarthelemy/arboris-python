@@ -4,13 +4,12 @@ from itertools import ifilter
 
 batch = True
 t_end = 1e-2
-
+w = World()
 if batch:
-    w = World()
+    observers = []
 else:
     from arboris.visu_osg import Drawer
-    w = ObservableWorld()
-    w.observers.append(Drawer(w))
+    observers = [Drawer(w)]
 
 add_groundplane(w, lengths=(3., 0.01, 2.) )
 add_human36(w)
@@ -34,5 +33,5 @@ shapes=w.getshapes()
 for c in constraints.get_all_contacts(w, friction_coeff=.6):
     w.register(c)
 timeline = arange(0., t_end, 5e-3)
-simulate(w, timeline)
+simulate(w, timeline, observers)
 

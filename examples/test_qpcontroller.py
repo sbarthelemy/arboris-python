@@ -5,7 +5,7 @@ This example shows how to use BalanceController.
 """
 __author__ = ("Joseph Salini <joseph.salini@gmail.com>")
 
-from arboris.core import ObservableWorld, simulate, SubFrame
+from arboris.core import World, simulate, SubFrame
 from arboris.homogeneousmatrix import transl
 from arboris.robots.simplearm import add_simplearm
 from arboris.visu_osg import Drawer
@@ -13,8 +13,7 @@ from arboris.qpcontroller import BalanceController, Task
 #from arboris.controllers import WeightController
 from numpy import arange
 
-world = ObservableWorld()
-#world.observers.append(Drawer(world))
+world = World()
 add_simplearm(world, name='Left')
 world.register(SubFrame(world.ground, transl(0.5, 0.5, 0), 'LeftTarget'))
 joints = world.getjoints()

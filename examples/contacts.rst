@@ -8,10 +8,9 @@ Non sliding, free
 >>> from arboris.visu_osg import Drawer
 >>> from arboris.robots.simpleshapes import add_sphere
 >>> from arboris.constraints import SoftFingerContact
->>> from arboris.core import simulate, ObservableWorld
+>>> from arboris.core import simulate, World
 >>> from numpy import arange
->>> world = ObservableWorld()
->>> world.observers.append(Drawer(world))
+>>> world = World()
 >>> add_sphere(world, name='ball0')
 >>> add_sphere(world, name='ball1')
 >>> bodies = world.getbodies()
@@ -19,7 +18,7 @@ Non sliding, free
 >>> bodies['ball0'].parentjoint.gvel[4] = -1.
 >>> c = SoftFingerContact(world._shapes, 0.1)
 >>> world.register(c)
->>> simulate(world,  arange(0,1,1e-3))
+>>> simulate(world,  arange(0,1,1e-3), [Drawer(world)])
 
 
 Non-sliding, blocked
@@ -29,10 +28,9 @@ Non-sliding, blocked
 >>> from arboris.robots.simpleshapes import add_sphere
 >>> from arboris.shapes import Sphere
 >>> from arboris.constraints import SoftFingerContact
->>> from arboris.core import simulate, ObservableWorld
+>>> from arboris.core import simulate, World
 >>> from numpy import arange
->>> world = ObservableWorld()
->>> world.observers.append(Drawer(world))
+>>> world = World()
 >>> add_sphere(world, name='ball0')
 >>> world.register(Sphere(world.ground))
 >>> bodies = world.getbodies()
@@ -40,7 +38,7 @@ Non-sliding, blocked
 >>> bodies['ball0'].parentjoint.gvel[4] = -1.
 >>> c = SoftFingerContact(world._shapes, 0.1)
 >>> world.register(c)
->>> simulate(world, arange(0,1,1e-3))
+>>> simulate(world, arange(0,1,1e-3), [Drawer(world)])
 
 
 Sliding, blocked
@@ -50,10 +48,9 @@ Sliding, blocked
 >>> from arboris.robots.simpleshapes import add_sphere
 >>> from arboris.shapes import Sphere
 >>> from arboris.constraints import SoftFingerContact
->>> from arboris.core import simulate, ObservableWorld
+>>> from arboris.core import simulate, World
 >>> from numpy import arange
->>> world = ObservableWorld()
->>> world.observers.append(Drawer(world))
+>>> world = World()
 >>> add_sphere(world, name='ball0')
 >>> world.register(Sphere(world.ground))
 >>> bodies = world.getbodies()
@@ -62,7 +59,7 @@ Sliding, blocked
 >>> bodies['ball0'].parentjoint.gvel[4] = -1.
 >>> c = SoftFingerContact(world._shapes, 0.1)
 >>> world.register(c)
->>> simulate(world, arange(0,1,1e-3))
+>>> simulate(world, arange(0,1,1e-3), [Drawer(world)])
 
 
 Sphere-box with gravity
@@ -73,11 +70,10 @@ Sphere-box with gravity
 >>> from arboris.shapes import Box
 >>> from arboris.collisions import box_sphere_collision
 >>> from arboris.constraints import SoftFingerContact
->>> from arboris.core import simulate, ObservableWorld
+>>> from arboris.core import simulate, World
 >>> from arboris.controllers import WeightController
 >>> from numpy import arange
->>> world = ObservableWorld()
->>> world.observers.append(Drawer(world))
+>>> world = World()
 >>> world.register(Box(world.ground))
 >>> world.register(WeightController(world))
 >>> add_sphere(world, name='ball0')
@@ -88,4 +84,4 @@ Sphere-box with gravity
 >>> c = SoftFingerContact(world._shapes, 0.1)
 >>> #c = SoftFingerContact(world._shapes, 0.1, collision_solver)
 >>> world.register(c)
->>> simulate(world, arange(0,0.7,1e-3))
+>>> simulate(world, arange(0,0.7,1e-3), [Drawer(world)])

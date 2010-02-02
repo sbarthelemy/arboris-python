@@ -8,7 +8,7 @@ __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from arboris import *
 from controllers import WeightController, ProportionalDerivativeController
-from core import World, ObservableWorld, Body, Joint, JointsList,\
+from core import World, Body, Joint, JointsList,\
     NamedObjectsList, Frame, SubFrame, simulate, Constraint,\
     Controller, WorldObserver
 from robots.human36 import add_human36
