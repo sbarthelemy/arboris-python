@@ -513,7 +513,7 @@ class World(NamedObject):
             pass
         elif isinstance(obj, Joint):
             raise ValueError('Joints should not be registered. Use add_link() instead.')
-        elif isinstance(obj, SubFrame):
+        elif isinstance(obj, SubFrame) or isinstance(obj, MovingSubFrame):
             if not obj in self._subframes:
                 self._subframes.append(obj)
         elif isinstance(obj, Shape):
@@ -914,7 +914,7 @@ class World(NamedObject):
         self._current_time += dt
 
 
-class SubFrame(NamedObject, Frame):
+class _SubFrame(NamedObject, Frame):
 
     def __init__(self, body, bpose=None, name=None):
         """Create a frame rigidly fixed to a body. 
@@ -969,10 +969,26 @@ class SubFrame(NamedObject, Frame):
     def body(self):
         return self._body
 
+    @abstractproperty
+    def bpose(self):
+        pass
+
+
+class SubFrame(_SubFrame):
     @property
     def bpose(self):
         return self._bpose.copy()
 
+
+class MovingSubFrame(_SubFrame):
+    @property
+    def bpose(self):
+        return self._bpose.copy()
+
+    @bpose.setter
+    def bpose(self, bpose):
+        assert Hg.ishomogeneousmatrix(bpose)
+        self._bpose[:] = bpose
 
 class Body(NamedObject, Frame):
 

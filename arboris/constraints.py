@@ -8,7 +8,7 @@ from abc import ABCMeta, abstractmethod
 from numpy import array, zeros, eye, dot, hstack, diag, logical_and
 from numpy.linalg import solve, eigvals, pinv
 import arboris.homogeneousmatrix as Hg
-from arboris.core import SubFrame, Constraint, Shape, NamedObject, World
+from arboris.core import MovingSubFrame, Constraint, Shape, NamedObject, World
 
 point_contact_proximity = 0.02
 joint_limits_proximity = 0.01
@@ -265,8 +265,8 @@ class PointContact(Constraint):
             from collisions import choose_solver
             (shapes, collision_solver) = choose_solver(shapes[0], shapes[1])
         self._shapes = shapes
-        self._frames = (SubFrame(shapes[0].frame.body),
-                        SubFrame(shapes[1].frame.body))
+        self._frames = (MovingSubFrame(shapes[0].frame.body),
+                        MovingSubFrame(shapes[1].frame.body))
         self._collision_solver = collision_solver
         self._proximity = proximity
 
@@ -281,13 +281,10 @@ class PointContact(Constraint):
         the `z`-axis
         """
         (sdist, H_gc0, H_gc1) = self._collision_solver(self._shapes)
-        #self._frames[0].bpose = dot(self._shapes[0].frame.bpose, H_s0c0)
-        #self._frames[1].bpose = dot(self._shapes[1].frame.bpose, H_s1c1)
         H_b0g = Hg.inv(self._shapes[0].frame.body.pose)
         H_b1g = Hg.inv(self._shapes[1].frame.body.pose)
-        self._frames[0]._bpose = dot(H_b0g, H_gc0) #TODO: use a set method?
-        self._frames[1]._bpose = dot(H_b1g, H_gc1)
-
+        self._frames[0].bpose = dot(H_b0g, H_gc0)
+        self._frames[1].bpose = dot(H_b1g, H_gc1)
         H_c0c1 = dot(Hg.inv(H_gc0), H_gc1)
         dsdist = (dot(Hg.adjoint(H_c0c1)[5,:], self._frames[1].twist)
                   -self._frames[0].twist[5])

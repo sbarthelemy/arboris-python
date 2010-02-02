@@ -478,7 +478,7 @@ class Drawer(core.Observer):
                         pos_node.addChild(gen_scale_node)
                         pos_node.setNodeMask(_MASK['inertia ellipsoid'])
                         self.frames[obj].addChild(pos_node)
-                elif isinstance(obj, core.SubFrame):
+                elif isinstance(obj, core.SubFrame) or isinstance(obj, core.MovingSubFrame):
                     self.frames[obj.body].addChild(t)
                     # draw a line between the subframe and its parent:
                     color = self._choose_color(obj.body)
