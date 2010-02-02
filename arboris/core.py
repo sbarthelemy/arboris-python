@@ -535,6 +535,51 @@ class World(NamedObject):
             raise ValueError(
                 'I do not know how to register objects of type {0}'.format(type(obj)))
 
+    def parse(self, target):
+        """Parse the world and call hooks on the ``target`` object.
+
+        This helper function  walks the world with a depth-first strategy and 
+        call the ``register`` and ``add_link`` methods of the ``target``
+        object. Each world element will be register only once. The order of the 
+        successive registration is meant to ease conversion to hierachic
+        data structures such as collada or OSG ones.
+
+        TODO: add an example, such as the parse of the pantograph.
+
+        """
+        def _register_frame_and_children(frame):
+            """register a frame and its children (except joints)"""
+            if not frame in registered:
+                registered.add(frame)
+                target.register(frame)
+                if isinstance(frame, Body):
+                    for f in self._subframes:
+                        if not(f in registered) and (frame is f.body):
+                            _register_frame_and_children(f)
+                for s in self._shapes:
+                    target.register(s)
+
+        def _register_constraints():
+            for c in self._constraints:
+                target.register(c)
+
+        def _register_controllers():
+            for c in self._controllers:
+                target.register(c)
+
+        def _recurse_over_joints(children_joints):
+            for j in children_joints:
+                (f0, f1) = j.frames
+                target.add_link(f0, j, f1)
+                _register_frame_and_children(f1.body)
+                _recurse_over_joints(f1.body.childrenjoints)
+        registered = set()
+        target.init_parse(self.ground, self.up, self.current_time)
+        _register_frame_and_children(self.ground)
+        _recurse_over_joints(self.ground.childrenjoints)
+        _register_constraints()
+        _register_controllers()
+
     def init(self):
         """ Init the joints-space model of the world.
         """
