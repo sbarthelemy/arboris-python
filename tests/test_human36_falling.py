@@ -11,7 +11,7 @@ else:
     from arboris.visu_osg import Drawer
     observers = [Drawer(w)]
 
-add_groundplane(w, lengths=(3., 0.01, 2.) )
+add_groundplane(w, half_extents=(3., 0.01, 2.) )
 add_human36(w)
 
 # set initial position
