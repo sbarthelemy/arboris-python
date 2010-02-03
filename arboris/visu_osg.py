@@ -83,12 +83,12 @@ _MASK = {
         'name': 1<<1,
         'frame': 1<<2,
         'link': 1<<3,
-        'shape':1<<4,
-        'inertia ellipsoid':1<<5,
-        'constraint force':1<<6,
-        'active constraint':1<<7}
+        'shape': 1<<4,
+        'inertia ellipsoid': 1<<5,
+        'constraint force': 1<<6,
+        'active constraint': 1<<7}
 
-def pose2mat(pose):
+def _pose2mat(pose):
     """Convert an homogeneous transform matrix from numpy to osg.
     
     The conversion handles the transposition required by osg.
@@ -102,7 +102,7 @@ def pose2mat(pose):
     ...              [ 5.,  6.,  7.,  8.],
     ...              [ 9., 10., 11., 12.],
     ...              [13., 14., 15., 16.]])
-    >>> osg_mat = pose2mat(mat)
+    >>> osg_mat = _pose2mat(mat)
     
     """
     m = osg.Matrixd()
@@ -113,7 +113,7 @@ def pose2mat(pose):
           )
     return m
 
-def align_z_with_vector(vec, transform):
+def _align_z_with_vector(vec, transform):
         assert isinstance(transform, osg.PositionAttitudeTransform)
         z = array([0.,0.,1.])
         length = sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2])
@@ -206,7 +206,7 @@ def draw_line(start, end, radius=0.04, color=None):
     geode = osg.Geode()
     geode.addDrawable(cyl)
     line = osg.PositionAttitudeTransform()
-    align_z_with_vector(v, line)
+    _align_z_with_vector(v, line)
     line.addChild(geode)
     return line
 
@@ -474,7 +474,7 @@ class Drawer(core.Observer):
                         gen_scale_node = osg.PositionAttitudeTransform()
                         gen_scale_node.addChild(scale_node)
                         pos_node = osg.MatrixTransform()
-                        pos_node.setMatrix(pose2mat(bHg))
+                        pos_node.setMatrix(_pose2mat(bHg))
                         pos_node.addChild(gen_scale_node)
                         pos_node.setNodeMask(_MASK['inertia ellipsoid'])
                         self.frames[obj].addChild(pos_node)
@@ -546,9 +546,9 @@ class Drawer(core.Observer):
 
     def update(self, dt=None):
         for obj in self._world.itersubframes():
-            self.frames[obj].setMatrix(pose2mat(obj.bpose))
+            self.frames[obj].setMatrix(_pose2mat(obj.bpose))
         for obj in self._world.iterbodies():
-            self.frames[obj].setMatrix(pose2mat(obj.pose))
+            self.frames[obj].setMatrix(_pose2mat(obj.pose))
         for obj in self._world.iterconstraints():
             if obj.is_active():
                 from numpy.linalg import norm
@@ -560,9 +560,9 @@ class Drawer(core.Observer):
                     force = obj._force[0:3]
                 scale = min(10., max(0.1, norm(force)/100))
                 self.constraint_forces[obj].setScale(
-                    osg.Vec3d(scale,scale,scale))
-                align_z_with_vector(force,
-                                    self.constraint_forces[obj])
+                        osg.Vec3d(scale,scale,scale))
+                _align_z_with_vector(obj._force[1:4],
+                                     self.constraint_forces[obj])
                 self.constraint_forces[obj].setNodeMask(
                         _MASK['constraint force'])
             else:
