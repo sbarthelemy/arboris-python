@@ -16,12 +16,12 @@ Test joint limits
 >>> joints['Shoulder'].gpos[0] = 3.14/2 - 0.1
 >>> time = arange(0., 0.1, 1e-3)
 >>> simulate(world, time)
->>> print (3.14/2 > joints['Shoulder'].gpos[0])
+>>> print (3.14/2 >= joints['Shoulder'].gpos[0])
 True
 >>> joints['Shoulder'].gpos[0] = -3.14/2 + 0.1
 >>> time = arange(0., 0.1, 1e-3)
 >>> simulate(world, time)
->>> print (-3.14/2 < joints['Shoulder'].gpos[0])
+>>> print (-3.14/2 <= joints['Shoulder'].gpos[0])
 True
 
 Test ball and socket constraint
