@@ -301,6 +301,7 @@ class Shape(NamedObject):
     """A generic class for geometric shapes used in collision detection
     """
     def __init__(self, frame, name=None):
+        assert isinstance(frame, Frame)
         self.frame = frame
         NamedObject.__init__(self, name)
 
@@ -342,7 +343,6 @@ class World(NamedObject):
         self._nleffects = array([]) # updated by self.update_dynamic()
         self._impedance = array([]) # updated by self.update_controller()
         self._admittance = array([]) # updated by self.update_controller()
-
 
     def iterbodies(self):
         """Iterate over all bodies, with a depth-first strategy."""
@@ -943,7 +943,7 @@ class SubFrame(NamedObject, Frame):
         NamedObject.__init__(self, name)
         assert Hg.ishomogeneousmatrix(bpose)
         self._bpose = bpose
-        if not(isinstance(body,Body)):
+        if not(isinstance(body, Body)):
             raise ValueError("The ``body`` argument must be an instance of the ``Boby`` class")
         else:
             self._body = body
@@ -1245,7 +1245,7 @@ class Observer(object):
         pass
 
     @abstractmethod
-    def update(self):
+    def update(self, dt):
         pass
 
     @abstractmethod
