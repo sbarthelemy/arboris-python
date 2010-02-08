@@ -113,7 +113,7 @@ else:
 
 
 if with_weight:
-    w.register(arboris.controllers.WeightController(w))
+    w.register(arboris.controllers.WeightController())
     t_end = 2.08
 else:
     t_end = 1.430

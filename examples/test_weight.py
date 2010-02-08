@@ -76,7 +76,7 @@ w.add_link(w.ground, freejoint, body)
 w.register(Box(subframe, half_extents))
 
 
-weightc = WeightController(w)       
+weightc = WeightController()       
 w.register(weightc)
 obs = TrajLog(w.getframes()['box_com'], w)
 

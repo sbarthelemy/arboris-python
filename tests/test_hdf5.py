@@ -11,7 +11,7 @@ file_name = "the_temporary_file_where_we_save_simulation_data.h5"
 dest_in_file = "test/xp"
 
 world = World()
-world.register( WeightController(world) )
+world.register( WeightController() )
 h5obs = Hdf5Logger(world, len(time)-1, file_name, dest_in_file, 'w')
 
 from arboris.robots import simplearm

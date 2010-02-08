@@ -18,22 +18,22 @@ class WeightController(Controller):
     >>> joints['Shoulder'].gpos[0] = 3.14/4
     >>> joints['Elbow'].gpos[0] = 3.14/4
     >>> joints['Wrist'].gpos[0] = 3.14/4
-    >>> c = WeightController(w)
+    >>> c = WeightController()
     >>> w.register(c)
     >>> w.init()
     >>> w.update_dynamic() #TODO change for update_kinematic
     >>> (gforce, impedance) = c.update() #TODO: test!
     
     """
-    def __init__(self, world, gravity=-9.81, name=None):
-        assert isinstance(world, World)
-        self._bodies = filter(lambda x: norm(x.mass>0.),
-                world.ground.iter_descendant_bodies())
+    def __init__(self, gravity=-9.81, name=None):
         self.gravity = float(gravity)
         Controller.__init__(self, name=name)
 
 
     def init(self, world):
+        assert isinstance(world, World)
+        self._bodies = filter(lambda x: norm(x.mass>0.),
+                world.ground.iter_descendant_bodies())
         self._wndof = world.ndof
         self._gravity_dtwist = zeros(6)
         self._gravity_dtwist[3:6] = float(self.gravity)*world.up

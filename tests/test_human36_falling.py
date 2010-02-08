@@ -18,7 +18,7 @@ add_human36(w)
 w.ground.childrenjoints[0].gpos = dot(
         homogeneousmatrix.transl(0,0.03,0), w.ground.childrenjoints[0].gpos)
 # add weight
-w.register(WeightController(w))
+w.register(WeightController())
 
 # add a (single) PD Controller to all the simple joints
 ljoints = filter(

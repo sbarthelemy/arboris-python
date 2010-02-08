@@ -25,7 +25,7 @@ task = Task(controlled_frame=frames['LeftEndEffector'],
          target_frame=frames['LeftTarget'], 
          world=world)
 
-#world.register(WeightController(world))
+#world.register(WeightController())
 world.register(BalanceController(world, [task]))
 
 from arboris.core import JointsList

@@ -75,7 +75,7 @@ Sphere-box with gravity
 >>> from numpy import arange
 >>> world = World()
 >>> world.register(Box(world.ground))
->>> world.register(WeightController(world))
+>>> world.register(WeightController())
 >>> add_sphere(world, name='ball0')
 >>> bodies = world.getbodies()
 >>> bodies['ball0'].parentjoint.gpos[1,3] = 2.05
