@@ -1,10 +1,9 @@
 #coding=utf-8
-"""A set of WorldObservers.
+"""A set of Observers.
 """
 __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>",
               "Joseph SALINI <joseph.salini@gmail.com>")
-
-from core import WorldObserver
+import arboris.core
 from abc import ABCMeta, abstractmethod, abstractproperty
 from numpy import dot, array, eye, linalg, vstack, hstack, zeros, diag
 from time import time as _time
@@ -12,7 +11,7 @@ from massmatrix import principalframe
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-class EnergyMonitor(WorldObserver):
+class EnergyMonitor(arboris.core.Observer):
     """Compute and store the world energy at each time step.
     
     **Example:**
@@ -68,7 +67,7 @@ class EnergyMonitor(WorldObserver):
         show()
 
 
-class PerfMonitor(WorldObserver):
+class PerfMonitor(arboris.core.Observer):
     """
 
     **Example:**
@@ -130,7 +129,7 @@ max computation time (s): {3}""".format(
     max(self._computation_time))
 
 
-class Hdf5Logger(WorldObserver):
+class Hdf5Logger(arboris.core.Observer):
     """An observer that saves the simulation data in an hdf5 file.
     """
     def __init__(self, filename, group = "/",

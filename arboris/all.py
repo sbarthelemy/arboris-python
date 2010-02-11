@@ -10,7 +10,7 @@ from arboris import *
 from controllers import WeightController, ProportionalDerivativeController
 from core import World, Body, Joint, JointsList,\
     NamedObjectsList, Frame, SubFrame, simulate, Constraint,\
-    Controller, WorldObserver
+    Controller, Observer
 from robots.human36 import add_human36
 from robots.simpleshapes import add_sphere, add_box, add_cylinder,\
     add_groundplane

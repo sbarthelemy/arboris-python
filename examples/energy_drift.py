@@ -46,10 +46,10 @@ def add_robot(w, gpos, gvel, is_fixed=True):
     w.init()
 
     
-from arboris.core import WorldObserver
+from arboris.core import Observer
 from numpy import linalg, where
 
-class MassMonitor(WorldObserver):
+class MassMonitor(Observer):
     def __init__(self, world):
         self._world = world
         self.mass_cond = []

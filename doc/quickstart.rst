@@ -178,7 +178,7 @@ A dynamic simulation
 =====================
 
 To get informations about the world, we can add
-:class:`arboris.core.WorldObservers` to the simulation.
+:class:`arboris.core.Observers` to the simulation.
 
 One of these observers gives a graphic representation of the world:
 the class :class:`arboris.visu_osg.Drawer`.

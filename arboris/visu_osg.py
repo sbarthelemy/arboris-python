@@ -326,7 +326,7 @@ def graphic_options(scale=1.):
     return options
 
 
-class Drawer(core.WorldObserver):
+class Drawer(core.Observer):
     """Draw the world, creating OSG nodes.
 
     **Attributes:**
@@ -347,7 +347,6 @@ class Drawer(core.WorldObserver):
       OSG nodes.
     
     """
-
     def __init__(self, world, scale=1., options=None, viewer=None):
         if options is None:
             self._options = graphic_options(scale)

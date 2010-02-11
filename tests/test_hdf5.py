@@ -1,6 +1,6 @@
 
 
-from arboris.core import World, simulate, SubFrame, WorldObserver
+from arboris.core import World, simulate, SubFrame
 from arboris.homogeneousmatrix import transl
 from numpy import array, arange, eye
 from arboris.controllers import WeightController

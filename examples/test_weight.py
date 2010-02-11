@@ -5,7 +5,7 @@ theoric one.
 from arboris.controllers import WeightController 
 from arboris.core import World, simulate
 from pylab import plot, show, legend, xlabel, ylabel, title
-from arboris.core import WorldObserver
+from arboris.core import Observer
 from numpy import arange, dot, eye, array
 import arboris.homogeneousmatrix as homogeneousmatrix
 from arboris.core import Body, SubFrame
@@ -15,7 +15,7 @@ import arboris.massmatrix as massmatrix
 
 
 
-class TrajLog(WorldObserver):
+class TrajLog(Observer):
     
     def __init__(self, frame, world):
         self.height = []

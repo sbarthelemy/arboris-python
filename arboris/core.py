@@ -1237,11 +1237,11 @@ class Body(NamedObject, Frame):
                                           child_twist)
 
 
-class WorldObserver(object):
+class Observer(object):
     __metaclass__ = ABCMeta
     
     @abstractmethod
-    def init(self):
+    def init(self, world, timeline):
         pass
 
     @abstractmethod
