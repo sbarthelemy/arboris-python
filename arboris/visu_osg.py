@@ -31,6 +31,7 @@ import arboris.homogeneousmatrix as Hg
 import arboris.massmatrix
 from arboris._visu import hsv_to_rgb
 import logging
+import arboris._visu
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -68,23 +69,167 @@ def _pose2mat(pose):
           )
     return m
 
-def _align_z_with_vector(vec, transform):
-        assert isinstance(transform, osg.PositionAttitudeTransform)
-        z = array([0.,0.,1.])
-        length = sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2])
-        if length > 0.:
-            vec = vec/length
-            q = cross(z, vec)
-            sin_theta = sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2])
-            cos_theta = dot(z, vec)
-            theta = arctan2(sin_theta, cos_theta)
-            if sin_theta == 0.:
-                transform.setAttitude(osg.Quat(theta, osg.Vec3d(1.,0.,0.)))
-            else:
-                transform.setAttitude(
-                    osg.Quat(theta, osg.Vec3d(q[0], q[1], q[2])))
+def _tuple2vec4(var):
+    """Convert an iterable (of length 4) to an :class:``osg.Vec4``.
 
-def draw_frame(length=1., radius=0.05, alpha=1.):
+    :type var: tuple or any iterable of length 4
+    :rtype: osg.Vec4
+
+    """
+    assert len(var) is 4
+    return osg.Vec4(var[0], var[1], var[2], var[3])
+
+def _align_z_with_vector(vec, transform):
+    assert isinstance(transform, osg.PositionAttitudeTransform)
+    z = array([0.,0.,1.])
+    length = sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2])
+    if length > 0.:
+        vec = vec/length
+        q = cross(z, vec)
+        sin_theta = sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2])
+        cos_theta = dot(z, vec)
+        theta = arctan2(sin_theta, cos_theta)
+        if sin_theta == 0.:
+            transform.setAttitude(osg.Quat(theta, osg.Vec3d(1.,0.,0.)))
+        else:
+            transform.setAttitude(
+                osg.Quat(theta, osg.Vec3d(q[0], q[1], q[2])))
+
+class OsgDriver(arboris._visu.AnimatorDriver):
+
+    def __init__(self, scale=1., options=None):
+        if options is None:
+            self._options = self.get_default_options(scale)
+        else:
+            self._options = options
+
+    def init(self):
+        pass
+
+    @staticmethod
+    def get_default_options(scale=1.):
+        options = arboris._visu.DrawerDriver.get_default_options(scale)
+        options['fullscreen'] = False
+        options['window size'] = (800,600)
+        options['window position'] = (0,0)
+        return options
+
+    def add_ground(self, up):
+        # TODO: account for up
+        # library of shared geometries
+        self._generic_frame = _draw_frame(
+            length=self._options['frame arrows length'],
+            radius=self._options['frame arrows radius'],
+            alpha=self._options['frame arrows alpha'])
+        self._generic_frame.setNodeMask(_MASK['frame'])
+        # TODO: add force etc
+        self._root = osg.Group()
+        # enable the transparency/alpha:
+        blend = osg.StateSet()
+        blend.setMode(osg.GL_BLEND, osg.StateAttribute.ON)
+        self._root.setStateSet(blend)
+        # create the osg viewer:
+        self._viewer = osgViewer.Viewer()
+        self._viewer.setSceneData(self._root)
+        manipulator = osgGA.TrackballManipulator()
+        self._viewer.setCameraManipulator(manipulator)
+        # set the position of the camera/view:
+        coi = map(float, self._options['center of interest'])
+        cam = map(float, self._options['camera position'])
+        up = map(float, up)
+        manipulator.setHomePosition(
+            osg.Vec3d(coi[0]+cam[0], coi[1]+cam[1], coi[2]+cam[2]),
+            osg.Vec3d(coi[0], coi[1], coi[2]),
+            osg.Vec3d(up[0], up[1], up[2]))
+        # setup the window:
+        if self._options['fullscreen'] is False:
+            window_size = self._options['window size']
+            window_pos = self._options['window position']
+            self._viewer.setUpViewInWindow(
+                    window_pos[0], window_pos[1],
+                    window_size[0], window_size[1])
+        self._viewer.home()
+        camera = self._viewer.getCamera()
+        #inheritanceMask = (~(osg.CullSettings.CULL_MASK) & osg.CullSettings.ALL_VARIABLES)
+        #camera.setInheritanceMask(inheritanceMask)
+        # add an handler for GUI Events (will toggle display on/off):
+        self._handler = _SwitcherHandler(camera)
+        for key, name, on in (
+            (ord('f'), 'frame', True),
+            (ord('i'), 'inertia ellipsoid', False),
+            (ord('l'), 'link', True),
+            (ord('n'), 'name', False),
+            (ord('w'), 'constraint force', True),
+            (ord('g'), 'shape', True)):
+            self._handler.add_category(key, name, on)
+        self._viewer.addEventHandler(self._handler.__disown__())
+        return self._root
+
+    def finish(self):
+        pass
+ 
+    def create_transform(self, pose, is_constant, name=None):
+        t = osg.MatrixTransform()
+        t.setMatrix(_pose2mat(pose))
+        #TODO set name
+        return t
+
+    def create_frame_arrows(self):
+        return self._generic_frame
+
+    def create_link(self):
+        pass
+
+    def create_ellipsoid(self):
+        pass
+
+    def create_sphere(self, radius, color):
+        shape = osg.ShapeDrawable(osg.Sphere(osg.Vec3(0.,0.,0.), radius))
+        shape.setColor(_tuple2vec4(color))
+        geode = osg.Geode()
+        geode.addDrawable(shape)
+        geode.setNodeMask(_MASK['shape'])
+        return geode
+
+    def create_box(self, half_extents, color):
+        shape = osg.ShapeDrawable(
+                osg.Box(osg.Vec3(0.,0.,0.), half_extents[0]*2.,
+                    half_extents[1]*2, half_extents[2]*2))
+        shape.setColor(_tuple2vec4(color))
+        geode = osg.Geode()
+        geode.addDrawable(shape)
+        geode.setNodeMask(_MASK['shape'])
+        return geode
+
+    def create_point(self, color):
+        shape = osg.ShapeDrawable(
+                osg.Sphere(osg.Vec3(0.,0.,0.),
+                self._options['point radius']))
+        shape.setColor(_tuple2vec4(color))
+        geode =  osg.Geode()
+        geode.addDrawable(shape)
+        geode.setNodeMask(_MASK['shape'])
+        return geode
+
+    def create_cylinder(self, length, radius, color):
+        shape = osg.ShapeDrawable(
+                osg.Cylinder(osg.Vec3(0.,0.,0.), radius, length))
+        shape.setColor(_tuple2vec4(color))
+        geode =  osg.Geode()
+        geode.addDrawable(shape)
+        geode.setNodeMask(_MASK['shape'])
+        return geode
+
+    def add_child(self, parent, child):
+        parent.addChild(child)
+
+    def update_transform(self, transform, pose):
+        transform.setMatrix(_pose2mat(pose))
+
+    def do_frame(self):
+        self._viewer.frame()
+
+def _draw_frame(length=1., radius=0.05, alpha=1.):
     """Draw a frame, as 3 cylinders.
 
     :param length: the cylinders length
@@ -97,7 +242,7 @@ def draw_frame(length=1., radius=0.05, alpha=1.):
 
     **Example:**
 
-    >>> generic_frame = draw_frame(.5, .8)
+    >>> generic_frame = _draw_frame(.5, .8)
     
     """
     # create the x cylinder
@@ -110,11 +255,11 @@ def draw_frame(length=1., radius=0.05, alpha=1.):
     cyl_z.setColor(osg.Vec4(0.,0.,1.,alpha))
     # create the geode for each cylinder
     geo_x = osg.Geode()
-    geo_x.addDrawable( cyl_x )
+    geo_x.addDrawable(cyl_x)
     geo_y = osg.Geode()
-    geo_y.addDrawable( cyl_y )
+    geo_y.addDrawable(cyl_y)
     geo_z = osg.Geode()
-    geo_z.addDrawable( cyl_z )
+    geo_z.addDrawable(cyl_z)
     # create the transform node for geo_x and geo_y
     trans_x = osg.PositionAttitudeTransform()
     trans_x.setAttitude(osg.Quat(pi/2., osg.Vec3(0.,1.,0.)))
@@ -207,7 +352,7 @@ def draw_force(length=1., radius=0.03, alpha=1.):
     return geode
 
 
-class SwitcherHandler(osgGA.GUIEventHandler):
+class _SwitcherHandler(osgGA.GUIEventHandler):
     """Switches parts of the display on/off according to keys pressed.
     """
     def __init__(self, camera):
@@ -249,323 +394,24 @@ class SwitcherHandler(osgGA.GUIEventHandler):
             self._camera.setCullMask(mask)
         return False
 
-def graphic_options(scale=1.):
-    """Default dictionnary of graphic options.
-    
-    :param scale: the scaling factor
-    :type scale: float
-    :return: scaled graphic options
-    :rtype: dict
+class OsgObserver(arboris.core.Observer):
 
-    """
-    body_palette = []
-    ncolor = 20
-    for k in range(ncolor):
-        h = 360./ncolor * k
-        body_palette.append(hsv_to_rgb((h, 0.9 , 0.9)))
-    options = {
-        'frame length': 0.08 * scale,
-        'frame radius': 0.005 * scale,
-        'frame alpha': 1.,
-        'link radius': 0.004 * scale,
-        'point radius': 0.008 * scale,
-        'plane half extents': (1. * scale, 1. * scale),
-        'text size': 0.1 * scale,
-        'body palette': body_palette,
-        'fullscreen': False,
-        'window size': (800, 600),
-        'window position': (0, 0),
-        'center of interest': (0., 0., 0.),
-        'camera position': (3.,3.,3.),
-        'force length': 0.1 * scale,
-        'force radius': 0.002 * scale}
-    return options
-
-
-class Drawer(arboris.core.Observer):
-    """Draw the world, creating OSG nodes.
-
-    **Attributes:**
-    - :attr:`root`: the root node of the OSG scene,
-    - :attr:`frames`: a dictionnary of tranform nodes corresponding to
-      and indexed by :class:`arboris.core.Frame` objects,
-    - :attr:`constraint_forces` and :attr:`constraints_moment`: 
-      dictionnaries of tranform nodes corresponding to and indexed by
-      :class:`arboris.core.Constraint` objects,
-
-    **Methods:**
-    - :meth:`__init__` creates ``root`` OSG node, get the graphic options
-      (colors, sizes...) and do house keeping. If the ``world`` parameter is
-      given, it will be converted to OSG nodes (it calls :meth:`init`). 
-    - :meth:`init` converts the ``world`` to osg nodes 
-      (it calls :meth:`register`).
-    - :meth:`register` converts a single arboris object ``obj`` to zero or more
-      OSG nodes.
-    
-    """
-    def __init__(self, world, scale=1., options=None, viewer=None):
-        arboris.core.Observer.__init__(self)
-        if options is None:
-            self._options = graphic_options(scale)
-        else:
-            self._options = options
-        self.root = osg.Group()
-        # enable the transparency/alpha:
-        blend = osg.StateSet()
-        blend.setMode(osg.GL_BLEND, osg.StateAttribute.ON)
-        self.root.setStateSet(blend)
-        
-        self._generic_frame = draw_frame(
-            length=self._options['frame length'],
-            radius=self._options['frame radius'],
-            alpha=self._options['frame alpha'])
-        self._generic_frame.setNodeMask(_MASK['frame'])
-        self._generic_force = draw_force(
-            length= self._options['force length'],
-            radius = self._options['force radius'])
-        self._body_colors = {}
-        self.registered = []
-        self.frames = {}
-        self.constraint_forces = {}
-        self._world = world
-        self._register(self._world.ground)
-        if viewer is None:
-            # create the osg viewer:
-            self.viewer = osgViewer.Viewer()
-            self.viewer.setSceneData(self.root)
-            manipulator = osgGA.TrackballManipulator()
-            self.viewer.setCameraManipulator(manipulator)
-            # set the position of the camera/view:
-            coi = map(float, self._options['center of interest'])
-            cam = map(float, self._options['camera position'])
-            up = map(float, self._world.up)
-            manipulator.setHomePosition(
-                osg.Vec3d(coi[0]+cam[0], coi[1]+cam[1], coi[2]+cam[2]),
-                osg.Vec3d(coi[0], coi[1], coi[2]),
-                osg.Vec3d(up[0], up[1], up[2]))
-            # setup the window:
-            if self._options['fullscreen'] is False:
-                window_size = self._options['window size']
-                window_pos = self._options['window position']
-                self.viewer.setUpViewInWindow(
-                    window_pos[0], window_pos[1], 
-                    window_size[0], window_size[1])
-            self.viewer.home()
-        else:
-            self.viewer = viewer
-        camera = self.viewer.getCamera()
-            #inheritanceMask = (~(osg.CullSettings.CULL_MASK) & osg.CullSettings.ALL_VARIABLES)
-            #camera.setInheritanceMask(inheritanceMask)
-        # add an handler for GUI Events (will toggle display on/off):
-        self.handler = SwitcherHandler(camera)
-        self.viewer.addEventHandler(self.handler.__disown__())
-
-    def _choose_color(self, body, alpha=1.):
-        """Select a colour in the palette for the body.
-        """
-        if body in self._body_colors:
-            color = self._body_colors[body]
-        else:
-            try:
-                c = self._options['body palette'].pop()
-                color = osg.Vec4(c[0], c[1], c[2], alpha)
-                self._body_colors[body] = color
-            except IndexError:
-                color = osg.Vec4(1., 1., 1., alpha)
-        return color
-
-    def _register(self, obj):
-        """Add the given arboris object ``obj`` to the scene.
-
-        For a single arboris object, several OSG nodes may be added,
-        belonging to different categories. For instance,
-        registering an object of the :class:`Body` class returns nodes
-        belonging to the ``frame``, ``name`` and ``inertia ellispoid``
-        categories.
-
-        The categories a node belongs to is specified using node masks.
-
-        """
-        if obj in self.registered:
-            pass
-        else:
-            self.registered.append(obj)
-            opts = self._options
-            if isinstance(obj, arboris.core.Frame):
-                # create a transform for the frames (instances of 
-                # the Body and Subframe classes)
-                t = osg.MatrixTransform()
-                self.frames[obj] = t
-                # draw the frame name:
-                name = draw_text(obj.name, opts['text size'])
-                name.setNodeMask(_MASK['name'])
-                t.addChild(name)
-                # draw the frame basis:
-                t.addChild(self._generic_frame)
-                if isinstance(obj, arboris.core.Body):
-                    self.root.addChild(t)
-                    if obj.mass[5,5] != 0:
-                        # draw the body inertia ellipsoid.
-                        #
-                        # MatrixTransform() # position
-                        #  |
-                        # PositionAttitudeTransform() # ellispoid axis scale
-                        #  |
-                        # Geode()
-                        #  |
-                        # Sphere()
-                        #
-                        Mb = obj.mass
-                        color = self._choose_color(obj)
-                        bHg = arboris.massmatrix.principalframe(Mb)
-                        Mg = arboris.massmatrix.transport(Mb, bHg)
-                        shape = osg.ShapeDrawable(
-                            osg.Sphere(osg.Vec3(0.,0.,0.), 1.))
-                        shape.setColor(color)
-                        shape_geo = osg.Geode()
-                        shape_geo.addDrawable(shape)
-                        scale_node = osg.PositionAttitudeTransform()
-                        scale_node.setScale(
-                            osg.Vec3d(Mg[0,0], Mg[1,1], Mg[2,2]))
-                        scale_node.addChild(shape_geo)
-                        gen_scale_node = osg.PositionAttitudeTransform()
-                        gen_scale_node.addChild(scale_node)
-                        pos_node = osg.MatrixTransform()
-                        pos_node.setMatrix(_pose2mat(bHg))
-                        pos_node.addChild(gen_scale_node)
-                        pos_node.setNodeMask(_MASK['inertia ellipsoid'])
-                        self.frames[obj].addChild(pos_node)
-                elif isinstance(obj, arboris.core.SubFrame) or\
-                        isinstance(obj, arboris.core.MovingSubFrame):
-                    self.frames[obj.body].addChild(t)
-                    # draw a line between the subframe and its parent:
-                    color = self._choose_color(obj.body)
-                    nl = draw_line((0,0,0),
-                               -dot(obj.bpose[0:3,0:3].T, obj.bpose[0:3,3]),
-                               opts['link radius'], color)
-                    nl.setNodeMask(_MASK['link'])
-                    self.frames[obj]. addChild(nl)
-            elif isinstance(obj, arboris.constraints.BallAndSocketConstraint)\
-                    or isinstance(obj, arboris.constraints.SoftFingerContact):
-                t = osg.PositionAttitudeTransform()
-                self.constraint_forces[obj] = t
-                t.setNodeMask(_MASK['constraint force'])
-                self.frames[obj._frames[0]].addChild(t)
-                t.addChild(self._generic_force)
-            elif isinstance(obj, arboris.core.Shape):
-                color = self._choose_color(obj.frame.body)
-                if isinstance(obj, arboris.shapes.Plane):
-                    # instead of drawing an infinite plane, we draw a finite
-                    # square.
-                    from arboris.collisions import _normal_to_frame
-                    dx, dy = opts['plane half extents']
-                    points = [(-dx, dy, 0),
-                              (-dx, -dy, 0),
-                              (dx, -dy, 0),
-                              (dx, dy, 0)]
-                    H = _normal_to_frame(obj.coeffs[0:3])
-                    origin = obj.coeffs[3]*obj.coeffs[0:3]
-                    vertices = osg.Vec3Array()
-                    for point in points:
-                        vertex = origin + dot(H[0:3, 0:3], point)
-                        vertices.push_back(osg.Vec3(vertex[0],
-                                                    vertex[1],
-                                                    vertex[2]))
-                    shape = osg.Geometry()
-                    shape.setVertexArray(vertices)
-                    face = osg.DrawElementsUInt(osg.PrimitiveSet.QUADS,0)
-                    face.push_back(3)
-                    face.push_back(2)
-                    face.push_back(1)
-                    face.push_back(0)
-                    shape.addPrimitiveSet(face)
-                    colors = osg.Vec4Array()
-                    colors.push_back(osg.Vec4(color[0],
-                                              color[1],
-                                              color[2],
-                                              color[3]))
-                    shape.setColorArray(colors)
-                    shape.setColorBinding(osg.Geometry.BIND_OVERALL)
-                else:
-                    if isinstance(obj, arboris.shapes.Sphere):
-                        shape = osg.ShapeDrawable(
-                            osg.Sphere(osg.Vec3(0.,0.,0.), obj.radius))
-                    elif isinstance(obj, arboris.shapes.Point):
-                        shape = osg.ShapeDrawable(
-                            osg.Sphere(osg.Vec3(0.,0.,0.),
-                                       self._options['point radius']))
-                    elif isinstance(obj, arboris.shapes.Box):
-                        shape = osg.ShapeDrawable(
-                            osg.Box(osg.Vec3(0.,0.,0.), obj.half_extents[0]*2.,
-                                    obj.half_extents[1]*2, obj.half_extents[2]*2))
-                    elif isinstance(obj, arboris.shapes.Cylinder):
-                        shape = osg.ShapeDrawable(
-                            osg.Cylinder(osg.Vec3(0.,0.,0.),
-                                         obj.radius, obj.length))
-                    else:
-                        raise NotImplementedError(
-                                'Cannot draw "{0}"'.format(obj))
-                    shape.setColor(color)
-                switch = osg.Switch()
-                geode =  osg.Geode()
-                geode.addDrawable(shape)
-                geode.setNodeMask(_MASK['shape'])
-                self.frames[obj.frame].addChild(geode)
-            elif isinstance(obj, arboris.core.Joint) or \
-                isinstance(obj, arboris.core.Constraint) or \
-                isinstance(obj, arboris.core.Controller):
-                pass
-            else:
-                raise NotImplementedError('Cannot draw "{0}"'.format(obj))
+    def __init__(self):
+        self._drawer = arboris._visu.Drawer(OsgDriver())
 
     def init(self, world, timeline):
-        self._world.update_geometric() #TODO find a way to remove this
-        for obj in self._world.iterbodies():
-            self._register(obj)
-        for obj in self._world.itersubframes():
-            self._register(obj)
-        for obj in self._world.itershapes():
-            self._register(obj)
-        for obj in self._world._constraints:
-            self._register(obj)
-        for key, name, on in (
-            (ord('f'), 'frame', True),
-            (ord('i'), 'inertia ellipsoid', False),
-            (ord('l'), 'link', True),
-            (ord('n'), 'name', False),
-            (ord('w'), 'constraint force', True),
-            (ord('g'), 'shape', True)):
-            self.handler.add_category(key, name, on)
+        world.parse(self._drawer)
 
-    def update(self, dt=None):
-        for obj in self._world.itersubframes():
-            self.frames[obj].setMatrix(_pose2mat(obj.bpose))
-        for obj in self._world.iterbodies():
-            self.frames[obj].setMatrix(_pose2mat(obj.pose))
-        for obj in self._world.iterconstraints():
-            if obj.is_active():
-                from numpy.linalg import norm
-                # scale the generic_force according to the force
-                # norm. We constraint the scaling to be in [0.1, 10]
-                if isinstance(obj, arboris.constraints.SoftFingerContact):
-                    force = obj._force[1:4]
-                elif isinstance(obj,
-                        arboris.constraints.BallAndSocketConstraint):
-                    force = obj._force[0:3]
-                scale = min(10., max(0.1, norm(force)/100))
-                self.constraint_forces[obj].setScale(
-                        osg.Vec3d(scale,scale,scale))
-                _align_z_with_vector(force,
-                                     self.constraint_forces[obj])
-                self.constraint_forces[obj].setNodeMask(
-                        _MASK['constraint force'])
+    def update(self, dt):
+        for (t, n) in self._drawer.transform_nodes.iteritems():
+            if isinstance(t, arboris.core.Joint):
+                self._drawer._driver.update_transform(n, t.pose)
+            elif isinstance(t, arboris.core.MovingSubFrame):
+                self._drawer._driver.update_transform(n, t.bpose)
             else:
-                self.constraint_forces[obj].setNodeMask(0)
-        self.viewer.frame()
-
-    def done(self):
-        return self.viewer.done()
+                raise ValueError()
+        self._drawer._driver.do_frame()
 
     def finish(self):
-        pass
+        self._drawer.finish()
 

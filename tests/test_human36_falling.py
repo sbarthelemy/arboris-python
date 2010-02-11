@@ -16,7 +16,7 @@ class Human36FallingTestCase(TestCase):
         if batch:
             observers = []
         else:
-            observers = [visu_osg.Drawer(self.world)]
+            observers = [OsgObserver()]
         add_groundplane(self.world)
         add_human36(self.world)
         # set initial position
