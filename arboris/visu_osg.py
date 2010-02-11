@@ -29,55 +29,10 @@ import arboris.core
 import arboris.constraints
 import arboris.homogeneousmatrix as Hg
 import arboris.massmatrix
+from arboris._visu import hsv_to_rgb
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
-
-def hsv_to_rgb(hsv):
-    """Convert color from hsv to rgb.
-
-    :param hsv: hsv values (with h in [0..360], s and v in [0..1])
-    :type hsv: 3-tuple of floats (h, s, v)
-    :return rgb: rgb values (with r, g and b in [0..1])
-    :rtype rgb: 3-tuple of floats (r, g, b)
-
-    The algorithm is taken from:
-    http://en.wikipedia.org/wiki/HSL_and_HSV
-
-    **Examples:**
-
-    >>> hsv_to_rgb((360,1.,1.)) # red
-    (1.0, 0.0, 0.0)
-    >>> hsv_to_rgb((360,0.5,1.)) # faded red
-    (1.0, 0.5, 0.5)
-    >>> hsv_to_rgb((360,1.,0.5)) # dark red
-    (0.5, 0.0, 0.0)
-    >>> hsv_to_rgb((120,1.,1)) # green
-    (0.0, 1, 0.0)
-    >>> hsv_to_rgb((240,1.,1)) # blue
-    (0.0, 0.0, 1)
-
-    """
-    from math import floor
-    (h, s, v) = hsv
-    hi = floor(h/60) % 6
-    f = h/60. - floor(h/60)
-    p = v * (1 - s)
-    q = v * (1 - f*s)
-    t = v * (1 - (1-f)*s)
-    if hi == 0:
-        rgb = (v, t, p)
-    elif hi == 1:
-        rgb = (q, v, p)
-    elif hi == 2:
-        rgb = (p, v, t)
-    elif hi == 3:
-        rgb = (p, q, v)
-    elif hi == 4:
-        rgb = (t, p, v)
-    elif hi == 5:
-        rgb = (v, p, q)
-    return rgb
 
 _MASK = {
         'name': 1<<1,
