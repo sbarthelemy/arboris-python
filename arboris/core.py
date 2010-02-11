@@ -644,6 +644,10 @@ class World(NamedObject):
     def gvel(self):
         return self._gvel.copy()
 
+    @property
+    def gforce(self):
+        return self._gforce.copy()
+
     def update_geometric(self):
         """Compute the forward geometric model. 
         

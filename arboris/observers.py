@@ -132,10 +132,70 @@ max computation time (s): {3}""".format(
 
 class Hdf5Logger(arboris.core.Observer):
     """An observer that saves the simulation data in an hdf5 file.
+    
+    :param filename: name of the output hdf5 file
+    :type filename: str
+    :param group: subgroup defaults to "/"
+    :type group: str
+    :param mode: mode used to open the hdf5 file. Can be 'w' or 'a' (default)
+    :type mode: str
+    :param save_state: toggle the write of the ``gpos`` and ``gvel`` groups
+    :type save_state: bool
+    :param save_transforms: toggle the write of the ``transforms`` group
+    :type save_transforms: bool
+    :param flat: whether to save body of joint poses in the ``transforms`` group
+    :type flat: bool
+    :param save_model: toggle the write of ``model`` group
+    :type save_model: bool
+
+    All the simulation data lies in a single user-chosen group, that is denoted
+    ``root`` in the following, and which defaults to ``/``. All the data are in
+    S.I. units (radians, meters, newtons and seconds).
+
+    The hdf5 file has the following layout::
+
+      root/timeline (nsteps,)
+      root/gpositions/
+      root/gvelolcities/
+      root/model/
+      root/transforms/
+
+    The ``gvelocities`` group contains the generalized velocities of the
+    joints::
+
+      NameOfJoint0 (nsteps, joint0.ndof)
+      NameOfJoint1 (nsteps, joint1.ndof)
+      ...
+
+    while the ``gpositions`` group contains their generalized positions.
+
+    The ``model`` group contains the matrices from the dynamical model::
+
+      gvel (nsteps, ndof)
+      gforce (nsteps, ndof)
+      mass (nsteps, ndof, ndof)
+      nleffects (nsteps, ndof, ndof)
+      admittance (nsteps, ndof, ndof)
+
+    The ``transforms`` group contains homogeneous transformations,
+    useful for viewing an animation of the simulation.
+
+      NameOfTransform0 (nsteps, 4, 4)
+      NameOfTransform1 (nsteps, 4, 4)
+      ...
+
+    The name and value of the transforms depends on the ``flat`` parameter.
+    If ``flat`` is True, then there is one transform per body, named after the
+    body and whose value is the body absolute pose (``Body.pose``).
+    If ``flat`` is False, there is one transform per joint, whose value is
+    ``Joint.pose`` and whose name is taken from the joint second frame
+    (``Joint.frames[1].name``).
+
+    The :class:`arboris.core.MovingSubFrame` instances are not saved yet.
+
     """
-    def __init__(self, filename, group = "/",
-                 mode = 'a', save_viewer_data = True , 
-                 save_dyn_model = False):
+    def __init__(self, filename, group="/", mode='a', save_state=False,
+                 save_transforms=True, flat=False, save_model=False):
         import h5py
         arboris.core.Observer.__init__(self)
         # hdf5 file handlers
@@ -144,11 +204,16 @@ class Hdf5Logger(arboris.core.Observer):
         for g in group.split('/'):
             if g:
                 self._root = self._root.require_group(g)
-        self._transforms = self._root.require_group('transforms')
         # what to save
-        self._save_viewer_data = save_viewer_data
-        self._save_dyn_model = save_dyn_model
- 
+        self._save_state = save_state
+        self._save_transforms = save_transforms
+        self._flat = flat
+        self._save_model = save_model
+
+    @property
+    def root(self):
+        return self._root
+
     def init(self, world, timeline):
         """Create the datasets.
         """
@@ -156,46 +221,61 @@ class Hdf5Logger(arboris.core.Observer):
         self._nb_steps = len(timeline)-1
         self._current_step = 0
         self._root.require_dataset("timeline", (self._nb_steps,), 'f8')
-        
-        if self._save_viewer_data:
-            self._matrix = self._world.getbodies()[1:]
-            for m in self._matrix:
-                d = self._transforms.require_dataset(m.name, 
-				               (self._nb_steps, 4,4), 'f8')
-                #d.attrs["ArborisViewerType"] = "matrix"
-            #self._wrench = []
-            #for w in self._wrench:
-            #    d = self._root.require_dataset(w.name, 
-            #        (self._nb_steps, 6), 'f8')
-            #    d.attrs["ArborisViewerType"] = "wrench"
-            #    dset.attrs["ArborisViewerParent"] = w.parent.name
-        if self._save_dyn_model:
+        if self._save_state:
+            self._gpositions = self._root.require_group('gpositions')
+            self._gvelocities = self._root.require_group('gvelocities')
+            for j in self._world.getjoints():
+                self._gpositions.require_dataset(j.name,
+                        (self._nb_steps,) + j.gpos.shape[:])
+                self._gvelocities.require_dataset(j.name,
+                        (self._nb_steps, j.ndof))
+        if self._save_transforms:
+            self._arb_transforms = {}
+            self._transforms = self._root.require_group('transforms')
+            if self._flat:
+                for b in self._world.ground.iter_descendant_bodies():
+                    self._arb_transforms[b.name] = b
+            else:
+                for j in  self._world.getjoints():
+                    self._arb_transforms[j.frames[1].name] = j
+            for k in self._arb_transforms.iterkeys():
+                d = self._transforms.require_dataset(k,
+                                                    (self._nb_steps, 4,4), 
+                                                    'f8')
+        if self._save_model:
+            self._model = self._root.require_group('transforms')
             ndof = self._world.ndof
-            #self._root.require_dataset("gpos", 
-            #        (self._nb_steps, 4, 4), 'f8')
-            self._root.require_dataset("gvel", 
+            self._model.require_dataset("gvel",
                     (self._nb_steps, ndof), 'f8')
-            self._root.require_dataset("mass", 
+            self._model.require_dataset("mass",
                     (self._nb_steps, ndof, ndof), 'f8')
-            self._root.require_dataset("nleffects", 
+            self._model.require_dataset("admittance",
                     (self._nb_steps, ndof, ndof), 'f8')
+            self._model.require_dataset("nleffects",
+                    (self._nb_steps, ndof, ndof), 'f8')
+            self._model.require_dataset("gforce",
+                    (self._nb_steps, ndof), 'f8')
 
     def update(self, dt):
         """Save the current data (state...).
         """
 	assert self._current_step <= self._nb_steps
         self._root["timeline"][self._current_step] = self._world._current_time
-        if self._save_viewer_data:
-            for m in self._matrix:
-                self._transforms[m.name][self._current_step,:,:] = m.pose
-            #for w in self._wrench:
-            #    self._root[w.name][self._current_step,:] = w.value
-        if self._save_dyn_model:
-            #self._root["gpos"][self._current_step,:,:] = \
-            #        self._world.ground.childrenjoints[0].frames[1].pose
-            self._root["gvel"][self._current_step,:] = self._world.gvel
-            self._root["mass"][self._current_step,:,:] = self._world.mass.copy()
-            self._root["nleffects"][self._current_step,:,:] = self._world.nleffects.copy()
+        if self._save_state:
+            for j in self._world.getjoints():
+                self._gpositions[j.name][self._current_step] = j.gpos
+                self._gvelocities[j.name][self._current_step] = j.gvel
+        if self._save_transforms:
+            for k, v in self._arb_transforms.iteritems():
+                self._transforms[k][self._current_step,:,:] = v.pose
+        if self._save_model:
+            self._model["gvel"][self._current_step,:] = self._world.gvel
+            self._model["mass"][self._current_step,:,:] = self._world.mass
+            self._model["admittance"][self._current_step,:,:] = \
+                    self._world.admittance
+            self._model["nleffects"][self._current_step,:,:] = \
+                    self._world.nleffects
+            self._model["gforce"][self._current_step,:] = self._world.gforce
         self._current_step += 1
 
     def finish(self):
