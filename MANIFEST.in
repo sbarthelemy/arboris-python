@@ -1,0 +1,5 @@
+include COPYING.LESSER.txt
+include COPYING.txt
+include LICENSE.txt
+include README.txt
+recursive-include doc *
