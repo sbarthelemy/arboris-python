@@ -11,10 +11,10 @@ import os
 import time
 import h5py
 from pylab import plot, show, xlabel, ylabel, title, figure, legend
-from arboris.core import World, ObservableWorld, simulate, SubFrame, WorldObserver
+from arboris.core import World, simulate, SubFrame
 from numpy import array, arange, linalg
 from arboris.observers import Hdf5Logger
-from arboris.converter import MatlabSimulationGenerator
+from convert_py2mat import MatlabSimulationGenerator
 
 def simulate_mat(world, timeline, name):
     stream = open('simulate.m', 'w')
@@ -24,9 +24,8 @@ def simulate_mat(world, timeline, name):
     os.system(cmd)
 
 def simulate_py(world, timeline, name):
-    world.observers.append(Hdf5Logger(world))
-    simulate(world, timeline)
-    world.observers[-1].write(name+'_py.h5')
+    observers = [Hdf5Logger(name+'_py.h5')]
+    simulate(world, timeline, observers)
 
 def load_matpy(name, mode='r'):
     matxp = h5py.File(name+'_mat.h5', mode)

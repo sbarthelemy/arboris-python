@@ -43,7 +43,7 @@ timeline = arange(t_start, t_end, dt)
 with_weight = False
 is_fixed = False
 
-world = ObservableWorld()
+world = World()
 world._up = array([0., 0., 1.]) # we use matlab's convention
 njoints = 9
 lengths = [1., .9, .8 , .7 , .6, .5, .4 , .3, .2]
