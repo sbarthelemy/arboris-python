@@ -360,7 +360,7 @@ tree.br({br}).bd({bd}).M = ...
         mass=a2s(_flip(body.mass)),
         jtype=jtype,
         H0 = a2s(H00L1),
-        H1 = a2s(2H11L0)
+        H1 = a2s(H11L0)
         )
         self.stream.write(text)
        
@@ -372,13 +372,24 @@ tree.br({br}).bd({bd}).M = ...
         for v in _shapes:
             body = v.frame.body
             (br,bd)= self._b_map[body.name]
-            if body.name in num_in_bd.iterkeys():
+            if body.name in num_in_bd:
                 num_in_bd[body.name] += 1
             else:
-                num_in_bd[body.name] = 2
+                num_in_bd[body.name] = 1
             if isinstance(v, shapes.Point): #TODO should be handled by Converter
                 stype='sphere'
-                dims='[0.01]'
+                dims='0.01'
+            elif isinstance(v, shapes.Sphere):
+                stype='sphere'
+                dims='{0}'.format(v.radius)
+            elif isinstance(v, shapes.Box):
+                stype='parallelepiped'
+                dims="[{0} {1} {2}]".format(v.half_extents[0]*2,
+                                            v.half_extents[1]*2,
+                                            v.half_extents[2]*2)
+            elif isinstance(v, shapes.Cylinder):
+                stype='cylinder'
+                dims='[{0} {1}]'.format(v.radius, v.length)
             Hpose=v.frame.bpose
             text="""
 tree.br({br}).bd({bd}).shape({num}).type = '{stype}';
@@ -387,12 +398,11 @@ tree.br({br}).bd({bd}).shape({num}).H = {H};
 tree.br({br}).bd({bd}).shape({num}).gr_props = {visu};
 """.format(br=br, bd=bd, num=num_in_bd[body.name], stype=stype,
            dims=dims, H=a2s(Hpose),
-           visu="")
+           visu="{}")
             self.stream.write(text)
 
         if len(_shapes) == 0:
-            # arboris-matlab needs at least one shape.
-            # TODO: remove this hack
+            # arboris-matlab needs at least one shape. FIXME
             text="""
 tree.br(1).bd(1).shape(1).type = 'sphere';
 tree.br(1).bd(1).shape(1).dims = [0.01];
@@ -418,6 +428,8 @@ tree.br(1).bd(1).shape(1).gr_props = {'FaceColor','Visible'; [1 0 0] ,'on'};
                 br+=1
                 self._add_branch(br, parent)
                 self._add_link(j, br, 1)
+                self._gpos.append(j.gpos)
+                self._gvel.append(j.gvel)
                 br = self._traverse(j.frames[1].body.childrenjoints, br, 2)
             return br
 
