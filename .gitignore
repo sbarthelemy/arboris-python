@@ -1,8 +1,9 @@
 *~
-*.swp
-*.pyc
 *.c
+*.pyc
 *.so
+*.swp
+.DS_Store
 src/*.c
 build/
 dist/
