@@ -7,6 +7,7 @@ suite = unittest.TestSuite()
 suite.addTest(_loader.loadTestsFromName('test_doctests.suite'))
 suite.addTest(_loader.loadTestsFromName('test_joints'))
 suite.addTest(_loader.loadTestsFromName('test_update_dynamic'))
+suite.addTest(_loader.loadTestsFromName('test_constraints'))
 
 if __name__ == "__main__":
     unittest.TextTestRunner(verbosity=2).run(suite)
