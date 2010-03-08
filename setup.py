@@ -7,44 +7,7 @@ import os
 from os.path import splitext, basename, join as pjoin, walk, sep
 import doctest
 
-class TestCommand(Command):
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        '''
-        Finds all the tests files in tests/, and run doctest on them.
-        '''
-        pymods = []
-        pyxmods = []
-        for root, dirs, files in os.walk('arboris'):
-            for file in files:
-                package = '.'.join(root.split(sep))
-                if file.endswith('.py') and file != '__init__.py':
-                    pymods.append('.'.join([package, splitext(file)[0]]))
-                elif file.endswith('.so'):
-                    pyxmods.append('.'.join([package, splitext(file)[0]]))
-
-        for mod in pymods:
-            exec('import {0} as module'.format(mod))
-            doctest.testmod(module)
-
-        for mod in pyxmods:
-            exec('import {0} as mod'.format(mod))
-            fix_module_doctests(mod)
-            doctest.testmod(mod)
-
-        for rst in glob(pjoin('tests', '*.rst')):
-            doctest.testfile(rst)
-
-
-cmdclass = {'test': TestCommand}
-
+cmdclass = {}
 try:
     # add a command for building the html doc
     from sphinx.setup_command import BuildDoc
