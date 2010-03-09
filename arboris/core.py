@@ -650,15 +650,6 @@ class World(NamedObject):
         """
         self.ground.update_geometric(eye(4))
 
-    def update_kinematic(self):
-        """
-        Compute the forward geometric and kinematic models. 
-        
-        This will recursively update all each body pose and jacobian
-        attributes.
-        """
-        self.ground.update_kinematic(eye(4),zeros((6,self._ndof)))
-
     def update_dynamic(self):
         r"""Compute the forward geometric, kinematic and dynamic models. 
         
