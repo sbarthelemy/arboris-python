@@ -561,7 +561,7 @@ class Drawer(core.Observer):
                 scale = min(10., max(0.1, norm(force)/100))
                 self.constraint_forces[obj].setScale(
                         osg.Vec3d(scale,scale,scale))
-                _align_z_with_vector(obj._force[1:4],
+                _align_z_with_vector(force,
                                      self.constraint_forces[obj])
                 self.constraint_forces[obj].setNodeMask(
                         _MASK['constraint force'])
