@@ -4,8 +4,8 @@
 __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from numpy import array, zeros, eye, sin, cos, dot
-import homogeneousmatrix
-from core import Joint, LinearConfigurationSpaceJoint
+import arboris.homogeneousmatrix
+from arboris.core import Joint, LinearConfigurationSpaceJoint
 
 class FreeJoint(Joint):
 
@@ -52,7 +52,7 @@ class FreeJoint(Joint):
         return zeros((6,6))
 
     def integrate(self, gvel, dt):
-        from twistvector import exp
+        from arboris.twistvector import exp
         self.gvel = gvel
         self.gpos = dot(self.gpos, exp( dt*self.gvel))
 
@@ -67,7 +67,7 @@ class RzRyRxJoint(LinearConfigurationSpaceJoint):
 
     @property
     def pose(self):
-        return homogeneousmatrix.rotzyx(
+        return arboris.homogeneousmatrix.rotzyx(
             self.gpos[0],self.gpos[1],self.gpos[2])
 
     @property
@@ -115,7 +115,7 @@ class RzRyJoint(LinearConfigurationSpaceJoint):
 
     @property
     def pose(self):
-        return homogeneousmatrix.rotzy(self.gpos[0], self.gpos[1])
+        return arboris.homogeneousmatrix.rotzy(self.gpos[0], self.gpos[1])
 
     @property
     def jacobian(self):
@@ -157,7 +157,7 @@ class RzRxJoint(LinearConfigurationSpaceJoint):
 
     @property
     def pose(self):
-        return homogeneousmatrix.rotzx(self.gpos[0], self.gpos[1])
+        return arboris.homogeneousmatrix.rotzx(self.gpos[0], self.gpos[1])
 
     @property
     def jacobian(self):
@@ -196,7 +196,7 @@ class RyRxJoint(LinearConfigurationSpaceJoint):
 
     @property
     def pose(self):
-        return homogeneousmatrix.rotyx(self.gpos[0], self.gpos[1])
+        return arboris.homogeneousmatrix.rotyx(self.gpos[0], self.gpos[1])
 
     @property
     def jacobian(self):
@@ -254,7 +254,7 @@ class RzJoint(LinearConfigurationSpaceJoint):
                [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                   1.00000000e+00]])
         """
-        return homogeneousmatrix.rotz(self.gpos[0])
+        return arboris.homogeneousmatrix.rotz(self.gpos[0])
 
     @property
     def ipose(self):
@@ -271,7 +271,7 @@ class RzJoint(LinearConfigurationSpaceJoint):
                   1.00000000e+00]])
 
         """
-        return homogeneousmatrix.rotz(-self.gpos[0])
+        return arboris.homogeneousmatrix.rotz(-self.gpos[0])
 
     @property
     def jacobian(self):
@@ -311,11 +311,11 @@ class RyJoint(LinearConfigurationSpaceJoint):
 
     @property
     def pose(self):
-        return homogeneousmatrix.roty(self.gpos[0])
+        return arboris.homogeneousmatrix.roty(self.gpos[0])
 
     @property
     def ipose(self):
-        return homogeneousmatrix.roty(-self.gpos[0])
+        return arboris.homogeneousmatrix.roty(-self.gpos[0])
 
     @property
     def jacobian(self):
@@ -334,11 +334,11 @@ class RxJoint(LinearConfigurationSpaceJoint):
 
     @property
     def pose(self):
-        return homogeneousmatrix.rotx(self.gpos[0])
+        return arboris.homogeneousmatrix.rotx(self.gpos[0])
 
     @property
     def ipose(self):
-        return homogeneousmatrix.rotx(-self.gpos[0])
+        return arboris.homogeneousmatrix.rotx(-self.gpos[0])
 
     @property
     def jacobian(self):
@@ -360,7 +360,7 @@ class TxTyTzJoint(LinearConfigurationSpaceJoint):
 
     @property
     def pose(self):
-        return homogeneousmatrix.transl(
+        return arboris.homogeneousmatrix.transl(
                 self.gpos[0], self.gpos[1], self.gpos[2])
 
     @property

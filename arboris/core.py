@@ -18,9 +18,9 @@ __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from numpy import array, zeros, eye, dot
 import numpy
-import homogeneousmatrix as Hg
+import arboris.homogeneousmatrix as Hg
 from abc import ABCMeta, abstractmethod, abstractproperty
-from rigidmotion import RigidMotion
+from arboris.rigidmotion import RigidMotion
 
 
 def simplearm():

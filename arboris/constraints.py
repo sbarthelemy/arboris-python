@@ -262,7 +262,7 @@ class PointContact(Constraint):
         assert isinstance(shapes[1], Shape)
         if collision_solver is None:
             # automatically find the collision solver
-            from collisions import choose_solver
+            from arboris.collisions import choose_solver
             (shapes, collision_solver) = choose_solver(shapes[0], shapes[1])
         self._shapes = shapes
         self._frames = (MovingSubFrame(shapes[0].frame.body),

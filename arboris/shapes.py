@@ -3,7 +3,7 @@
 
 __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
-from core import Shape
+from arboris.core import Shape
 
 class Point(Shape):
     """

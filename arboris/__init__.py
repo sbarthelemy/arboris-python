@@ -7,12 +7,12 @@ def optional_modules():
     """A list of optional modules which are available."""
     mods = []
     try:
-        import visu_osg
+        import arboris.visu_osg
         mods.append('visu_osg')
     except ImportError:
         pass
     try:
-        import qpcontroller
+        import arboris.qpcontroller
         mods.append('qpcontroller')
     except ImportError:
         pass

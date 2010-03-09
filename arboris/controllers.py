@@ -2,11 +2,11 @@
 __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from abc import ABCMeta, abstractmethod, abstractproperty
-from core import NamedObject, Controller, World
+from arboris.core import NamedObject, Controller, World
 from numpy import array, zeros, dot, ix_
 from numpy.linalg import norm
-import homogeneousmatrix
-from joints import LinearConfigurationSpaceJoint
+import arboris.homogeneousmatrix
+from arboris.joints import LinearConfigurationSpaceJoint
 
 class WeightController(Controller):
     """A contoller which applies weight to joints.
@@ -47,11 +47,12 @@ class WeightController(Controller):
             R_gb = b.pose[0:3,0:3] 
             H_bc[0:3,0:3] = R_gb.T
             #wrench_c = array((0,0,0,0,-9.81*b.mass[3,3],0))
-            #Ad_cb = homogeneousmatrix.iadjoint(H_bc)
+            #Ad_cb = arboris.homogeneousmatrix.iadjoint(H_bc)
             #wrench_b = dot(Ad_cb.T, wrench_c)
             #gforce += dot(b.jacobian.T, wrench_b )
             # gravity acceleration expressed in body frame
-            g = dot(homogeneousmatrix.iadjoint(b.pose), self._gravity_dtwist)
+            g = dot(arboris.homogeneousmatrix.iadjoint(b.pose),
+                    self._gravity_dtwist)
             gforce += dot(b.jacobian.T, dot(b.mass, g))
         impedance = zeros( (self._wndof, self._wndof) )
         return (gforce, impedance)

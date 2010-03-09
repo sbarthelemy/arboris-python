@@ -4,7 +4,7 @@
 
 __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
-import homogeneousmatrix as Hg
+import arboris.homogeneousmatrix as Hg
 from numpy import diag, eye, dot, array
 from numpy.linalg import eig, eigvals, det, norm
 

@@ -8,9 +8,9 @@ __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 from numpy.linalg import norm
 from numpy import zeros, eye, dot, absolute, argsort, cross, argmin,\
     hstack
-import homogeneousmatrix as Hg
-from core import Shape
-from shapes import *
+import arboris.homogeneousmatrix as Hg
+from arboris.core import Shape
+from arboris.shapes import *
 
 def choose_solver(shape0, shape1):
     """Choose a suitable solver for the two shapes.

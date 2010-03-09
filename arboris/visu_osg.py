@@ -24,11 +24,11 @@ __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>",
 
 import osg, osgDB, osgGA, osgViewer, osgText, osgUtil
 from numpy import pi, arctan2, array, dot, cross, sqrt, eye, cos, sin
-import shapes
-import core
-import constraints
-import homogeneousmatrix as Hg
-import massmatrix
+import arboris.shapes
+import arboris.core
+import arboris.constraints
+import arboris.homogeneousmatrix as Hg
+import arboris.massmatrix
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
@@ -326,16 +326,16 @@ def graphic_options(scale=1.):
     return options
 
 
-class Drawer(core.Observer):
+class Drawer(arboris.core.Observer):
     """Draw the world, creating OSG nodes.
 
     **Attributes:**
     - :attr:`root`: the root node of the OSG scene,
     - :attr:`frames`: a dictionnary of tranform nodes corresponding to
-      and indexed by :class:`core.Frame` objects,
+      and indexed by :class:`arboris.core.Frame` objects,
     - :attr:`constraint_forces` and :attr:`constraints_moment`: 
       dictionnaries of tranform nodes corresponding to and indexed by
-      :class:`core.Constraint` objects,
+      :class:`arboris.core.Constraint` objects,
 
     **Methods:**
     - :meth:`__init__` creates ``root`` OSG node, get the graphic options
@@ -434,7 +434,7 @@ class Drawer(core.Observer):
         else:
             self.registered.append(obj)
             opts = self._options
-            if isinstance(obj, core.Frame):
+            if isinstance(obj, arboris.core.Frame):
                 # create a transform for the frames (instances of 
                 # the Body and Subframe classes)
                 t = osg.MatrixTransform()
@@ -445,7 +445,7 @@ class Drawer(core.Observer):
                 t.addChild(name)
                 # draw the frame basis:
                 t.addChild(self._generic_frame)
-                if isinstance(obj, core.Body):
+                if isinstance(obj, arboris.core.Body):
                     self.root.addChild(t)
                     if obj.mass[5,5] != 0:
                         # draw the body inertia ellipsoid.
@@ -460,8 +460,8 @@ class Drawer(core.Observer):
                         #
                         Mb = obj.mass
                         color = self._choose_color(obj)
-                        bHg = massmatrix.principalframe(Mb)
-                        Mg = massmatrix.transport(Mb, bHg)
+                        bHg = arboris.massmatrix.principalframe(Mb)
+                        Mg = arboris.massmatrix.transport(Mb, bHg)
                         shape = osg.ShapeDrawable(
                             osg.Sphere(osg.Vec3(0.,0.,0.), 1.))
                         shape.setColor(color)
@@ -478,7 +478,8 @@ class Drawer(core.Observer):
                         pos_node.addChild(gen_scale_node)
                         pos_node.setNodeMask(_MASK['inertia ellipsoid'])
                         self.frames[obj].addChild(pos_node)
-                elif isinstance(obj, core.SubFrame) or isinstance(obj, core.MovingSubFrame):
+                elif isinstance(obj, arboris.core.SubFrame) or\
+                        isinstance(obj, arboris.core.MovingSubFrame):
                     self.frames[obj.body].addChild(t)
                     # draw a line between the subframe and its parent:
                     color = self._choose_color(obj.body)
@@ -487,26 +488,27 @@ class Drawer(core.Observer):
                                opts['link radius'], color)
                     nl.setNodeMask(_MASK['link'])
                     self.frames[obj]. addChild(nl)
-            elif isinstance(obj, constraints.SoftFingerContact) or isinstance(obj, constraints.BallAndSocketConstraint):
+            elif isinstance(obj, arboris.constraints.BallAndSocketConstraint)\
+                    or isinstance(obj, arboris.constraints.SoftFingerContact):
                 t = osg.PositionAttitudeTransform()
                 self.constraint_forces[obj] = t
                 t.setNodeMask(_MASK['constraint force'])
                 self.frames[obj._frames[0]].addChild(t)
                 t.addChild(self._generic_force)
-            elif isinstance(obj, core.Shape):
+            elif isinstance(obj, arboris.core.Shape):
                 color = self._choose_color(obj.frame.body)
-                if isinstance(obj, shapes.Sphere):
+                if isinstance(obj, arboris.shapes.Sphere):
                     shape = osg.ShapeDrawable(
                         osg.Sphere(osg.Vec3(0.,0.,0.), obj.radius))
-                elif isinstance(obj, shapes.Point):
+                elif isinstance(obj, arboris.shapes.Point):
                     shape = osg.ShapeDrawable(
                         osg.Sphere(osg.Vec3(0.,0.,0.), 
                                    self._options['point radius']))
-                elif isinstance(obj, shapes.Box):
+                elif isinstance(obj, arboris.shapes.Box):
                     shape = osg.ShapeDrawable(
                         osg.Box(osg.Vec3(0.,0.,0.), obj.half_extents[0]*2., 
                                 obj.half_extents[1]*2, obj.half_extents[2]*2))
-                elif isinstance(obj, shapes.Cylinder):
+                elif isinstance(obj, arboris.shapes.Cylinder):
                     shape = osg.ShapeDrawable(
                         osg.Cylinder(osg.Vec3(0.,0.,0.),
                                      obj.radius, obj.length))
@@ -518,9 +520,9 @@ class Drawer(core.Observer):
                 geode.addDrawable(shape)
                 geode.setNodeMask(_MASK['shape'])
                 self.frames[obj.frame].addChild(geode)
-            elif isinstance(obj, core.Joint) or \
-                isinstance(obj, core.Constraint) or \
-                isinstance(obj, core.Controller):
+            elif isinstance(obj, arboris.core.Joint) or \
+                isinstance(obj, arboris.core.Constraint) or \
+                isinstance(obj, arboris.core.Controller):
                 pass
             else:
                 raise NotImplemented(obj)
@@ -554,9 +556,10 @@ class Drawer(core.Observer):
                 from numpy.linalg import norm
                 # scale the generic_force according to the force
                 # norm. We constraint the scaling to be in [0.1, 10]
-                if isinstance(obj,constraints.SoftFingerContact):
+                if isinstance(obj, arboris.constraints.SoftFingerContact):
                     force = obj._force[1:4]
-                elif isinstance(obj,constraints.BallAndSocketConstraint):
+                elif isinstance(obj,
+                        arboris.constraints.BallAndSocketConstraint):
                     force = obj._force[0:3]
                 scale = min(10., max(0.1, norm(force)/100))
                 self.constraint_forces[obj].setScale(

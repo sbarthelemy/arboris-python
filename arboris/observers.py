@@ -7,7 +7,7 @@ import arboris.core
 from abc import ABCMeta, abstractmethod, abstractproperty
 from numpy import dot, array, eye, linalg, vstack, hstack, zeros, diag
 from time import time as _time
-from massmatrix import principalframe
+from arboris.massmatrix import principalframe
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
