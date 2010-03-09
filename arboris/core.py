@@ -1005,10 +1005,6 @@ class _SubFrame(NamedObject, Frame):
     def body(self):
         return self._body
 
-    @abstractproperty
-    def bpose(self):
-        pass
-
 
 class SubFrame(_SubFrame):
     @property
