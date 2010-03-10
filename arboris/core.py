@@ -1,17 +1,23 @@
 # coding=utf-8
 """The core of the simulator.
 
-A world (instance of the :class:`World` class) consists of bodies (instances of the :class:`Body` class) interlinked by joints (instances of :class:`Joint` subclasses). Joints serve two purposes in arboris: 
+A world (instance of the :class:`World` class) consists of bodies (instances 
+of the :class:`Body` class) interlinked by joints (instances of :class:`Joint`
+subclasses). Joints serve two purposes in arboris: 
     
-- restrict the relative motion between bodies (for instance a hinge joint only allows for rotations around its axis) 
-- and parametrize the bodies positions (for instance a single angle is enough to parametrize the relative position of two bodies constrained by a hinge joint).
+- restrict the relative motion between bodies (for instance a hinge joint only
+  allows for rotations around its axis) 
+- and parametrize the bodies positions (for instance a single angle is enough
+  to parametrize the relative position of two bodies constrained by a hinge
+  joint).
 
 A world forms an oriented tree whose nodes are the bodies and edges are the
 joints, so that the state (pose and velocity) of each body can be computed from
-the state of its parent joints (the joints on the path from the body to the root
-of the tree (which is body called "ground")).
+the state of its parent joints (the joints on the path from the body to the 
+root of the tree (which is body called "ground")).
 
-One or more frames (instances of the :class:`SubFrame` class) can be associated to bodies and serve as anchor points to the joints.
+One or more frames (instances of the :class:`SubFrame` class) can be associated
+to bodies and serve as anchor points to the joints.
 
 """
 __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
@@ -285,7 +291,7 @@ class Constraint(NamedObject):
         pass
 
     @abstractmethod
-    def update(self):
+    def update(self, dt):
         pass
 
     @abstractmethod
@@ -591,12 +597,12 @@ class World(NamedObject):
 
         # Adjust the size of the worldwide model matrices 
         # (we wipe their content)
-        self._mass = zeros((self._ndof,self._ndof))
-        self._nleffects =  zeros((self._ndof,self._ndof))
-        self._viscosity = zeros((self._ndof,self._ndof))
-        self._controller_viscosity = zeros((self._ndof,self._ndof))
+        self._mass = zeros((self._ndof, self._ndof))
+        self._nleffects =  zeros((self._ndof, self._ndof))
+        self._viscosity = zeros((self._ndof, self._ndof))
+        self._controller_viscosity = zeros((self._ndof, self._ndof))
         self._gforce = zeros(self._ndof)
-            
+
         # Init the worldwide generalized velocity vector:
         self._gvel = zeros(self._ndof)
         for j in self.iterjoints():
@@ -890,7 +896,7 @@ class World(NamedObject):
         jac = zeros((ndol, self._ndof))
         gforce = self._gforce.copy()
         for c in constraints:
-            jac[c._dol,:] = c.jacobian
+            jac[c._dol, :] = c.jacobian
             gforce += c.gforce
         vel = dot(jac, dot(self._admittance, 
                            dot(self._mass, self._gvel/dt) + gforce))
@@ -902,7 +908,7 @@ class World(NamedObject):
             k+=1 
             for c in constraints:
                 dforce = c.solve(vel[c._dol], admittance[c._dol,c._dol], dt)
-                vel += dot(admittance[:,c._dol], dforce)
+                vel += dot(admittance[:, c._dol], dforce)
         for c in constraints:
             self._gforce += c.gforce
 
@@ -1026,11 +1032,11 @@ class Body(NamedObject, Frame):
 
     def __init__(self, name=None, mass=None, viscosity=None):
         if mass is None:
-            mass = zeros((6,6))
+            mass = zeros((6, 6))
         else:
             pass #TODO: check the mass matrix
         if viscosity is None:
-            viscosity = zeros((6,6))
+            viscosity = zeros((6, 6))
         else:
             pass #TODO: check the viscosity matrix
 
@@ -1102,7 +1108,7 @@ class Body(NamedObject, Frame):
     def body(self):
         return self
 
-    def update_geometric(self,pose):
+    def update_geometric(self, pose):
         """
         - g: ground body
         - p: parent body
@@ -1244,17 +1250,17 @@ class Body(NamedObject, Frame):
         self._djacobian = djac
         self._twist = twist
         wx = array(
-            [[             0,-self.twist[2], self.twist[1]],
-             [ self.twist[2],             0,-self.twist[0]],
-             [-self.twist[1], self.twist[0],             0]])
-        if self.mass[3,3]<=1e-10: #TODO: avoid hardcoded value
-            rx = zeros((3,3))
+            [[             0, -self.twist[2],  self.twist[1]],
+             [ self.twist[2],              0, -self.twist[0]],
+             [-self.twist[1],  self.twist[0],              0]])
+        if self.mass[3, 3] <= 1e-10: #TODO: avoid hardcoded value
+            rx = zeros((3, 3))
         else:
-            rx = self.mass[0:3,3:6]/self.mass[3,3] #TODO: better solution?
-        self._nleffects = zeros((6,6))
-        self._nleffects[0:3,0:3] = wx
-        self._nleffects[3:6,3:6] = wx
-        self._nleffects[0:3,3:6] = dot(rx,wx) - dot(wx,rx)
+            rx = self.mass[0:3, 3:6]/self.mass[3,3] #TODO: better solution?
+        self._nleffects = zeros((6, 6))
+        self._nleffects[0:3, 0:3] = wx
+        self._nleffects[3:6, 3:6] = wx
+        self._nleffects[0:3, 3:6] = dot(rx, wx) - dot(wx, rx)
         self._nleffects = dot(self.nleffects, self.mass)
 
         H_gp = pose
@@ -1280,7 +1286,7 @@ class Body(NamedObject, Frame):
             child_jac[:,j.dof] += dot(Ad_cn, J_nr)
 
             child_djac = dot(dAd_cp, J_pg) + dot(Ad_cp, dJ_pg)
-            child_djac[:,j.dof] += dot(Ad_cn, dJ_nr)
+            child_djac[:, j.dof] += dot(Ad_cn, dJ_nr)
             j._frame1.body.update_dynamic(child_pose, child_jac, child_djac, 
                                           child_twist)
 

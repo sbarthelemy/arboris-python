@@ -12,9 +12,10 @@ from arboris.core import World, Body, SubFrame
 from arboris.massmatrix import transport, cylinder, box
 from arboris.homogeneousmatrix import transl, rotx
 from arboris.joints import FreeJoint, RzJoint
-from numpy import array, dot, pi
+from numpy import dot
 
-def add_snake(w, nbody, lengths = None, masses = None, gpos = None, gvel = None, is_fixed = True):
+def add_snake(w, nbody, lengths=None, masses=None, gpos=None, gvel=None,
+        is_fixed=True):
     """Add a snake-shape robot to the world.
     
     **Example:**

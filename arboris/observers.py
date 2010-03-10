@@ -87,6 +87,7 @@ class PerfMonitor(arboris.core.Observer):
 
     """
     def __init__(self, log=False):
+        arboris.core.Observer.__init__(self)
         if log:
             self._logger = logging.getLogger(self.__class__.__name__)
         else:
@@ -136,6 +137,7 @@ class Hdf5Logger(arboris.core.Observer):
                  mode = 'a', save_viewer_data = True , 
                  save_dyn_model = False):
         import h5py
+        arboris.core.Observer.__init__(self)
         # hdf5 file handlers
         self._file = h5py.File(filename, mode)
         self._root = self._file

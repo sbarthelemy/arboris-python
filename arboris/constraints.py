@@ -4,7 +4,6 @@
 
 __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
-from abc import ABCMeta, abstractmethod
 from numpy import array, zeros, eye, dot, hstack, diag, logical_and
 from numpy.linalg import solve, eigvals, pinv
 import arboris.homogeneousmatrix as Hg
@@ -72,7 +71,7 @@ class JointLimits(Constraint):
                 (self._max-self._pos0<self._proximity)    
 
     def solve(self, vel, admittance, dt):
-        pred = self._pos0 + dt*(vel - dot(admittance,  self._force))
+        pred = self._pos0 + dt*(vel - dot(admittance, self._force))
         prev_force = self._force.copy()
         # pos = self._pos0 + dt*(vel + admittance*dforce)
         if (pred <= self._min):
@@ -180,7 +179,7 @@ class BallAndSocketConstraint(Constraint):
 
         """
         H_01 = dot(Hg.inv(self._frames[0].pose), self._frames[1].pose)
-        self._pos0 = H_01[0:3,3]
+        self._pos0 = H_01[0:3, 3]
 
     def is_active(self):
         return True
@@ -188,8 +187,8 @@ class BallAndSocketConstraint(Constraint):
     @property
     def jacobian(self):
         H_01 = dot(Hg.inv(self._frames[0].pose), self._frames[1].pose)
-        return (dot(Hg.adjoint(H_01)[3:6,:], self._frames[1].jacobian)
-                -self._frames[0].jacobian[3:6,:])
+        return (dot(Hg.adjoint(H_01)[3:6, :], self._frames[1].jacobian)
+                -self._frames[0].jacobian[3:6, :])
 
     def solve(self, vel, admittance, dt):
         r"""
@@ -265,6 +264,8 @@ class PointContact(Constraint):
             from arboris.collisions import choose_solver
             (shapes, collision_solver) = choose_solver(shapes[0], shapes[1])
         self._shapes = shapes
+        self._is_active = None
+        self._sdist = None
         self._frames = (MovingSubFrame(shapes[0].frame.body),
                         MovingSubFrame(shapes[1].frame.body))
         self._collision_solver = collision_solver
@@ -286,7 +287,7 @@ class PointContact(Constraint):
         self._frames[0].bpose = dot(H_b0g, H_gc0)
         self._frames[1].bpose = dot(H_b1g, H_gc1)
         H_c0c1 = dot(Hg.inv(H_gc0), H_gc1)
-        dsdist = (dot(Hg.adjoint(H_c0c1)[5,:], self._frames[1].twist)
+        dsdist = (dot(Hg.adjoint(H_c0c1)[5, :], self._frames[1].twist)
                   -self._frames[0].twist[5])
         self._is_active = (sdist + dsdist*dt < self._proximity)
         self._sdist = sdist
@@ -428,8 +429,8 @@ class SoftFingerContact(PointContact):
     @property
     def jacobian(self):
         H_01 = dot(Hg.inv(self._frames[0].pose), self._frames[1].pose)
-        return (dot(Hg.adjoint(H_01)[2:6,:], self._frames[1].jacobian)
-                -self._frames[0].jacobian[2:6,:])
+        return (dot(Hg.adjoint(H_01)[2:6, :], self._frames[1].jacobian)
+                -self._frames[0].jacobian[2:6, :])
     
     def solve(self, vel, admittance, dt):
         r"""
@@ -805,19 +806,19 @@ class SoftFingerContact(PointContact):
                 #
                 alpha = vel - dot(admittance, self._force)
                 alpha[3] += self._sdist/dt
-                Y_c = admittance[0:3,3]
-                y_n = admittance[3,3]
-                Y_t = admittance[0:3,0:3]
+                Y_c = admittance[0:3, 3]
+                y_n = admittance[3, 3]
+                Y_t = admittance[0:3, 0:3]
                 beta = alpha[0:3] - alpha[3]/y_n*Y_c
                 a = self._mu/y_n * alpha[3]
                 b = self._mu/y_n * Y_c
-                B = zeros((6,6))
+                B = zeros((6, 6))
                 E = diag(self._eps**2)
                 Y_that = Y_t - dot(Y_c, Y_c.T)/y_n
-                B[3:6,3:6] = dot(E, Y_that)
-                B[0:3,0:3] = dot(E, Y_that + 2/a*dot(beta,b.T))
-                B[0:3,3:6] = -dot(E ,dot(beta,beta.T)/(a**2))
-                B[3:6,0:3] = dot(E, dot(b,b.T)) - eye(3)
+                B[3:6, 3:6] = dot(E, Y_that)
+                B[0:3, 0:3] = dot(E, Y_that + 2/a*dot(beta, b.T))
+                B[0:3, 3:6] = -dot(E, dot(beta, beta.T)/(a**2))
+                B[3:6, 0:3] = dot(E, dot(b, b.T)) - eye(3)
 
                 # s is the real part of the eigenvalue with the smallest 
                 # imaginary par within those with a positive real part
@@ -829,8 +830,8 @@ class SoftFingerContact(PointContact):
                     s = max(min(S), -1e10) #TODO: log when |s|>=1e10
                 prev_force = self._force.copy()
                 A = admittance.copy()
-                A[0:3,0:3] -= s*diag(self._eps**-2)
-                self._force = solve(A,-alpha)
+                A[0:3, 0:3] -= s*diag(self._eps**-2)
+                self._force = solve(A, -alpha)
                 dforce = self._force - prev_force
                 return dforce
         
@@ -855,10 +856,9 @@ def get_all_contacts(world, contact_class=None, **args):
     """
     assert isinstance(world, World)
     if contact_class is None:
-        import arboris.constraints
-        contact_class = arboris.constraints.SoftFingerContact
+        contact_class = SoftFingerContact
     else:
-        assert issubclass(contact_class, arboris.constraints.PointContact)
+        assert issubclass(contact_class, PointContact)
     contacts = []
     shapes = tuple(world.itershapes())
     for i in range(len(shapes)):

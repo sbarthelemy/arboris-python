@@ -1,8 +1,7 @@
 # coding=utf-8
 __author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
-from abc import ABCMeta, abstractmethod, abstractproperty
-from arboris.core import NamedObject, Controller, World
+from arboris.core import Controller, World
 from numpy import array, zeros, dot, ix_
 from numpy.linalg import norm
 import arboris.homogeneousmatrix
@@ -28,6 +27,9 @@ class WeightController(Controller):
     def __init__(self, gravity=-9.81, name=None):
         self.gravity = float(gravity)
         Controller.__init__(self, name=name)
+        self._bodies = None
+        self._wndof = None
+        self._gravity_dtwist = None
 
 
     def init(self, world):
@@ -44,8 +46,8 @@ class WeightController(Controller):
             #TODO: improve efficiency
             from arboris.massmatrix import principalframe
             H_bc = principalframe(b.mass)
-            R_gb = b.pose[0:3,0:3] 
-            H_bc[0:3,0:3] = R_gb.T
+            R_gb = b.pose[0:3, 0:3] 
+            H_bc[0:3, 0:3] = R_gb.T
             #wrench_c = array((0,0,0,0,-9.81*b.mass[3,3],0))
             #Ad_cb = arboris.homogeneousmatrix.iadjoint(H_bc)
             #wrench_b = dot(Ad_cb.T, wrench_c)
@@ -100,12 +102,14 @@ class ProportionalDerivativeController(Controller):
         dof_map = []
         for j in joints:
             if not isinstance(j, LinearConfigurationSpaceJoint):
-                raise ValueError('Joints must be LinearConfigurationSpaceJoint instances')
+                raise ValueError('Joints must be ' +\
+                        'LinearConfigurationSpaceJoint instances')
             else:
                 self._cndof += j.ndof
                 dof_map.extend(range(j.dof.start, j.dof.stop))
         self._dof_map = array(dof_map)
         self.joints = joints
+        self._wndof = None
 
         if kp is None:
             self.kp = zeros((self._cndof, self._cndof))
@@ -131,7 +135,7 @@ class ProportionalDerivativeController(Controller):
         self._wndof = world.ndof
         dof_map = []
         for j in self.joints:
-                dof_map.extend(range(j.dof.start, j.dof.stop))
+            dof_map.extend(range(j.dof.start, j.dof.stop))
         self._dof_map = array(dof_map)
 
     def update(self, dt):

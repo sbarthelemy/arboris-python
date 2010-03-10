@@ -348,6 +348,7 @@ class Drawer(arboris.core.Observer):
     
     """
     def __init__(self, world, scale=1., options=None, viewer=None):
+        arboris.core.Observer.__init__(self)
         if options is None:
             self._options = graphic_options(scale)
         else:

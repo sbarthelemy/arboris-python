@@ -10,7 +10,6 @@ from arboris.shapes import Sphere, Box, Cylinder
 from arboris.core import World, Body, SubFrame
 from arboris.homogeneousmatrix import transl
 import arboris.massmatrix as massmatrix
-import numpy
 
 def add_sphere(world, radius=1., mass=1., name=None):
     """Build a ball robot.
@@ -31,7 +30,7 @@ def add_sphere(world, radius=1., mass=1., name=None):
     world.init()
  
 
-def add_box(world, half_extents=(1.,1.,1.), mass=1., name='Box'):
+def add_box(world, half_extents=(1., 1., 1.), mass=1., name='Box'):
     """Build a box robot.
 
     Example:

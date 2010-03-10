@@ -21,9 +21,9 @@ def ismassmatrix(M, tol=tol, semi=False):
 
     """
     common = M.shape == (6,6) and norm(M-M.T) <= tol and \
-            (M[3:6,3:6] == M[3,3]*eye(3)).all()
+            (M[3:6, 3:6] == M[3,3]*eye(3)).all()
     if not common:
-        print (M[3:6,3:6] == M[3,3]*eye(3))
+        print (M[3:6, 3:6] == M[3, 3]*eye(3))
         print norm(M-M.T)
     if semi:
         return common and (eigvals(M)>=0.).all()
@@ -42,7 +42,7 @@ def transport(M, H):
     
     **Example:**
     
-    >>> M_a = diag((3.,2.,4.,1.,1.,1.))
+    >>> M_a = diag((3., 2., 4., 1., 1., 1.))
     >>> H_ab = Hg.transl(1., 3., 0.)
     >>> M_b = transport(M_a, H_ab)
     >>> M_b
@@ -85,16 +85,16 @@ def principalframe(M):
     """
     assert ismassmatrix(M)
     m = M[5,5]
-    rx = M[0:3,3:6]/m
+    rx = M[0:3, 3:6]/m
     H = eye(4)
-    H[0:3,3] = array([rx[2,1],rx[0,2],rx[1,0]]) #TODO: use a function
-    RSR = M[0:3,0:3] + m*dot(rx, rx)
+    H[0:3, 3] = array([rx[2, 1], rx[0, 2], rx[1, 0]]) #TODO: use a function
+    RSR = M[0:3, 0:3] + m*dot(rx, rx)
     [S, R] = eig(RSR)
     if det(R)<0.:
-        iI = array([[0,0,1],[0,1,0],[1,0,0]])
+        iI = array([[0, 0, 1],[0, 1, 0], [1, 0, 0]])
         R = dot(R, iI)
         S = dot(iI, dot(S, iI))
-    H[0:3,0:3] = R
+    H[0:3, 0:3] = R
     return H
 
 def box(half_extents, mass):
@@ -102,7 +102,7 @@ def box(half_extents, mass):
     
     **Example:**
     
-    >>> box((2.,4.,6.), 3.)
+    >>> box((2., 4., 6.), 3.)
     array([[ 52.,   0.,   0.,   0.,   0.,   0.],
            [  0.,  40.,   0.,   0.,   0.,   0.],
            [  0.,   0.,  20.,   0.,   0.,   0.],

@@ -8,7 +8,6 @@ from numpy import array, sin, cos, eye, dot, hstack, vstack
 from numpy.linalg import norm
 
 def adjacency(tw):
-    assert tw.shape == (6,)
     """
     return the adjacency matrix
 
@@ -23,7 +22,7 @@ def adjacency(tw):
            [ 12.,   0., -10.,   3.,   0.,  -1.],
            [-11.,  10.,   0.,  -2.,   1.,   0.]])
 
-"""
+    """
     assert tw.shape == (6,)
     return array(
         [[     0,-tw[2], tw[1],      0,     0,     0],
@@ -64,8 +63,8 @@ def exp(tw):
         sc = 1.-t**2/6.
         dsc = 1./6.
     
-    R = eye(3) + sc*wx + cc*dot(wx,wx)
-    w_3x1 = w.reshape(3,1) #TODO improve efficiency
-    p = dot(sc*eye(3)+cc*wx+dsc*dot(w_3x1,w_3x1.T), v)
-    return vstack((hstack((R, p.reshape(3,1))),
+    R = eye(3) + sc*wx + cc*dot(wx, wx)
+    w_3x1 = w.reshape(3, 1) #TODO improve efficiency
+    p = dot(sc*eye(3) + cc*wx + dsc*dot(w_3x1, w_3x1.T), v)
+    return vstack((hstack((R, p.reshape(3, 1))),
                    array([[0., 0., 0., 1.]])))

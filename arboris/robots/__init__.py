@@ -1,1 +1,1 @@
-all = ['human36', 'simplearm', 'simpleshapes', 'snake']
+__all__ = ['human36', 'simplearm', 'simpleshapes', 'snake']
