@@ -1,11 +1,58 @@
 # coding: utf-8
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
-from distutils.core import setup, Command
-from glob import glob
-import os
-from os.path import splitext, basename, join as pjoin, walk, sep
-import doctest
+from distutils.core import setup
+import os.path
+import subprocess
+
+def get_version():
+    """
+    Get the version from git or from the VERSION.txt file
+
+    If we're in a git repository, uses the output of ``git describe`` as
+    the version, and update the ``VERSION.txt`` file.
+    Otherwise, read the version from the ``VERSION.txt`` file
+
+    Much inspire from this post:
+    http://dcreager.net/2010/02/10/setuptools-git-version-numbers/
+    """
+
+    def get_version_from_git():
+        """Returns the version as defined by ``git describe``, or None."""
+        try:
+            p = subprocess.Popen(['git', 'describe'],
+                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p.stderr.close()
+            line = p.stdout.readlines()[0].strip()
+            assert line.startswith('v')
+            return line[1:] #remove the leading 'v'
+        except OSError:
+            return None
+
+    def get_version_from_file():
+        """Returns the version as defin in the ``VERSION.txt`` file."""
+        f = open('VERSION.txt', "r")
+        try:
+            version = f.readlines()[0].strip()
+        except OSError:
+            return None
+        finally:
+            f.close()
+        return version
+
+    def update_version_file(version):
+        """Update, if necessary, the ``VERSION.txt`` file."""
+        if version != get_version_from_file():
+            f = open('VERSION.txt', "w")
+            f.write(version+'\n')
+            f.close()
+
+    version = get_version_from_git()
+    if version:
+        update_version_file(version)
+    else:
+        version = get_version_from_file()
+    return version
 
 cmdclass = {}
 try:
@@ -15,15 +62,14 @@ try:
 except ImportError:
     pass
 
-version = '0.1.0pre5'
 readme = open('README.txt', 'r')
-
 setup(name='arboris',
-      version=version,
+      version=get_version(),
       maintainer='S√©bastien BARTH√âLEMY',
       maintainer_email='barthelemy@crans.org',
       url='https://vizir.robot.jussieu.fr/trac/arboris',
-      description='A rigid body dynamics and contacts simulator written in python.',
+      description=
+              'A rigid body dynamics and contacts simulator written in python.',
       long_description=readme.read(),
       license='LGPL',
       packages=['arboris',
@@ -32,7 +78,8 @@ setup(name='arboris',
               'Development Status :: 4 - Beta',
               'Environment :: Console',
               'Intended Audience :: Science/Research',
-              'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
+              'License :: OSI Approved :: GNU Library or Lesser General ' +\
+                      'Public License (LGPL)',
               'Operating System :: OS Independent',
               'Programming Language :: Python',
               'Topic :: Scientific/Engineering :: Physics'],
