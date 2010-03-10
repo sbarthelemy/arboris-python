@@ -15,7 +15,7 @@ try:
 except ImportError:
     pass
 
-version = '0.1.0pre4'
+version = '0.1.0pre5'
 readme = open('README.txt', 'r')
 
 setup(name='arboris',
