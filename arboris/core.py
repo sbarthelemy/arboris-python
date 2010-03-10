@@ -261,7 +261,7 @@ class JointsList(NamedObjectsList):
 class Constraint(NamedObject):
     __metaclass__ = ABCMeta
 
-    def __init__(self, frames, name=None):
+    def __init__(self, name=None):
         NamedObject.__init__(self, name)
 
     @abstractmethod

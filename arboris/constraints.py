@@ -8,7 +8,7 @@ from abc import ABCMeta, abstractmethod
 from numpy import array, zeros, eye, dot, hstack, diag, logical_and
 from numpy.linalg import solve, eigvals, pinv
 import arboris.homogeneousmatrix as Hg
-from arboris.core import MovingSubFrame, Constraint, Shape, NamedObject, World
+from arboris.core import MovingSubFrame, Constraint, Shape, World
 
 point_contact_proximity = 0.02
 joint_limits_proximity = 0.01
@@ -33,13 +33,12 @@ class JointLimits(Constraint):
     
     """
 
-    def __init__(self, joint, min, max, proximity=None, 
-                 name=None):
+    def __init__(self, joint, min, max, proximity=None, name=None):
         from arboris.joints import LinearConfigurationSpaceJoint
         if not isinstance(joint, LinearConfigurationSpaceJoint):
             raise ValueError()
+        Constraint.__init__(self, name)
         self._joint = joint
-        NamedObject.__init__(self, name)
         self._min = array(min).reshape((joint.ndof,))
         self._max = array(max).reshape((joint.ndof,))
         if proximity is None:
@@ -153,7 +152,7 @@ class BallAndSocketConstraint(Constraint):
     def __init__(self, frames, name=None):
         self._force = zeros(3)
         self._pos0 = None
-        NamedObject.__init__(self, name)
+        Constraint.__init__(self, name)
         self._frames = frames
 
     def init(self, world):
@@ -257,9 +256,10 @@ class PointContact(Constraint):
 
     """
 
-    def __init__(self, shapes, collision_solver, proximity):
+    def __init__(self, shapes, collision_solver, proximity, name):
         assert isinstance(shapes[0], Shape)
         assert isinstance(shapes[1], Shape)
+        Constraint.__init__(self, name)
         if collision_solver is None:
             # automatically find the collision solver
             from arboris.collisions import choose_solver
@@ -417,8 +417,7 @@ class SoftFingerContact(PointContact):
     def __init__(self, shapes, friction_coeff, collision_solver=None,
                  proximity=0.02, name=None):
         self._mu = friction_coeff
-        PointContact.__init__(self, shapes, collision_solver, proximity)
-        NamedObject.__init__(self, name)
+        PointContact.__init__(self, shapes, collision_solver, proximity, name)
         self._force = zeros(4)
         self._eps = array((1., 1., 1.))
 
