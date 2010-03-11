@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
+__author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from arboris.core import Controller, World
 from numpy import array, zeros, dot, ix_

@@ -1,7 +1,7 @@
 # coding=utf-8
 """Check which modules are availlable."""
 
-__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
+__author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 def optional_modules():
     """A list of optional modules which are available."""

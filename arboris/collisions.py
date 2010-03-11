@@ -3,7 +3,7 @@
 
 """
 
-__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
+__author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from numpy.linalg import norm
 from numpy import zeros, eye, absolute, argsort, cross, argmin, \

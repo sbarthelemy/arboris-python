@@ -1,7 +1,7 @@
 # coding=utf-8
 """Different kinds of joints"""
 
-__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
+__author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from numpy import array, zeros, eye, sin, cos, dot
 import arboris.homogeneousmatrix

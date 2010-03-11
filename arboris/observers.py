@@ -1,7 +1,7 @@
 #coding=utf-8
 """A set of Observers.
 """
-__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>",
+__author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>",
               "Joseph SALINI <joseph.salini@gmail.com>")
 import arboris.core
 from abc import ABCMeta, abstractmethod, abstractproperty

@@ -4,7 +4,7 @@
 
 This is meant for interactive use.
 """
-__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
+__author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from arboris import *
 from arboris.controllers import WeightController, \

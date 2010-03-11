@@ -19,7 +19,7 @@ parents, for instance when the same geometry is displayed at several places
 (this saves memory).
 
 """
-__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>",
+__author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>",
               "Joseph SALINI <joseph.salini@gmail.com>")
 
 import osg, osgDB, osgGA, osgViewer, osgText, osgUtil

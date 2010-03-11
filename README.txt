@@ -25,7 +25,7 @@ In 2005, Alain Micaelli, a researcher from CEA LIST, wrote a first version of
 the simulator in the matlab language. It was an implementation (and often an
 extension) of the algorithms described in [Park2005]_, [Murray1994]_ and
 [Liu2003]_.
-He was later joined by Sébastien Barthélemy, from ISIR/UPMC, who reorganized 
+He was later joined by Sébastien Barthélemy, from ISIR/UPMC, who reorganized
 the code to take advantage of the early object-oriented features of matlab.
 It eventually became clear that the language was ill-designed, and that a full
 rewrite was necessary. With the help of Joseph Salini, also from ISIR/UPMC,
@@ -46,9 +46,9 @@ The matlab version of the simulator is now deprecated.
 
 .. [Liu2003]
     T. Liu and M. Y. Wang, 
-    “Computation of three dimensional rigid body dynamics of 
-    multiple contacts using time-stepping and Gauss-Seidel 
-    method”, 
+    "Computation of three dimensional rigid body dynamics of
+    multiple contacts using time-stepping and Gauss-Seidel
+    method",
     IEEE Transaction on Automation Science and Engineering, 
     submitted, November 2003.
 

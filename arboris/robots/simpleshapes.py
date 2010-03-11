@@ -3,7 +3,7 @@
 """
 This module builds worlds composed of a single shape.
 """
-__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
+__author__ = (u"Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
 from arboris.joints import FreeJoint
 from arboris.shapes import Sphere, Box, Cylinder

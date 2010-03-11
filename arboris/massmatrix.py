@@ -2,7 +2,7 @@
 """Functions for working with mass matrices.
 """
 
-__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
+__author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 import arboris.homogeneousmatrix as Hg
 from numpy import diag, eye, dot, array

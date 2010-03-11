@@ -2,7 +2,7 @@
 
 """Constraints solvers, used in the Gauss-Seidel solver."""
 
-__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
+__author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from numpy import array, zeros, eye, dot, hstack, diag, logical_and
 from numpy.linalg import solve, eigvals, pinv

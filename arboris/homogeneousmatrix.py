@@ -1,7 +1,7 @@
 # coding=utf-8
 """Functions for working with homogeneous matrices."""
 
-__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
+__author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from numpy import array, zeros, sin, cos, dot, hstack, vstack
 import numpy

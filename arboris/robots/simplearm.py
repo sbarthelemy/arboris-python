@@ -8,7 +8,7 @@ t06_ConstructionRobot.m tutorial from matlab-arboris.
 
 When ran as a script, the module shows the robot in motion.
 """
-__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
+__author__ = (u"Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
 from arboris.core import World, Body, SubFrame
 import numpy as np

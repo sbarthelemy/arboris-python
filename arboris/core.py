@@ -20,7 +20,7 @@ One or more frames (instances of the :class:`SubFrame` class) can be associated
 to bodies and serve as anchor points to the joints.
 
 """
-__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
+__author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from numpy import array, zeros, eye, dot
 import numpy

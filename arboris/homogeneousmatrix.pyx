@@ -3,7 +3,7 @@
 Functions for working with homogeneous matrices.
 
 """
-__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
+__author__ = (u"Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
 from misc_c cimport asym, sin, cos
 import numpy

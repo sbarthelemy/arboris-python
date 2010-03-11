@@ -1,7 +1,7 @@
 # coding=utf-8
 """Geometric shapes, for use in collision detection."""
 
-__author__ = ("Sébastien BARTHÉLEMY <barthelemy@crans.org>")
+__author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from arboris.core import Shape
 

@@ -6,7 +6,7 @@ This module builds a planar snake robot.
 
 When ran as a script, the module shows the robot in motion.
 """
-__author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
+__author__ = (u"Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
 from arboris.core import World, Body, SubFrame
 from arboris.massmatrix import transport, cylinder, box
