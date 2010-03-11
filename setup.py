@@ -67,7 +67,7 @@ setup(name='arboris',
       version=get_version(),
       maintainer='S√©bastien BARTH√âLEMY',
       maintainer_email='barthelemy@crans.org',
-      url='https://vizir.robot.jussieu.fr/trac/arboris',
+      url='http://chronos.isir.upmc.fr/~barthelemy',
       description=
               'A rigid body dynamics and contacts simulator written in python.',
       long_description=readme.read(),
