@@ -284,7 +284,7 @@ class Constraint(NamedObject):
 
     @abstractproperty
     def ndol(self):
-        """Number of degrees of "liaison" 
+        u"""Number of degrees of "liaison"
         
         In french: *nombre de degrés de liaison*. This is equal to (6 - ndof).
         """
