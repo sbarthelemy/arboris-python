@@ -54,5 +54,5 @@ The matlab version of the simulator is now deprecated.
 
 .. [Duindam2006] 
     V. Duindam, 
-    "Port-Based Modelling and Control for  Efficent Bipedal Walking Robots",
+    "Port-Based Modelling and Control for Efficent Bipedal Walking Robots",
     University of Twente, 2006.
