@@ -68,3 +68,11 @@ Eventually, when Joe issues a new pull, everything gets merged gracefully::
 
   joe@joe-laptop$ git pull
 
+Using pylint
+============
+
+One can run `Pylint <http://www.logilab.org/857>`_ to look for coding style
+violations etc.::
+
+  pylint --rcfile=.pylintrc -f html arboris/ > pylint_report.html
+

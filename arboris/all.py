@@ -6,7 +6,10 @@ This is meant for interactive use.
 """
 __author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
-from arboris import *
+#pylint: disable-msg=W0611
+#pylint: disable-msg=W0614
+
+from arboris import * #pylint: disable-msg=W0401
 from arboris.controllers import WeightController, \
                                 ProportionalDerivativeController
 from arboris.core import World, Body, Joint, JointsList, NamedObjectsList, \
