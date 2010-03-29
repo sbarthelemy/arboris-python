@@ -27,6 +27,7 @@ class Cylinder(Shape):
     A cylinder, whose symmetry axis is along the z-axis.
     """
     def __init__(self, frame, length=1., radius=1., name=None):
+        assert radius >= 0.
         Shape.__init__(self, frame, name)
         self.radius = radius
         self.length = length
@@ -37,6 +38,7 @@ class Sphere(Shape):
     A sphere.
     """
     def __init__(self, frame, radius=1., name=None):
+        assert radius >= 0.
         Shape.__init__(self, frame, name)
         self.radius = radius
 
