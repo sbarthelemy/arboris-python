@@ -111,16 +111,12 @@ def sphere_point_collision(shapes):
                                     0.)
 
 def box_sphere_collision(shapes):
-    """
-
-
-    """
     assert isinstance(shapes[0], Box)
     assert isinstance(shapes[1], Sphere)
     return _box_sphere_collision(shapes[0].frame.pose,
-                                    shapes[0].half_extents,
-                                    shapes[1].frame.pose[0:3, 3],
-                                    shapes[1].radius)
+                                 shapes[0].half_extents,
+                                 shapes[1].frame.pose[0:3, 3],
+                                 shapes[1].radius)
 
 def box_point_collision(shapes):
     """
@@ -187,8 +183,8 @@ def _box_sphere_collision(H_g0, half_extents0, p_g1, radius1):
     """
     :param H_g0: pose of the box `H_{g0}`
     :type H_g0: (4,4) array
-    :param lengths0: lengths of the box
-    :type lengths0: (3,) array
+    :param half_extents0: half lengths of the box
+    :type half_extents0: (3,) array
     :param p_g1: center of the sphere
     :type p_g1: (3,) array 
     :param radius1: radius of the sphere
