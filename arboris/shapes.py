@@ -4,6 +4,30 @@
 __author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from arboris.core import Shape
+import numpy
+import numpy.linalg
+
+class Plane(Shape):
+    """
+    A plane.
+
+    A plane defined by the equation `a x + b y + c z + d = 0`, in the ``frame``
+    coordinates.
+
+    :param frame: the frame the shape is attached to
+    :type frame: :class:`arboris.frame`
+    :param coeffs: coefficients `(a, b, c, d)` for the plane equation
+    :type coeffs: (4,) array of floats
+    :param name: the shape's name
+    :type name: string
+
+    """
+    def __init__(self, frame, coeffs=(0., 1., 0., 0.), name=None):
+        Shape.__init__(self, frame, name)
+        # normalize the plane normal
+        coeffs = numpy.array(coeffs)
+        n = numpy.linalg.norm(coeffs[0:3])
+        self.coeffs = coeffs/n
 
 class Point(Shape):
     """

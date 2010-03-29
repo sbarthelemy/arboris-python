@@ -6,7 +6,7 @@ This module builds worlds composed of a single shape.
 __author__ = (u"Sébastien BARTHÉLEMY <sebastien.barthelemy@gmail.com>")
 
 from arboris.joints import FreeJoint
-from arboris.shapes import Sphere, Box, Cylinder
+from arboris.shapes import Sphere, Box, Cylinder, Plane
 from arboris.core import World, Body, SubFrame
 from arboris.homogeneousmatrix import transl
 import arboris.massmatrix as massmatrix
@@ -68,8 +68,9 @@ def add_cylinder(world, length=1., radius=1., mass=1., name='Cylinder'):
     world.init()
     
     
-def add_groundplane(w, half_extents=(1., .1, 1.) ):
-    """Add a ground plane using a box shape.
+def add_groundplane(world):
+    """Add a ground plane using a plane shape.
     """
-    frame = SubFrame(w.ground, transl(0., -half_extents[1], 0.) )
-    w.register(Box(frame, half_extents, 'Ground shape'))
+    coeffs = list(world.up)
+    coeffs.append(0.)
+    world.register(Plane(world.ground, coeffs, 'Ground shape'))

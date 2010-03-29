@@ -1,6 +1,5 @@
 from arboris.all import *
 from numpy import arange, dot, eye, sqrt
-from itertools import ifilter
 
 batch = True
 t_end = 1e-2
@@ -11,7 +10,7 @@ else:
     from arboris.visu_osg import Drawer
     observers = [Drawer(w)]
 
-add_groundplane(w, half_extents=(3., 0.01, 2.) )
+add_groundplane(w)
 add_human36(w)
 
 # set initial position

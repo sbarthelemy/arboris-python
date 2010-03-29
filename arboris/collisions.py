@@ -25,6 +25,9 @@ def choose_solver(shape0, shape1):
         elif isinstance(shape1, Point):
             shapes = (shape0, shape1)
             solver = sphere_point_collision
+        elif isinstance(shape1, Plane):
+            shapes = (shape1, shape0)
+            solver = plane_sphere_collision
         elif isinstance(shape1, Box):
             shapes = (shape1, shape0)
             solver = box_sphere_collision
@@ -34,9 +37,18 @@ def choose_solver(shape0, shape1):
         if isinstance(shape1, Sphere):
             shapes = (shape1, shape0)
             solver = sphere_point_collision
-        elif isinstance(shape1, Box):
+        elif isinstance(shape1, Plane):
             shapes = (shape1, shape0)
-            solver = box_point_collision
+            solver = plane_point_collision
+        else:
+            raise NotImplementedError()
+    elif isinstance(shape0, Plane):
+        if isinstance(shape1, Sphere):
+            shapes = (shape0, shape1)
+            solver = plane_sphere_collision
+        elif isinstance(shape1, Point):
+            shapes = (shape0, shape1)
+            solver = plane_point_collision
         else:
             raise NotImplementedError()
     elif isinstance(shape0, Box):
@@ -82,16 +94,21 @@ def box_sphere_collision(shapes):
                                  shapes[1].frame.pose[0:3, 3],
                                  shapes[1].radius)
 
-def box_point_collision(shapes):
-    """
+def plane_sphere_collision(shapes):
+    assert isinstance(shapes[0], Plane)
+    assert isinstance(shapes[1], Sphere)
+    return _plane_sphere_collision(shapes[0].frame.pose,
+                                   shapes[0].coeffs,
+                                   shapes[1].frame.pose[0:3, 3],
+                                   shapes[1].radius)
 
-    """
-    assert isinstance(shapes[0], Box)
+def plane_point_collision(shapes):
+    assert isinstance(shapes[0], Plane)
     assert isinstance(shapes[1], Point)
-    return _box_sphere_collision(shapes[0].frame.pose,
-                                    shapes[0].half_extents,
-                                    shapes[1].frame.pose[0:3, 3],
-                                    0.)
+    return _plane_sphere_collision(shapes[0].frame.pose,
+                                   shapes[0].coeffs,
+                                   shapes[1].frame.pose[0:3, 3],
+                                   0.)
 
 def _sphere_sphere_collision(p_g0, radius0, p_g1, radius1):
     """
@@ -141,6 +158,51 @@ def _sphere_sphere_collision(p_g0, radius0, p_g1, radius1):
     H_gc1[0:3,3] += sdist*z
     return (sdist, H_gc0, H_gc1)
 
+def _plane_sphere_collision(H_g0, coeffs0, p_g1, radius1):
+    """
+    :param H_g0: pose of the plane `H_{g0}`
+    :type H_g0: (4,4) array
+    :param coeffs0: coefficients from the plane equation
+    :type coeffs0: (4,) array
+    :param p_g1: center of the sphere
+    :type p_g1: (3,) array
+    :param radius1: radius of the sphere
+    :type radius1: float
+
+    **Tests:**
+
+    >>> from numpy import array, eye
+    >>> H_g0 = eye(4)
+    >>> coeffs0 = array([0., 1., 0., -5.])
+    >>> r1 = 0.1
+    >>> p_g1 = array([2., 4., 3.])
+    >>> (sdist, H_gc0, H_gc1) = _plane_sphere_collision(H_g0, coeffs0, p_g1, r1)
+    >>> print sdist
+    8.9
+    >>> print H_gc0
+    [[ 0.  1.  0.  2.]
+     [-0.  0.  1. -5.]
+     [ 1. -0.  0.  3.]
+     [ 0.  0.  0.  1.]]
+    >>> print H_gc1
+    [[ 0.   1.   0.   2. ]
+     [-0.   0.   1.   3.9]
+     [ 1.  -0.   0.   3. ]
+     [ 0.   0.   0.   1. ]]
+
+    """
+    assert Hg.ishomogeneousmatrix(H_g0)
+    assert norm(coeffs0[0:3]) == 1.
+    assert radius1 >= 0.
+    normal = coeffs0[0:3] # the plane normal
+    p_01 = Hg.pdot(Hg.inv(H_g0), p_g1)
+    csdist = dot(normal, p_01) - coeffs0[3] # signed distance from the center
+    sdist = csdist - radius1
+    H_gc0 = _normal_to_frame(normal)
+    H_gc0[0:3,3] = p_01 - csdist * normal
+    H_gc1 = H_gc0.copy()
+    H_gc1[0:3,3] = p_01 - sign(sdist) * radius1 * normal
+    return (sdist, H_gc0, H_gc1)
 
 def _box_sphere_collision(H_g0, half_extents0, p_g1, radius1):
     """
@@ -235,6 +297,4 @@ def _box_sphere_collision(H_g0, half_extents0, p_g1, radius1):
     H_gc0[0:3, 3] = f_g
     H_gc1[0:3, 3] = p_g1 - radius1*normal
     return (sdist, H_gc0, H_gc1)
-
-
 
