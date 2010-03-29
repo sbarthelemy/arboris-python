@@ -185,7 +185,7 @@ def _sphere_sphere_collision(p_g0, radius0, p_g1, radius1):
 
 def _box_sphere_collision(H_g0, half_extents0, p_g1, radius1):
     """
-    :param H_g0: pose of the box `H_{g1}`
+    :param H_g0: pose of the box `H_{g0}`
     :type H_g0: (4,4) array
     :param lengths0: lengths of the box
     :type lengths0: (3,) array
