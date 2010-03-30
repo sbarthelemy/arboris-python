@@ -1,36 +1,56 @@
+import unittest
+from arboristest import TestCase
 from arboris.all import *
-from numpy import arange, dot, eye, sqrt
+import numpy
 
 batch = True
-t_end = 1e-2
-w = World()
-if batch:
-    observers = []
-else:
-    from arboris.visu_osg import Drawer
-    observers = [Drawer(w)]
 
-add_groundplane(w)
-add_human36(w)
+class Human36FallingTestCase(TestCase):
+    """Check if joint limits are enforced on a simplearm under grabity."""
 
-# set initial position
-w.ground.childrenjoints[0].gpos = dot(
-        homogeneousmatrix.transl(0,0.03,0), w.ground.childrenjoints[0].gpos)
-# add weight
-w.register(WeightController())
+    def setUp(self):
+        d = numpy
+        t_end = 20e-2
+        dt = 5e-3
+        self.world = World()
+        if batch:
+            observers = []
+        else:
+            observers = [visu_osg.Drawer(self.world)]
+        add_groundplane(self.world)
+        add_human36(self.world)
+        # set initial position
+        self.world.ground.childrenjoints[0].gpos = numpy.dot(
+                homogeneousmatrix.transl(0,0.03,0),
+                self.world.ground.childrenjoints[0].gpos)
+        # add weight
+        self.world.register(controllers.WeightController())
 
-# add a (single) PD Controller to all the simple joints
-ljoints = filter(
-        lambda x: isinstance(x, core.LinearConfigurationSpaceJoint),
-        w.iterjoints());
-n = len(JointsList(ljoints).dof)
-kp = 0.1*eye(n)
-c = ProportionalDerivativeController(ljoints, kp=kp, kd=2.*sqrt(kp))
+        # add a (single) PD Controller to all the simple joints
+        ljoints = filter(
+                lambda x: isinstance(x, core.LinearConfigurationSpaceJoint),
+                self.world.iterjoints());
+        n = len(JointsList(ljoints).dof)
+        kp = 0.1*numpy.eye(n)
+        c = ProportionalDerivativeController(ljoints, kp=kp, kd=2.*numpy.sqrt(kp))
+        # add contacts
+        shapes = self.world.getshapes()
+        self.contact_frames = []
+        for c in constraints.get_all_contacts(self.world, friction_coeff=.6):
+            self.world.register(c)
+            # find the contact frame attached to the foot (and not the ground)
+            if c._frames[0].body.name.startswith('Foot'):
+                self.contact_frames.append(c._frames[0])
+            else:
+                self.contact_frames.append(c._frames[1])
+        # run the simulation
+        timeline = arange(0., t_end, dt)
+        simulate(self.world, timeline, observers)
 
-# add contacts
-shapes=w.getshapes()
-for c in constraints.get_all_contacts(w, friction_coeff=.6):
-    w.register(c)
-timeline = arange(0., t_end, 5e-3)
-simulate(w, timeline, observers)
+    def runTest(self):
+        # ensure contact points are still above the ground
+        for f in self.contact_frames:
+            self.assertTrue(f.pose[1,3] >= 0.)
 
+if __name__ == '__main__':
+    unittest.main()
