@@ -9,7 +9,7 @@ from arboris.core import simplearm, simulate, Body, World
 from arboris.joints import FreeJoint
 
 class JointLimitsTestCase(TestCase):
-    """Check if joint limits are enforced on a simplearm under grabity."""
+    """Check if joint limits are enforced on a simplearm under gravity."""
     def setUp(self):
         self.world = simplearm()
         a = WeightController()
