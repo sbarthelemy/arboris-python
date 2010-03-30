@@ -514,7 +514,7 @@ class Drawer(arboris.core.Observer):
                         osg.Cylinder(osg.Vec3(0.,0.,0.),
                                      obj.radius, obj.length))
                 else:
-                    raise NotImplemented("Cannot draw this shape")
+                    raise NotImplementedError('Cannot draw "{0}"'.format(obj))
                 shape.setColor(color)
                 switch = osg.Switch()
                 geode =  osg.Geode()
@@ -526,7 +526,7 @@ class Drawer(arboris.core.Observer):
                 isinstance(obj, arboris.core.Controller):
                 pass
             else:
-                raise NotImplemented(obj)
+                raise NotImplementedError('Cannot draw "{0}"'.format(obj))
 
     def init(self, world, timeline):
         self._world.update_geometric() #TODO find a way to remove this
