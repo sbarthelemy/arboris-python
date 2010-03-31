@@ -314,11 +314,12 @@ def graphic_options(scale=1.):
         'frame alpha': 1.,
         'link radius': 0.004 * scale,
         'point radius': 0.008 * scale,
+        'plane half extents': (1. * scale, 1. * scale),
         'text size': 0.1 * scale,
         'body palette': body_palette,
         'fullscreen': False,
-        'window size': (800,600),
-        'window position': (0,0),
+        'window size': (800, 600),
+        'window position': (0, 0),
         'center of interest': (0., 0., 0.),
         'camera position': (3.,3.,3.),
         'force length': 0.1 * scale,
@@ -498,24 +499,58 @@ class Drawer(arboris.core.Observer):
                 t.addChild(self._generic_force)
             elif isinstance(obj, arboris.core.Shape):
                 color = self._choose_color(obj.frame.body)
-                if isinstance(obj, arboris.shapes.Sphere):
-                    shape = osg.ShapeDrawable(
-                        osg.Sphere(osg.Vec3(0.,0.,0.), obj.radius))
-                elif isinstance(obj, arboris.shapes.Point):
-                    shape = osg.ShapeDrawable(
-                        osg.Sphere(osg.Vec3(0.,0.,0.), 
-                                   self._options['point radius']))
-                elif isinstance(obj, arboris.shapes.Box):
-                    shape = osg.ShapeDrawable(
-                        osg.Box(osg.Vec3(0.,0.,0.), obj.half_extents[0]*2., 
-                                obj.half_extents[1]*2, obj.half_extents[2]*2))
-                elif isinstance(obj, arboris.shapes.Cylinder):
-                    shape = osg.ShapeDrawable(
-                        osg.Cylinder(osg.Vec3(0.,0.,0.),
-                                     obj.radius, obj.length))
+                if isinstance(obj, arboris.shapes.Plane):
+                    # instead of drawing an infinite plane, we draw a finite
+                    # square.
+                    from arboris.collisions import _normal_to_frame
+                    dx, dy = opts['plane half extents']
+                    points = [(-dx, dy, 0),
+                              (-dx, -dy, 0),
+                              (dx, -dy, 0),
+                              (dx, dy, 0)]
+                    H = _normal_to_frame(obj.coeffs[0:3])
+                    origin = obj.coeffs[3]*obj.coeffs[0:3]
+                    vertices = osg.Vec3Array()
+                    for point in points:
+                        vertex = origin + dot(H[0:3, 0:3], point)
+                        vertices.push_back(osg.Vec3(vertex[0],
+                                                    vertex[1],
+                                                    vertex[2]))
+                    shape = osg.Geometry()
+                    shape.setVertexArray(vertices)
+                    face = osg.DrawElementsUInt(osg.PrimitiveSet.QUADS,0)
+                    face.push_back(3)
+                    face.push_back(2)
+                    face.push_back(1)
+                    face.push_back(0)
+                    shape.addPrimitiveSet(face)
+                    colors = osg.Vec4Array()
+                    colors.push_back(osg.Vec4(color[0],
+                                              color[1],
+                                              color[2],
+                                              color[3]))
+                    shape.setColorArray(colors)
+                    shape.setColorBinding(osg.Geometry.BIND_OVERALL)
                 else:
-                    raise NotImplementedError('Cannot draw "{0}"'.format(obj))
-                shape.setColor(color)
+                    if isinstance(obj, arboris.shapes.Sphere):
+                        shape = osg.ShapeDrawable(
+                            osg.Sphere(osg.Vec3(0.,0.,0.), obj.radius))
+                    elif isinstance(obj, arboris.shapes.Point):
+                        shape = osg.ShapeDrawable(
+                            osg.Sphere(osg.Vec3(0.,0.,0.),
+                                       self._options['point radius']))
+                    elif isinstance(obj, arboris.shapes.Box):
+                        shape = osg.ShapeDrawable(
+                            osg.Box(osg.Vec3(0.,0.,0.), obj.half_extents[0]*2.,
+                                    obj.half_extents[1]*2, obj.half_extents[2]*2))
+                    elif isinstance(obj, arboris.shapes.Cylinder):
+                        shape = osg.ShapeDrawable(
+                            osg.Cylinder(osg.Vec3(0.,0.,0.),
+                                         obj.radius, obj.length))
+                    else:
+                        raise NotImplementedError(
+                                'Cannot draw "{0}"'.format(obj))
+                    shape.setColor(color)
                 switch = osg.Switch()
                 geode =  osg.Geode()
                 geode.addDrawable(shape)
