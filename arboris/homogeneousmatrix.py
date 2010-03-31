@@ -198,6 +198,39 @@ def rotz(angle):
          [ 0,   0, 0, 1]])
     return H
 
+def zaligned(vec):
+    """Returns an homogeneous matrix whose z-axis is colinear vith `vec`.
+
+    :param vec: input vector, assumed to be normalized
+    :type vec: (3,) array
+    :return: homogeneous matrix of the frame
+    :rtype: (4,4) array
+
+    **Example:**
+
+    >>> zaligned((1.,0.,0.))
+    array([[-0.,  0.,  1.,  0.],
+           [ 0., -1.,  0.,  0.],
+           [ 1.,  0.,  0.,  0.],
+           [ 0.,  0.,  0.,  1.]])
+
+    """
+    assert numpy.abs(numpy.linalg.norm(vec)-1) < 1e-9
+    H = numpy.eye(4)
+    x = H[0:3, 0]
+    y = H[0:3, 1]
+    z = H[0:3, 2]
+    # z-axis, normal to the tangent plane:
+    z[:] = vec
+    idx = numpy.argsort(numpy.absolute(z))
+    # x axis, normal to z-axis
+    x[idx[0]] = 0
+    x[idx[1]] = z[idx[2]]
+    x[idx[2]] = -z[idx[1]]
+    x /= numpy.linalg.norm(x)
+    y[:] = numpy.cross(z, x)
+    return H
+
 def ishomogeneousmatrix(H, tol=tol):
     """
     Return true if input is an homogeneous matrix

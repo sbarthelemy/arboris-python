@@ -6,8 +6,7 @@
 __author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 from numpy.linalg import norm
-from numpy import zeros, eye, absolute, argsort, cross, argmin, \
-    hstack
+from numpy import zeros, argmin, hstack, dot, sign
 import arboris.homogeneousmatrix as Hg
 from arboris.core import Shape
 from arboris.shapes import *
@@ -52,41 +51,6 @@ def choose_solver(shape0, shape1):
     else:
         raise NotImplementedError()
     return (shapes, solver)
-
-
-def _normal_to_frame(vec):
-    """Builds a direct frame whose z-axis is vec.
-
-    :param vec: input 
-    :type vec: (3,) array
-    :return: homogeneous matrix of the frame
-    :rtype: (4,4) array
-
-    **Examples:**
-    >>> from numpy import array
-    >>> _normal_to_frame(array([1.,0.,0.]))
-    array([[-0.,  0.,  1.,  0.],
-           [ 0., -1.,  0.,  0.],
-           [ 1.,  0.,  0.,  0.],
-           [ 0.,  0.,  0.,  1.]])
-
-    """
-    assert abs(norm(vec)-1) < 1e-9
-    H = eye(4)
-    x = H[0:3, 0]
-    y = H[0:3, 1]
-    z = H[0:3, 2]
-    # z-axis, normal to the tangent plane:
-    z[:] = vec
-    idx = argsort(absolute(z))
-    # x axis, normal to z-axis
-    x[idx[0]] = 0
-    x[idx[1]] = z[idx[2]]
-    x[idx[2]] = -z[idx[1]]
-    x /= norm(x)
-    y[:] = cross(z, x)
-    return H
-
 
 def sphere_sphere_collision(shapes):
     """
@@ -170,13 +134,12 @@ def _sphere_sphere_collision(p_g0, radius0, p_g1, radius1):
     vec = p_g1 - p_g0
     sdist = norm(vec) - radius0 - radius1
     normal = vec/norm(vec)
-    H_gc0 = _normal_to_frame(normal)
+    H_gc0 = Hg.zaligned(normal)
     z = H_gc0[0:3, 2]
     H_gc0[0:3, 3] = p_g0 + radius0*z
     H_gc1 = H_gc0.copy()
     H_gc1[0:3,3] += sdist*z
     return (sdist, H_gc0, H_gc1)
-
 
 
 def _box_sphere_collision(H_g0, half_extents0, p_g1, radius1):
@@ -267,7 +230,7 @@ def _box_sphere_collision(H_g0, half_extents0, p_g1, radius1):
         vec = p_g1 - f_g
         normal = vec/norm(vec)
         sdist = norm(vec) - radius1
-    H_gc0 = _normal_to_frame(normal)
+    H_gc0 = Hg.zaligned(normal)
     H_gc1 = H_gc0.copy()
     H_gc0[0:3, 3] = f_g
     H_gc1[0:3, 3] = p_g1 - radius1*normal
