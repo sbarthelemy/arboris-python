@@ -198,7 +198,7 @@ def _plane_sphere_collision(H_g0, coeffs0, p_g1, radius1):
     p_01 = Hg.pdot(Hg.inv(H_g0), p_g1)
     csdist = dot(normal, p_01) - coeffs0[3] # signed distance from the center
     sdist = csdist - radius1
-    H_gc0 = _normal_to_frame(normal)
+    H_gc0 = Hg.zaligned(normal)
     H_gc0[0:3,3] = p_01 - csdist * normal
     H_gc1 = H_gc0.copy()
     H_gc1[0:3,3] = p_01 - sign(sdist) * radius1 * normal
