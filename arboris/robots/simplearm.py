@@ -14,77 +14,65 @@ from arboris.core import World, Body, SubFrame
 import numpy as np
 import arboris.homogeneousmatrix as Hg
 import arboris.massmatrix
+import arboris.shapes
 from arboris.joints import RzJoint
 
 def add_simplearm(world, name='', lengths=(0.5 ,0.4 , 0.2),
-                  masses=(1.0, 0.8, 0.2)):
+                  masses=(1.0, 0.8, 0.2), with_shapes=False):
     """Build a  planar 3-R robot.
 
-    TODO: make use of the ``name`` input argument to prefix bodies and joints names
+    ***Example:***
 
-    Example:
-
-        >>> w = World()
-        >>> add_simplearm(w)
-        >>> w.update_dynamic()
+    >>> w = World()
+    >>> add_simplearm(w)
+    >>> w.update_dynamic()
 
     """
     assert isinstance(world, World)
-    w = world
-    arm_length = lengths[0]
-    arm_mass = masses[0]
-    forearm_length = lengths[1]
-    forearm_mass = masses[1]
-    hand_length = lengths[2]
-    hand_mass = masses[2]
 
-    # create bodies
-    arm = Body(
-        name=name+'Arm',
-        mass=arboris.massmatrix.transport(
-            arboris.massmatrix.box(
-                (arm_length/20., arm_length/2., arm_length/20.),
-                arm_mass),
-            Hg.transl(0., -arm_length/2., 0.)))
-    forearm = Body(
-        name=name+'ForeArm',
-        mass=arboris.massmatrix.transport(
-            arboris.massmatrix.box(
-                (forearm_length/20., forearm_length/2., forearm_length/20.),
-                forearm_mass),
-            Hg.transl(0., -forearm_length/2., 0.)))
-    hand = Body(
-        name=name+'Hand',
-        mass=arboris.massmatrix.transport(
-            arboris.massmatrix.box(
-                (hand_length/20., -hand_length/2., hand_length/20.),
-                hand_mass),
-            Hg.transl(0., -hand_length/2., 0.)))
+    def create_body(name, length, mass):
+        """create a body"""
+        half_extents = (length/20., length/2., length/20.)
+        mass_matrix_at_com = arboris.massmatrix.box(half_extents, mass)
+        mass_matrix_at_base = arboris.massmatrix.transport(
+                mass_matrix_at_com,
+                Hg.transl(0., -length/2., 0.))
+        body = Body(name, mass_matrix_at_base)
+        if with_shapes:
+            f = SubFrame(body, Hg.transl(0., length/2., 0.))
+            shape = arboris.shapes.Box(f, half_extents)
+            world.register(shape)
+        return body
+
+    # create the 3 bodies
+    arm = create_body(name+'Arm', lengths[0], masses[0])
+    forearm = create_body(name+'ForeArm', lengths[1], masses[1])
+    hand = create_body(name+'Hand', lengths[2], masses[2])
 
     # create a joint between the ground and the arm
     shoulder = RzJoint(name=name+'Shoulder')
-    w.add_link(w.ground, shoulder, arm)
+    world.add_link(world.ground, shoulder, arm)
     
     # add a frame to the arm, where the forearm will be anchored
     f = SubFrame(arm,
-        Hg.transl(0, arm_length, 0),
+        Hg.transl(0, lengths[0], 0),
         name+'ElbowBaseFrame')
 
     # create a joint between the arm and the forearm
     elbow = RzJoint(name=name+'Elbow')
-    w.add_link(f, elbow, forearm)
+    world.add_link(f, elbow, forearm)
 
     # add a frame to the forearm, where the hand will be anchored
     f = SubFrame(forearm,
-        Hg.transl(0, forearm_length, 0),
+        Hg.transl(0, lengths[1], 0),
         name+'WristBaseFrame')
 
     # create a joint between the forearm and the hand
     wrist = RzJoint(name=name+'Wrist')
-    w.add_link(f, wrist, hand)
+    world.add_link(f, wrist, hand)
 
     # create a frame at the end of the hand
-    f = SubFrame(hand, Hg.transl(0, hand_length, 0), name+'EndEffector')
-    w.register(f)
-    w.init()
+    f = SubFrame(hand, Hg.transl(0, lengths[2], 0), name+'EndEffector')
+    world.register(f)
+    world.init()
 
