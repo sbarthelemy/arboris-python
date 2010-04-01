@@ -563,7 +563,8 @@ class World(NamedObject):
                         if not(f in registered) and (frame is f.body):
                             _register_frame_and_children(f)
                 for s in self._shapes:
-                    target.register(s)
+                    if frame is s.frame:
+                        target.register(s)
 
         def _register_constraints():
             for c in self._constraints:
