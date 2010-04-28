@@ -1,8 +1,6 @@
 # coding=utf-8
 """
 This example shows that arboris creates energy.
-
-We can see it many simulations, by toggling:
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
@@ -58,7 +56,4 @@ class EnergyDriftTestCase(TestCase):
  
 if __name__ == '__main__':
     unittest.main()
-
-
-    
 
