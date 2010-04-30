@@ -1,7 +1,7 @@
 # coding=utf-8
 
 from xml.etree.ElementTree import ElementTree, SubElement, Element, Comment
-from numpy import eye, zeros, all, array, ndarray, linspace
+from numpy import eye, zeros, all, array, ndarray, linspace, pi
 from arboris.homogeneousmatrix import inv, rotzyx_angles
 import arboris.core
 import arboris._visu
@@ -124,7 +124,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
                     "1 2 6 7 7 3 2 4 0 3 3 7 4"
             return geom
 
-        self.collada = Element("COLLADA", {"version":"1.4.0",
+        self.collada = Element("COLLADA", {"version":"1.4.1",
                 "xmlns":"http://www.collada.org/2005/11/COLLADASchema"})
         self.collada.append(asset())
         #self.collada.append(self._anim()) #TODO: remove
@@ -205,6 +205,10 @@ class ColladaDriver(arboris._visu.DrawerDriver):
                 rotx = zeros(n)
                 for i in range(n):
                     (rotz[i], roty[i], rotx[i]) = rotzyx_angles(poses[i])
+                coeff = 180./pi
+                rotz *= coeff
+                roty *= coeff
+                rotx *= coeff
                 # generate a data source, a sampler and a channel for each
                 for transform, param_names, data in (
                         ('translate', ('X','Y','Z'), transl),
@@ -245,14 +249,18 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         else:
             node = Element("node")
         if not is_constant:
+            rotz, roty, rotx = rotzyx_angles(pose)
+            coeff = 180./pi
             matrix = SubElement(node, "translate", {'sid':"translate"})
-            matrix.text = "0 0 0"
+            matrix.text = "{0} {1} {2}".format(pose[0, 3],
+                                               pose[1, 3],
+                                               pose[2, 3])
             matrix = SubElement(node, "rotate", {'sid':"rotateZ"})
-            matrix.text = "0 0 1 0.00000"
+            matrix.text = "0 0 1 {0}".format(rotz*coeff)
             matrix = SubElement(node, "rotate", {'sid':"rotateY"})
-            matrix.text = "0 1 0 0.00000"
+            matrix.text = "0 1 0 {0}".format(roty*coeff)
             matrix = SubElement(node, "rotate", {'sid':"rotateX"})
-            matrix.text = "1 0 0 0.00000"
+            matrix.text = "1 0 0 {0}".format(rotx*coeff)
         elif not (pose == eye(4)).all():
             matrix = SubElement(node, "matrix", {'sid':'matrix'})
             matrix.text = str(pose.reshape(-1)).strip('[]')
