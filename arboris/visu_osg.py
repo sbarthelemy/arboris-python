@@ -397,7 +397,7 @@ class _SwitcherHandler(osgGA.GUIEventHandler):
 class OsgObserver(arboris.core.Observer):
 
     def __init__(self):
-        self._drawer = arboris._visu.Drawer(OsgDriver())
+        self._drawer = arboris._visu.Drawer(OsgDriver(), flat=False)
 
     def init(self, world, timeline):
         world.parse(self._drawer)

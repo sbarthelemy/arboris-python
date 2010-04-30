@@ -6,16 +6,17 @@ from arboris.homogeneousmatrix import inv, rotzyx_angles
 import arboris.core
 import arboris._visu
 
-def write_collada_scene(world, dae_filename):
+def write_collada_scene(world, dae_filename, flat=False):
     assert isinstance(world, arboris.core.World)
-    drawer = arboris._visu.Drawer(ColladaDriver(dae_filename))
+    drawer = arboris._visu.Drawer(ColladaDriver(dae_filename), flat)
     world.parse(drawer)
     drawer.finish()
 
-def write_collada_animation(world, dae_filename, hdf5_filename, hdf5_group="/"):
+def write_collada_animation(world, dae_filename, hdf5_filename, hdf5_group="/",
+                            flat=False):
     import h5py
     assert isinstance(world, arboris.core.World)
-    drawer = arboris._visu.Drawer(ColladaDriver(dae_filename))
+    drawer = arboris._visu.Drawer(ColladaDriver(dae_filename), flat)
     world.parse(drawer)
     hdf5_file = h5py.File(hdf5_filename, 'r')
     group = hdf5_file

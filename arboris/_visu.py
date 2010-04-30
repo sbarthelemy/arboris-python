@@ -173,15 +173,17 @@ class Drawer(object):
     TODO : add links
     """
     
-    def __init__(self, driver):
+    def __init__(self, driver, flat=False):
         self.transform_nodes = {}
         self.body_colors = {}
+        self._flat = flat
         # TODO: guess driver
         assert isinstance(driver, DrawerDriver)
         self._driver = driver
     
     def init_parse(self, ground, up, current_time):
-        self.frame_nodes = {ground: self._driver.add_ground(up)}
+        self._ground_node = self._driver.add_ground(up)
+        self.frame_nodes = {ground: self._ground_node}
 
     def _add_frame(self, pose, is_constant, name):
         node = self._driver.create_transform(pose, is_constant, name)
@@ -190,25 +192,74 @@ class Drawer(object):
         return node
 
     def add_link(self, f0, j, f1):
+        """
+        ::
+
+        in arboris::
+
+          f0------>f1
+            j.pose
+
+             f1.pose
+             -------------------->
+          gnd-------->bd1-------->f1
+             bd1.pose    f1.bpose
+
+
+        if not flat and bd1 is a SubFrame instance::
+
+          f0n------>f1n------------->bd1n
+             j.pose    inv(f1.bpose)
+
+        if not flat and f1 is a Body instance::
+
+          f0n------>f1n=bd1n
+             j.pose
+
+        if flat and f1 is a SubFrame instance::
+
+          gndn-------->bd1n-------->f1n
+              bd1.pose     f1.bpose
+
+        if flat and f1 is a Body instance::
+
+          gndn-------->f1n=bd1n
+              bd1.pose
+
+        """
         assert isinstance(f0, arboris.core.Frame)
         assert isinstance(j, arboris.core.Joint)
         assert isinstance(f1, arboris.core.Frame)
         d = self._driver
-        f1_node = self._add_frame(j.pose, False, f1.name)
-        self.frame_nodes[f1] = f1_node
-        d.add_child(self.frame_nodes[f0], f1_node)
-        self.transform_nodes[j] = f1_node
         if isinstance(f1, arboris.core.Body):
             # no need to add a body
-            bd = f1
+            bd1 = f1
+            if self._flat:
+                f1_node = self._add_frame(bd1.pose, False, f1.name)
+                d.add_child(self._ground_node, f1_node)
+            else:
+                f1_node = self._add_frame(j.pose, False, f1.name)
+                d.add_child(self.frame_nodes[f0], f1_node)
+            self.frame_nodes[f1] = f1_node
         elif isinstance(f1, arboris.core.MovingSubFrame):
             # this should never happen
             raise ValueError()
         elif isinstance(f1, arboris.core.SubFrame):
-            bd = f1.body
-            bd_node = self._add_frame(inv(f1.bpose), True, bd.name)
-            self.frame_nodes[bd] = bd_node
-            d.add_child(self.frame_nodes[f1], bd_node)
+            bd1 = f1.body
+            if self._flat:
+                bd1_node = self._add_frame(bd1.pose, False, bd1.name)
+                d.add_child(self.ground_node, bd1_node)
+                f1_node = self._add_frame(f1.bpose, True, f1.name)
+                d.add_child(bd1_node, f1_node)
+            else:
+                f1_node = self._add_frame(j.pose, False, f1.name)
+                d.add_child(self.frame_nodes[f0], f1_node)
+                bd1_node = self._add_frame(inv(f1.bpose), True, bd1.name)
+                d.add_child(f1_node, bd1_node)
+            self.frame_nodes[bd1] = bd1_node
+            self.frame_nodes[f1] = f1_node
+        if not self._flat:
+            self.transform_nodes[j] = f1_node
     
     def register(self, obj):
         if isinstance(obj, arboris.core.SubFrame) and \
