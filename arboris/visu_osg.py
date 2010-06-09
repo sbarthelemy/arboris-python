@@ -612,5 +612,5 @@ class Drawer(arboris.core.Observer):
         return self.viewer.done()
 
     def finish(self):
-        pass
+        del self.viewer
 
