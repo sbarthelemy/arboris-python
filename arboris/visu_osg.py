@@ -502,13 +502,13 @@ class Drawer(arboris.core.Observer):
                 if isinstance(obj, arboris.shapes.Plane):
                     # instead of drawing an infinite plane, we draw a finite
                     # square.
-                    from arboris.collisions import _normal_to_frame
+                    from arboris.homogeneousmatrix import zaligned
                     dx, dy = opts['plane half extents']
                     points = [(-dx, dy, 0),
                               (-dx, -dy, 0),
                               (dx, -dy, 0),
                               (dx, dy, 0)]
-                    H = _normal_to_frame(obj.coeffs[0:3])
+                    H = zaligned(obj.coeffs[0:3])
                     origin = obj.coeffs[3]*obj.coeffs[0:3]
                     vertices = osg.Vec3Array()
                     for point in points:
