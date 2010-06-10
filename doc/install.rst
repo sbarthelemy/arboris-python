@@ -74,18 +74,39 @@ unzip, go in the new directory, then run::
 Installing osgswig
 ------------------
 
-dependancies and tools
+OpenSceneGraph build dependancies::
 
-::
+  sudo aptitude build-depends libopenscenegraph-dev
+  sudo aptitude install subversion build-essential cmake
 
-  sudo aptitude install subversion build-essential cmake swig\
-                        libopenscenegraph-dev python-dev
+Get the code source and compile it (compilation is quite long)::
+
+  svn co \
+  http://www.openscenegraph.org/svn/osg/OpenSceneGraph/tags/OpenSceneGraph-2.9.7
+  cd OpenSceneGraph-2.9.7
+  mkdir build
+  cd build
+  cmake .. -DCMAKE_BUILD_TYPE=Release \
+           -DCMAKE_CXX_FLAGS=-D__STDC_CONSTANT_MACROS \
+           -DBUILD_OSG_WRAPPERS=ON \
+           -DBUILD_OSG_APPLICATIONS=OFF
+  make
+  sudo make install
+
+OSG libraries were installed in ``/usr/local``. Ensure that ``ld`` will find
+them::
+
+  echo $LD_LIBRARY_DIR
+
+OsgSwig dependancies::
+
+  sudo aptitude install swig python-dev
 
 Install the python bindings from sources (inspired by
 `this wiki page <http://code.google.com/p/osgswig/wiki/BuildInstructions>`_)::
 
   cd /tmp
-  svn checkout -r207 http://osgswig.googlecode.com/svn/trunk/ osgswig
+  svn checkout http://osgswig.googlecode.com/svn/trunk/ osgswig
   cd osgswig
   mkdir build
   cd build
@@ -94,6 +115,7 @@ Install the python bindings from sources (inspired by
   cp  lib/python/osgswig-0.9.1/* ~/.local/lib/python2.6/site-packages/
 
 Don't worry about the hundreds of warnings during the compilation.
+(It worked with revision 227 of osgswig).
 
 Installing cvxmod
 -----------------
