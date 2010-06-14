@@ -41,7 +41,7 @@ def _indent(elem, level=0):
         if not elem.tail or not elem.tail.strip():
             elem.tail = i
         for elem in elem:
-            _indent(elem, level+1) 
+            _indent(elem, level+1)
         if not elem.tail or not elem.tail.strip():
             elem.tail = i
     else:
@@ -63,7 +63,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         return self.visual_scene
 
     def _init_scene(self, up):
- 
+
         def asset():
             """Generate the "asset" collada tag."""
             asset = Element("asset")
@@ -134,7 +134,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         lib.append(_create_box())
         library_visual_scenes = SubElement(self.collada, "library_visual_scenes")
         scene_name = 'myscene'
-        self.visual_scene = SubElement(library_visual_scenes, "visual_scene", 
+        self.visual_scene = SubElement(library_visual_scenes, "visual_scene",
                 {'id':scene_name})
         if (up == [1., 0., 0.]).all():
             up = 'X_UP'
@@ -174,7 +174,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
             arr = SubElement(src, type+'_array', {'id':array_id, 'count':str(data.size)})#TODO: use sid instead of id
             arr.text = str(data.reshape(-1)).strip("[]").replace("'", "")
             tch = SubElement(src, "technique_common")
-            acs = SubElement(tch, "accessor", 
+            acs = SubElement(tch, "accessor",
                     {"source":"#"+array_id,
                      "count":str(data.size/stride),
                      "stride":str(stride)})
@@ -183,7 +183,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
                 if param_name:
                     par.attrib['name'] = param_name
             return src
-        
+
         def sampler(id, input, output, interpolation):
             """Add a sampler and a channel"""
             spl = Element("sampler", {"id":id})
@@ -229,7 +229,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
                             array(['STEP']*n)))
                         target = node_id+"/"+transform+'.ANGLE'
                     sanim.append(source(id+'-output', param_names, data))
-                    sanim.append(sampler(id+'-sampler', '#'+id+'-input', 
+                    sanim.append(sampler(id+'-sampler', '#'+id+'-input',
                         '#'+id+'-output', '#'+id+'-interpolation'))
                     sanim.append(Element('channel', {'source':'#'+id+'-sampler',
                             'target':target}))
@@ -266,7 +266,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
             matrix = SubElement(node, "matrix", {'sid':'matrix'})
             matrix.text = str(pose.reshape(-1)).strip('[]')
         return node
-    
+
     def create_frame_arrows(self):
         return Element("instance_geometry", {"url":"#frame_arrows"})
 
@@ -278,7 +278,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         scale.text = "{0} {1} {2}".format(*half_extents)
         SubElement(node, "instance_geometry", {"url":"#box"})
         return node
- 
+
     def finish(self):
         # write to  file
         _indent(self.collada)
