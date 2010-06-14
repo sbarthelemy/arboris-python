@@ -7,14 +7,14 @@ This module is based on the openscenegraph (osg) python wrappers.
 Scene graph basics
 ------------------
 
-A scene graph is a data structure that arranges the logical and 
-spatial representation of a graphical scene. It consists of a 
+A scene graph is a data structure that arranges the logical and
+spatial representation of a graphical scene. It consists of a
 collection of *nodes* in a tree or graph structure. In general a node
-may have many children but only a single parent, with the effect of a 
-parent apparent to all its child nodes. For instance, a geometrical 
+may have many children but only a single parent, with the effect of a
+parent apparent to all its child nodes. For instance, a geometrical
 transformation matrix node would move all its children.
 
-In some cases, a single (child) node may be shared between several 
+In some cases, a single (child) node may be shared between several
 parents, for instance when the same geometry is displayed at several places
 (this saves memory).
 
@@ -46,7 +46,7 @@ _MASK = {
 
 def _pose2mat(pose):
     """Convert an homogeneous transform matrix from numpy to osg.
-    
+
     The conversion handles the transposition required by osg.
 
     :param pose: the homogeneous transform matrix.
@@ -59,7 +59,7 @@ def _pose2mat(pose):
     ...              [ 9., 10., 11., 12.],
     ...              [13., 14., 15., 16.]])
     >>> osg_mat = _pose2mat(mat)
-    
+
     """
     m = osg.Matrixd()
     m.set(pose[0,0], pose[1,0], pose[2,0], pose[3,0],
@@ -167,7 +167,7 @@ class OsgDriver(arboris._visu.AnimatorDriver):
 
     def finish(self):
         pass
- 
+
     def create_transform(self, pose, is_constant, name=None):
         t = osg.MatrixTransform()
         t.setMatrix(_pose2mat(pose))
@@ -243,7 +243,7 @@ def _draw_frame(length=1., radius=0.05, alpha=1.):
     **Example:**
 
     >>> generic_frame = _draw_frame(.5, .8)
-    
+
     """
     # create the x cylinder
     cyl_x = osg.ShapeDrawable(osg.Cylinder(
@@ -285,7 +285,7 @@ def draw_line(start, end, radius=0.04, color=None):
     :type end: (3,)-shaped ndarray
     :param radius: the cylinder radius
     :type radius: float
-    :param color: the line color 
+    :param color: the line color
     :type color: osg.Vec4
     :rtype: osg.Transform
 
@@ -342,7 +342,7 @@ def draw_force(length=1., radius=0.03, alpha=1.):
     :param alpha: the cylinders alpha value
     :type alpha: float
     :rtype: osg.Geode
-    
+
     """
     cyl = osg.ShapeDrawable(osg.Cylinder(
         osg.Vec3(0.,0.,length/2.), radius, length))
@@ -370,7 +370,7 @@ class _SwitcherHandler(osgGA.GUIEventHandler):
         mask = self._camera.getCullMask()
         mask = mask ^ _MASK[category]
         self._camera.setCullMask(mask)
- 
+
     def _turn(self, category, on):
         """Turn the display of a category on/off."""
         mask = self._camera.getCullMask()
