@@ -201,6 +201,40 @@ class OsgDriver(arboris._visu.AnimatorDriver):
         geode.setNodeMask(_MASK['shape'])
         return geode
 
+    def create_plane(self, coeffs, color):
+        # instead of drawing an infinite plane, we draw a finite
+        # square.
+        from arboris.homogeneousmatrix import zaligned
+        dx, dy = self._options['plane half extents']
+        points = [(-dx, dy, 0),
+                  (-dx, -dy, 0),
+                  (dx, -dy, 0),
+                  (dx, dy, 0)]
+        H = zaligned(coeffs[0:3])
+        origin = coeffs[3] * coeffs[0:3]
+        vertices = osg.Vec3Array()
+        for point in points:
+            vertex = origin + dot(H[0:3, 0:3], point)
+            vertices.push_back(osg.Vec3(vertex[0],
+                                        vertex[1],
+                                        vertex[2]))
+        shape = osg.Geometry()
+        shape.setVertexArray(vertices)
+        face = osg.DrawElementsUInt(osg.PrimitiveSet.QUADS,0)
+        face.push_back(3)
+        face.push_back(2)
+        face.push_back(1)
+        face.push_back(0)
+        shape.addPrimitiveSet(face)
+        colors = osg.Vec4Array()
+        colors.push_back(_tuple2vec4(color))
+        shape.setColorArray(colors)
+        shape.setColorBinding(osg.Geometry.BIND_OVERALL)
+        geode =  osg.Geode()
+        geode.addDrawable(shape)
+        geode.setNodeMask(_MASK['shape'])
+        return geode
+
     def create_point(self, color):
         shape = osg.ShapeDrawable(
                 osg.Sphere(osg.Vec3(0.,0.,0.),

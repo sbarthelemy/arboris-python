@@ -94,6 +94,7 @@ class DrawerDriver():
             'frame arrows alpha': 1.,
             'link radius': 0.004 * scale,
             'point radius': 0.008 * scale,
+            'plane half extents': (1. * scale, 1. * scale),
             'text size': 0.1 * scale,
             'body palette': body_palette,
             'center of interest': (0., 0., 0.),
@@ -139,6 +140,10 @@ class DrawerDriver():
         pass
 
     #@abstractmethod
+    def create_plane(self, coeffs, color):
+        pass
+
+    #@abstractmethod
     def create_point(self, color):
         pass
 
@@ -180,7 +185,7 @@ class Drawer(object):
         # TODO: guess driver
         assert isinstance(driver, DrawerDriver)
         self._driver = driver
- 
+
     def init_parse(self, ground, up, current_time):
         self._ground_node = self._driver.add_ground(up)
         self.frame_nodes = {ground: self._ground_node}
@@ -273,10 +278,21 @@ class Drawer(object):
             self.frame_nodes[obj] = node
             self.transform_nodes[obj] = node
             self._driver.add_child(self.frame_nodes[obj.body], node)
-        if isinstance(obj, arboris.shapes.Box):
-            #TODO: fix color
-            node = self._driver.create_box(obj.half_extents, (1,0,0,1))
+        if isinstance(obj, arboris.core.Shape):
+            color = (1, 0, 0, 1) #TODO: fix color
+            if isinstance(obj, arboris.shapes.Sphere):
+                node = self._driver.create_sphere(obj.radius, color)
+            if isinstance(obj, arboris.shapes.Point):
+                node = self._driver.create_point(color)
+            if isinstance(obj, arboris.shapes.Cylinder):
+                node = self._driver.create_cylinder(obj.length, obj.radius,
+                                                    color)
+            if isinstance(obj, arboris.shapes.Plane):
+                node = self._driver.create_plane(obj.coeffs, color)
+            if isinstance(obj, arboris.shapes.Box):
+                node = self._driver.create_box(obj.half_extents, color)
             self._driver.add_child(self.frame_nodes[obj.frame], node)
+
     def finish(self):
         self._driver.finish()
 
