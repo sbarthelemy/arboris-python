@@ -52,8 +52,8 @@ def hsv_to_rgb(hsv):
 
 class DrawerDriver():
     """ABC for drawer drivers.
-    
-    This class defines an interface for "drawer drivers" 
+
+    This class defines an interface for "drawer drivers"
     which take care of the low level details of drawing the
     world, on behalf of the :class:`arboris.visu.Drawer`
     class.
@@ -71,12 +71,12 @@ class DrawerDriver():
     @staticmethod
     def get_default_options(scale=1.):
         """Get graphic options as a dict.
-        
+
         :param scale: the scaling factor
         :type scale: float
         :return: scaled graphic options
         :rtype: dict
- 
+
         """
         body_palette = []
         ncolor = 20
@@ -101,7 +101,7 @@ class DrawerDriver():
             'force length': 0.1 * scale,
             'force radius': 0.002 * scale}
         return options
-    
+
     @abstractmethod
     def add_ground(self, up):
         pass
@@ -113,7 +113,7 @@ class DrawerDriver():
     @abstractmethod
     def finish(self):
         pass
-    
+
     @abstractmethod
     def create_transform(self, pose, is_constant, name=None):
         pass
@@ -172,7 +172,7 @@ class Drawer(object):
     TODO : add shapes
     TODO : add links
     """
-    
+
     def __init__(self, driver, flat=False):
         self.transform_nodes = {}
         self.body_colors = {}
@@ -180,7 +180,7 @@ class Drawer(object):
         # TODO: guess driver
         assert isinstance(driver, DrawerDriver)
         self._driver = driver
-    
+ 
     def init_parse(self, ground, up, current_time):
         self._ground_node = self._driver.add_ground(up)
         self.frame_nodes = {ground: self._ground_node}
@@ -260,7 +260,7 @@ class Drawer(object):
             self.frame_nodes[f1] = f1_node
         if not self._flat:
             self.transform_nodes[j] = f1_node
-    
+
     def register(self, obj):
         if isinstance(obj, arboris.core.SubFrame) and \
                 not(obj in self.frame_nodes):
