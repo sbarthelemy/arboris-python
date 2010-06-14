@@ -7,14 +7,14 @@ This module is based on the openscenegraph (osg) python wrappers.
 Scene graph basics
 ------------------
 
-A scene graph is a data structure that arranges the logical and 
-spatial representation of a graphical scene. It consists of a 
+A scene graph is a data structure that arranges the logical and
+spatial representation of a graphical scene. It consists of a
 collection of *nodes* in a tree or graph structure. In general a node
-may have many children but only a single parent, with the effect of a 
-parent apparent to all its child nodes. For instance, a geometrical 
+may have many children but only a single parent, with the effect of a
+parent apparent to all its child nodes. For instance, a geometrical
 transformation matrix node would move all its children.
 
-In some cases, a single (child) node may be shared between several 
+In some cases, a single (child) node may be shared between several
 parents, for instance when the same geometry is displayed at several places
 (this saves memory).
 
@@ -90,7 +90,7 @@ _MASK = {
 
 def _pose2mat(pose):
     """Convert an homogeneous transform matrix from numpy to osg.
-    
+
     The conversion handles the transposition required by osg.
 
     :param pose: the homogeneous transform matrix.
@@ -103,7 +103,7 @@ def _pose2mat(pose):
     ...              [ 9., 10., 11., 12.],
     ...              [13., 14., 15., 16.]])
     >>> osg_mat = _pose2mat(mat)
-    
+
     """
     m = osg.Matrixd()
     m.set(pose[0,0], pose[1,0], pose[2,0], pose[3,0],
@@ -143,7 +143,7 @@ def draw_frame(length=1., radius=0.05, alpha=1.):
     **Example:**
 
     >>> generic_frame = draw_frame(.5, .8)
-    
+
     """
     # create the x cylinder
     cyl_x = osg.ShapeDrawable(osg.Cylinder(
@@ -185,7 +185,7 @@ def draw_line(start, end, radius=0.04, color=None):
     :type end: (3,)-shaped ndarray
     :param radius: the cylinder radius
     :type radius: float
-    :param color: the line color 
+    :param color: the line color
     :type color: osg.Vec4
     :rtype: osg.Transform
 
@@ -242,7 +242,7 @@ def draw_force(length=1., radius=0.03, alpha=1.):
     :param alpha: the cylinders alpha value
     :type alpha: float
     :rtype: osg.Geode
-    
+
     """
     cyl = osg.ShapeDrawable(osg.Cylinder(
         osg.Vec3(0.,0.,length/2.), radius, length))
@@ -270,7 +270,7 @@ class SwitcherHandler(osgGA.GUIEventHandler):
         mask = self._camera.getCullMask()
         mask = mask ^ _MASK[category]
         self._camera.setCullMask(mask)
- 
+
     def _turn(self, category, on):
         """Turn the display of a category on/off."""
         mask = self._camera.getCullMask()
@@ -296,7 +296,7 @@ class SwitcherHandler(osgGA.GUIEventHandler):
 
 def graphic_options(scale=1.):
     """Default dictionnary of graphic options.
-    
+
     :param scale: the scaling factor
     :type scale: float
     :return: scaled graphic options
@@ -334,21 +334,21 @@ class Drawer(arboris.core.Observer):
     - :attr:`root`: the root node of the OSG scene,
     - :attr:`frames`: a dictionnary of tranform nodes corresponding to
       and indexed by :class:`arboris.core.Frame` objects,
-    - :attr:`constraint_forces` and :attr:`constraints_moment`: 
+    - :attr:`constraint_forces` and :attr:`constraints_moment`:
       dictionnaries of tranform nodes corresponding to and indexed by
       :class:`arboris.core.Constraint` objects,
 
     **Methods:**
     - :meth:`__init__` creates ``root`` OSG node, get the graphic options
       (colors, sizes...) and do house keeping. If the ``world`` parameter is
-      given, it will be converted to OSG nodes (it calls :meth:`init`). 
-    - :meth:`init` converts the ``world`` to osg nodes 
+      given, it will be converted to OSG nodes (it calls :meth:`init`).
+    - :meth:`init` converts the ``world`` to osg nodes
       (it calls :meth:`register`).
     - :meth:`register` converts a single arboris object ``obj`` to zero or more
       OSG nodes.
-    
+
     """
-    def __init__(self, world, scale=1., options=None, viewer=None):
+    def __init__(self, options=None, scale=1., viewer=None):
         arboris.core.Observer.__init__(self)
         if options is None:
             self._options = graphic_options(scale)
@@ -359,7 +359,7 @@ class Drawer(arboris.core.Observer):
         blend = osg.StateSet()
         blend.setMode(osg.GL_BLEND, osg.StateAttribute.ON)
         self.root.setStateSet(blend)
-        
+
         self._generic_frame = draw_frame(
             length=self._options['frame length'],
             radius=self._options['frame radius'],
@@ -372,38 +372,8 @@ class Drawer(arboris.core.Observer):
         self.registered = []
         self.frames = {}
         self.constraint_forces = {}
-        self._world = world
-        self._register(self._world.ground)
-        if viewer is None:
-            # create the osg viewer:
-            self.viewer = osgViewer.Viewer()
-            self.viewer.setSceneData(self.root)
-            manipulator = osgGA.TrackballManipulator()
-            self.viewer.setCameraManipulator(manipulator)
-            # set the position of the camera/view:
-            coi = map(float, self._options['center of interest'])
-            cam = map(float, self._options['camera position'])
-            up = map(float, self._world.up)
-            manipulator.setHomePosition(
-                osg.Vec3d(coi[0]+cam[0], coi[1]+cam[1], coi[2]+cam[2]),
-                osg.Vec3d(coi[0], coi[1], coi[2]),
-                osg.Vec3d(up[0], up[1], up[2]))
-            # setup the window:
-            if self._options['fullscreen'] is False:
-                window_size = self._options['window size']
-                window_pos = self._options['window position']
-                self.viewer.setUpViewInWindow(
-                    window_pos[0], window_pos[1], 
-                    window_size[0], window_size[1])
-            self.viewer.home()
-        else:
-            self.viewer = viewer
-        camera = self.viewer.getCamera()
-            #inheritanceMask = (~(osg.CullSettings.CULL_MASK) & osg.CullSettings.ALL_VARIABLES)
-            #camera.setInheritanceMask(inheritanceMask)
-        # add an handler for GUI Events (will toggle display on/off):
-        self.handler = SwitcherHandler(camera)
-        self.viewer.addEventHandler(self.handler.__disown__())
+        self.viewer = viewer
+
 
     def _choose_color(self, body, alpha=1.):
         """Select a colour in the palette for the body.
@@ -437,7 +407,7 @@ class Drawer(arboris.core.Observer):
             self.registered.append(obj)
             opts = self._options
             if isinstance(obj, arboris.core.Frame):
-                # create a transform for the frames (instances of 
+                # create a transform for the frames (instances of
                 # the Body and Subframe classes)
                 t = osg.MatrixTransform()
                 self.frames[obj] = t
@@ -502,13 +472,13 @@ class Drawer(arboris.core.Observer):
                 if isinstance(obj, arboris.shapes.Plane):
                     # instead of drawing an infinite plane, we draw a finite
                     # square.
-                    from arboris.collisions import _normal_to_frame
+                    from arboris.homogeneousmatrix import zaligned
                     dx, dy = opts['plane half extents']
                     points = [(-dx, dy, 0),
                               (-dx, -dy, 0),
                               (dx, -dy, 0),
                               (dx, dy, 0)]
-                    H = _normal_to_frame(obj.coeffs[0:3])
+                    H = zaligned(obj.coeffs[0:3])
                     origin = obj.coeffs[3]*obj.coeffs[0:3]
                     vertices = osg.Vec3Array()
                     for point in points:
@@ -563,8 +533,44 @@ class Drawer(arboris.core.Observer):
             else:
                 raise NotImplementedError('Cannot draw "{0}"'.format(obj))
 
+
+    def _init_viewer(self, viewer):
+        if viewer is None:
+            # create the osg viewer:
+            self.viewer = osgViewer.Viewer()
+            self.viewer.setSceneData(self.root)
+            manipulator = osgGA.TrackballManipulator()
+            self.viewer.setCameraManipulator(manipulator)
+            # set the position of the camera/view:
+            coi = map(float, self._options['center of interest'])
+            cam = map(float, self._options['camera position'])
+            up = map(float, self._world.up)
+            manipulator.setHomePosition(
+                osg.Vec3d(coi[0]+cam[0], coi[1]+cam[1], coi[2]+cam[2]),
+                osg.Vec3d(coi[0], coi[1], coi[2]),
+                osg.Vec3d(up[0], up[1], up[2]))
+            # setup the window:
+            if self._options['fullscreen'] is False:
+                window_size = self._options['window size']
+                window_pos = self._options['window position']
+                self.viewer.setUpViewInWindow(
+                    window_pos[0], window_pos[1],
+                    window_size[0], window_size[1])
+            self.viewer.home()
+        else:
+            self.viewer = viewer
+        camera = self.viewer.getCamera()
+            #inheritanceMask = (~(osg.CullSettings.CULL_MASK) & osg.CullSettings.ALL_VARIABLES)
+            #camera.setInheritanceMask(inheritanceMask)
+        # add an handler for GUI Events (will toggle display on/off):
+        self.handler = SwitcherHandler(camera)
+        self.viewer.addEventHandler(self.handler.__disown__())
+
     def init(self, world, timeline):
+        self._world = world
+        self._register(self._world.ground)
         self._world.update_geometric() #TODO find a way to remove this
+        self._init_viewer(self.viewer)
         for obj in self._world.iterbodies():
             self._register(obj)
         for obj in self._world.itersubframes():
@@ -588,24 +594,25 @@ class Drawer(arboris.core.Observer):
         for obj in self._world.iterbodies():
             self.frames[obj].setMatrix(_pose2mat(obj.pose))
         for obj in self._world.iterconstraints():
-            if obj.is_active():
-                from numpy.linalg import norm
-                # scale the generic_force according to the force
-                # norm. We constraint the scaling to be in [0.1, 10]
-                if isinstance(obj, arboris.constraints.SoftFingerContact):
-                    force = obj._force[1:4]
-                elif isinstance(obj,
-                        arboris.constraints.BallAndSocketConstraint):
-                    force = obj._force[0:3]
-                scale = min(10., max(0.1, norm(force)/100))
-                self.constraint_forces[obj].setScale(
-                        osg.Vec3d(scale,scale,scale))
-                _align_z_with_vector(force,
-                                     self.constraint_forces[obj])
-                self.constraint_forces[obj].setNodeMask(
-                        _MASK['constraint force'])
-            else:
-                self.constraint_forces[obj].setNodeMask(0)
+            if isinstance(obj, arboris.constraints.SoftFingerContact) or isinstance(obj, arboris.constraints.BallAndSocketConstraint):
+                if obj.is_active():
+                    from numpy.linalg import norm
+                    # scale the generic_force according to the force
+                    # norm. We constraint the scaling to be in [0.1, 10]
+                    if isinstance(obj, arboris.constraints.SoftFingerContact):
+                        force = obj._force[1:4]
+                    elif isinstance(obj,
+                            arboris.constraints.BallAndSocketConstraint):
+                        force = obj._force[0:3]
+                    scale = min(10., max(0.1, norm(force)/100))
+                    self.constraint_forces[obj].setScale(
+                            osg.Vec3d(scale,scale,scale))
+                    _align_z_with_vector(force,
+                                         self.constraint_forces[obj])
+                    self.constraint_forces[obj].setNodeMask(
+                            _MASK['constraint force'])
+                else:
+                    self.constraint_forces[obj].setNodeMask(0)
         self.viewer.frame()
 
     def done(self):
