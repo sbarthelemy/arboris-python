@@ -166,7 +166,7 @@ class OsgDriver(arboris._visu.AnimatorDriver):
         return self._root
 
     def finish(self):
-        pass
+        del self._viewer
 
     def create_transform(self, pose, is_constant, name=None):
         t = osg.MatrixTransform()
