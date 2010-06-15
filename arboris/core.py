@@ -1,19 +1,19 @@
 # coding=utf-8
 """The core of the simulator.
 
-A world (instance of the :class:`World` class) consists of bodies (instances 
+A world (instance of the :class:`World` class) consists of bodies (instances
 of the :class:`Body` class) interlinked by joints (instances of :class:`Joint`
-subclasses). Joints serve two purposes in arboris: 
-    
+subclasses). Joints serve two purposes in arboris:
+
 - restrict the relative motion between bodies (for instance a hinge joint only
-  allows for rotations around its axis) 
+  allows for rotations around its axis)
 - and parametrize the bodies positions (for instance a single angle is enough
   to parametrize the relative position of two bodies constrained by a hinge
   joint).
 
 A world forms an oriented tree whose nodes are the bodies and edges are the
 joints, so that the state (pose and velocity) of each body can be computed from
-the state of its parent joints (the joints on the path from the body to the 
+the state of its parent joints (the joints on the path from the body to the
 root of the tree (which is body called "ground")).
 
 One or more frames (instances of the :class:`SubFrame` class) can be associated
@@ -42,7 +42,7 @@ class NamedObject(object):
 
     def __init__(self, name=None):
         self.name = name
-    
+
     def __repr__(self):
         if self.name is None:
             return object.__repr__(self)
@@ -50,20 +50,20 @@ class NamedObject(object):
             return '<{0}.{1} object named "{2}" at "{3}")>'.format(
                 self.__class__.__module__,
                 self.__class__.__name__,
-                self.name, 
+                self.name,
                 hex(id(self)))
 
 class NamedObjectsList(list):
     """A list of (possibly) NamedObjects.
-    
+
     This class behaves like the built-in ``list`` class except that
-    objects can be retrieved by name, using a string index or the 
+    objects can be retrieved by name, using a string index or the
     ``find`` method. In the first case, the first matching object is
     returned, in the second case a (raw) list of matching objects is
     returned.
-    
+
     **Example:**
-    
+
     >>> L = [Body(name="Jean-Paul"), 1., 'sss']
     >>> NL = NamedObjectsList(L)
     >>> NL.append(Body(name=u'Guard'))
@@ -86,17 +86,17 @@ class NamedObjectsList(list):
     """
     def __init__(self, iterable=None):
         self.extend(iterable)
-    
+
     def find(self, name):
         result = []
         for obj in self:
             if isinstance(obj, NamedObject) and (obj.name == name):
                 result.append(obj)
         return result
-    
+
     def __getitem__(self, index):
         if isinstance(index, str) or isinstance(index, unicode):
-            # returns the first item whose name is matching 
+            # returns the first item whose name is matching
             for obj in self:
                 if isinstance(obj, NamedObject) and (obj.name == index):
                     return obj
@@ -105,21 +105,21 @@ class NamedObjectsList(list):
             return list.__getitem__(self, index)
 
     def as_dict(self):
-        """Returns a dictionary whose keys are the objects names and 
+        """Returns a dictionary whose keys are the objects names and
         values are the objects themselves. Objects with no name are
-        ignored. Duplicate names raise a ``DuplicateName`` 
+        ignored. Duplicate names raise a ``DuplicateName``
         exception.
 
         """
         result = {}
         for obj in self:
             if isinstance(obj, NamedObject) and obj.name is not None:
-                if obj.name not in result:  
+                if obj.name not in result:
                     result[obj.name] = obj
                 else:
                     raise DuplicateNameError()
         return result
-       
+
 class DuplicateNameError(Exception):
     pass
 
@@ -155,16 +155,16 @@ class Frame(object):
 
 class Joint(RigidMotion, NamedObject):
     """A generic class for ideal joints.
-    
-    An ideal joint is a kinematic restriction of the allowed relative 
+
+    An ideal joint is a kinematic restriction of the allowed relative
     twist of two frames, here named frames 0 and 1, to which the joint
     is said to be attached. In arboris, it serves to parametrize the
     relative position and velocity of frame 1 regarding to frame 0.
-    
-    This class has virtual methods and properties. It should be 
+
+    This class has virtual methods and properties. It should be
     subclassed by concrete implementations.
 
-    """    
+    """
     __metaclass__ = ABCMeta
 
     def __init__(self, name=None):
@@ -242,7 +242,7 @@ class JointsList(NamedObjectsList):
     def __init__(self, iterable):
         NamedObjectsList.__init__(self, iterable)
         self._init_dof()
-    
+
     def _init_dof(self):
         self._dof = slice(0,0)
         for obj in self:
@@ -269,6 +269,16 @@ class Constraint(NamedObject):
 
     def __init__(self, name=None):
         NamedObject.__init__(self, name)
+        self._is_enabled = True
+
+    def is_enabled(self):
+        return self._is_enabled
+
+    def enable(self):
+        self._is_enabled = True
+
+    def disable(self):
+        self._is_enabled = False
 
     @abstractmethod
     def init(self, world):
@@ -285,7 +295,7 @@ class Constraint(NamedObject):
     @abstractproperty
     def ndol(self):
         u"""Number of degrees of "liaison"
-        
+
         In french: *nombre de degrés de liaison*. This is equal to (6 - ndof).
         """
         pass
@@ -360,7 +370,7 @@ class World(NamedObject):
         """Returns a NamedObjectsList of the world bodies.
         """
         return NamedObjectsList(self.iterbodies())
-    
+
     def iterconstraints(self):
         """Iterate over all constraints."""
         for obj in self._constraints:
@@ -388,7 +398,7 @@ class World(NamedObject):
     def itershapes(self):
         """Iterate over all shapes."""
         for obj in self._shapes:
-            yield obj    
+            yield obj
 
     def getshapes(self):
         """Returns a NamedObjectsList of the world shapes.
@@ -419,16 +429,16 @@ class World(NamedObject):
 
     def add_link(self, frame0, joint, frame1, *args):
         """Add a link (ie. Joint and Body) to the world.
-        
-        :param frame0: the frame where the new joint will be attached. 
+
+        :param frame0: the frame where the new joint will be attached.
                        It should belong to a bady which is already in the world.
         :param joint: the joint to be added.
         :param frame1: the frame of the body which is to be added to the world.
-        
+
         One can also add several links at a time::
-        
+
             world.add_link(frame0_a, joint_a, frame1_a, frame0_b, joint_b, frame1_b)
-            
+
         """
         assert isinstance(frame0, Frame)
         assert isinstance(frame1, Frame)
@@ -448,22 +458,22 @@ class World(NamedObject):
         self.register(frame1)
         if len(args) > 0:
             self.add_link(*args)
-    
+
     def replace_joint(self, old_joint, *args):
         """Replace a joint by another joint or by another kinematic chain.
-        
+
         **Syntax:** ::
-            
+
             world.replace_joint(old_joint, new_joint)
             world.replace_joint(old_joint, frame0, new_joint, ... , frame1)
-            
+
         **Example:**
 
             >>> w = simplearm()
             >>> from arboris.joints import RzJoint
             >>> joints = w.getjoints()
             >>> w.replace_joint(joints['Elbow'], RzJoint())
-            
+
         """
         assert isinstance(old_joint, Joint)
         assert old_joint in old_joint._frame0.body.childrenjoints
@@ -476,9 +486,9 @@ class World(NamedObject):
         elif len(args) == 0 or len(args) % 3 != 0:
             raise RuntimeError() #TODO
         else:
-            body0 = args[0].body 
+            body0 = args[0].body
             body1 = args[-1].body
-            assert old_joint._frame0.body is body0 
+            assert old_joint._frame0.body is body0
             assert old_joint._frame1.body is body1
             body1.parentjoint = None
             old_joint._frame0 = None
@@ -488,15 +498,15 @@ class World(NamedObject):
             # and old_joint is still somewhere in body0.childrenjoint
             # let's fix that
             i = body0.childrenjoints.index(old_joint)
-            body0.childrenjoints[i] = body0.childrenjoints.pop()            
+            body0.childrenjoints[i] = body0.childrenjoints.pop()
             self.init() #TODO
-        
+
     def register(self, obj):
         """
         Register an object into the world.
-        
+
         ``obj`` can be a subframe, a shape or a constraint.
-        
+
         :arguments:
             obj
                 the object that will be added. It may be a subframe, a shape,
@@ -507,7 +517,7 @@ class World(NamedObject):
         >>> w = simplearm()
         >>> from arboris.controllers import ProportionalDerivativeController
         >>> joints = w.getjoints()
-        >>> c0 = ProportionalDerivativeController(joints[1:3], 
+        >>> c0 = ProportionalDerivativeController(joints[1:3],
         ...     name = 'my controller')
         >>> w.register(c0)
         >>> c1 = ProportionalDerivativeController(joints[0:1])
@@ -544,9 +554,9 @@ class World(NamedObject):
     def parse(self, target):
         """Parse the world and call hooks on the ``target`` object.
 
-        This helper function  walks the world with a depth-first strategy and 
+        This helper function  walks the world with a depth-first strategy and
         call the ``register`` and ``add_link`` methods of the ``target``
-        object. Each world element will be register only once. The order of the 
+        object. Each world element will be register only once. The order of the
         successive registration is meant to ease conversion to hierachic
         data structures such as collada or OSG ones.
 
@@ -596,7 +606,7 @@ class World(NamedObject):
             self._ndof += j.ndof
             j._dof = slice(old_ndof, self._ndof)
 
-        # Adjust the size of the worldwide model matrices 
+        # Adjust the size of the worldwide model matrices
         # (we wipe their content)
         self._mass = zeros((self._ndof, self._ndof))
         self._nleffects =  zeros((self._ndof, self._ndof))
@@ -612,14 +622,14 @@ class World(NamedObject):
 
         for c in self._constraints:
             c.init(self)
-        
+
         for a in self._controllers:
             a.init(self)
 
     @property
     def current_time(self):
         return self._current_time
-    
+
     @property
     def up(self):
         return self._up
@@ -645,22 +655,22 @@ class World(NamedObject):
         return self._gvel.copy()
 
     def update_geometric(self):
-        """Compute the forward geometric model. 
-        
+        """Compute the forward geometric model.
+
         This will recursively update each body pose attribute.
-        
+
         Example:
 
         >>> w = simplearm()
         >>> w.update_geometric()
-        
+
         """
         self.ground.update_geometric(eye(4))
 
     def update_dynamic(self):
-        r"""Compute the forward geometric, kinematic and dynamic models. 
-        
-        Recursively update each body pose, jacobian, djacobian, twist 
+        r"""Compute the forward geometric, kinematic and dynamic models.
+
+        Recursively update each body pose, jacobian, djacobian, twist
         and nleffects attributes (thanks to the
         :meth:`arboris.Body.update_dynamic` method) and then update
         the world mass, viscosity and nleffects attributes.
@@ -669,19 +679,19 @@ class World(NamedObject):
 
         >>> w = simplearm()
         >>> w.update_dynamic()
-        
+
 
         **Algorithm:**
 
-        The (world) generalized mass, viscosity and nleffect matrices 
-        respectively denoted `M`, `B` and `N` are computed from each body 
-        `b` jacobian `\J[b]_{b/g}`, hessian `\dJ[b]_{b/g}`, mass `M_b`, 
+        The (world) generalized mass, viscosity and nleffect matrices
+        respectively denoted `M`, `B` and `N` are computed from each body
+        `b` jacobian `\J[b]_{b/g}`, hessian `\dJ[b]_{b/g}`, mass `M_b`,
         viscosity `B_b` and nleffects `N_b` matrices as :
 
         .. math::
             M &= \sum_b \J[b]_{b/g}^T \; M_b \; \J[b]_{b/g} \\
             B &= \sum_b \J[b]_{b/g}^T \; B_b \; \J[b]_{b/g} \\
-            N &= \sum_b \J[b]_{b/g}^T 
+            N &= \sum_b \J[b]_{b/g}^T
             \left( M_b \; \dJ[b]_{b/g} + N_b \; \J[b]_{b/g}\right)
 
         If there is no additional constraint (such as contacts) nor actuation
@@ -690,13 +700,13 @@ class World(NamedObject):
         .. math::
             M \dGVel + \left( N + B \right) \GVel = 0
 
-        """        
+        """
         self.ground.update_dynamic(
             eye(4),
             zeros((6,self._ndof)),
             zeros((6,self._ndof)),
             zeros(6))
-        
+
         self._mass[:] = 0.
         self._viscosity[:] = 0.
         self._nleffects[:] = 0.
@@ -718,7 +728,7 @@ class World(NamedObject):
         :type dt: float
         :param t:
         :type t: float
-        
+
         **Example:**
 
         >>> w = simplearm()
@@ -737,47 +747,47 @@ class World(NamedObject):
         array([[ 0.00732382, -0.0203006 ,  0.0244142 ],
                [-0.0203006 ,  0.07594182, -0.14621124],
                [ 0.0244142 , -0.14621124,  0.76901683]])
-        
+
         **Algorithm:**
 
         Let's consider the following discretized 2nd-order model:
 
         .. math::
-            M(t) \dGVel(t+dt) + \left( N(t)+B(t) )\right) \GVel(t+dt) &= 
+            M(t) \dGVel(t+dt) + \left( N(t)+B(t) )\right) \GVel(t+dt) &=
             \GForce(t)
 
         considering
-        
+
         .. math::
             \dGVel(t+dt) = \frac{\GVel(t+dt) - \GVel(t)}{dt}
-        
+
         we get
-        
+
         .. math::
-            \left( \frac{M(t)}{dt}+N(t)+B(t) \right) \GVel(t+dt) &= 
+            \left( \frac{M(t)}{dt}+N(t)+B(t) \right) \GVel(t+dt) &=
             \frac{M(t)}{dt} \GVel(t) + \GForce(t)
-        
-        Here `\GForce(t)` sums up the generalized forces due to 
+
+        Here `\GForce(t)` sums up the generalized forces due to
         all the active controllers and constraints.
 
         The generalized force due to a controller has the following form:
-        
+
         .. math::
             \GForce_a(t) &= \GForce_{0a}(t) + Z_a(t) \GVel(t+td)
 
-        where `\GForce_{0a}(t)` is constant during the 
+        where `\GForce_{0a}(t)` is constant during the
         `[t, t+dt]` period of time.
 
         It leads us to
 
         .. math::
-            \left( \frac{M(t)}{dt}+N(t)+B(t) -\sum_a Z_a(t) \right) 
-            \GVel(t+dt) &= 
+            \left( \frac{M(t)}{dt}+N(t)+B(t) -\sum_a Z_a(t) \right)
+            \GVel(t+dt) &=
             \frac{M(t)}{dt} \GVel(t) + \sum_a \GForce_{0a}(t)
 
         One can the define impedance (`Z`) and admittance (`Y`)
         matrices:
-    
+
         .. math::
             Z(t) &= \frac{M(t)}{dt}+N(t)+B(t)-\sum_a Z_a(t) \\
             Y(t) &= Z^{-1}(t)
@@ -788,7 +798,7 @@ class World(NamedObject):
         """
         assert dt > 0
         self._gforce[:] = 0.
-        self._impedance = self._mass/dt + self._viscosity + self._nleffects 
+        self._impedance = self._mass/dt + self._viscosity + self._nleffects
         for a in self._controllers:
             (gforce, impedance) = a.update(dt)
             self._gforce += gforce
@@ -798,48 +808,48 @@ class World(NamedObject):
     def update_constraints(self, dt):
         r"""
         In accordance with the integration scheme, we assume the following
-        first order model between generalized velocities and generalized 
+        first order model between generalized velocities and generalized
         forces:
 
         .. math::
-            \GVel(t+dt) &= Y(t) 
+            \GVel(t+dt) &= Y(t)
             \left( \frac{M(t)}{dt} \GVel(t) + \GForce(t) \right)
 
         where:
 
-        - the admittance matrix  `Y` takes into account a 
+        - the admittance matrix  `Y` takes into account a
           first order model of the actuators,
 
-        - the actuators generalized forces `\GForce(t)` 
+        - the actuators generalized forces `\GForce(t)`
           are assumed to be constant during the `[t , t+dt ]`
           time interval.
-        
-        This (constraint-free) model must be completed by constraints 
+
+        This (constraint-free) model must be completed by constraints
         forces `\pre[c]f`, which are mapped to generalized forces
         by the constraint jacobian `\pre[c]J_c^T`:
 
         .. math::
-            \GVel(t+dt) 
-            &= Y(t) 
+            \GVel(t+dt)
+            &= Y(t)
             \left( \frac{M(t)}{dt} \GVel(t) + \GForce(t)
                 + \sum_{c} \; \pre[c]J_{c}^T(t) \; \pre[c]f(t)
             \right)
-  
-        one can also define the constraint velocity  as: 
+
+        one can also define the constraint velocity  as:
         `\pre[c]v = \pre[c]J_c \; \GVel` so that:
-    
+
         .. math::
-            \pre[c]v(t+dt) 
+            \pre[c]v(t+dt)
             &= \pre[c]J_c(t) \; \GVel(t+dt)\\
-            &= \pre[c]J_c(t) \; Y(t) 
-            \left( 
+            &= \pre[c]J_c(t) \; Y(t)
+            \left(
                 \frac{M(t)}{dt} \GVel(t) + \; \GForce(t)
             \right)
-            + \sum_d \; \pre[c]J_c(t) \; Y(t) \; \pre[d]J_d^T(t) 
+            + \sum_d \; \pre[c]J_c(t) \; Y(t) \; \pre[d]J_d^T(t)
             \; \pre[d]f(t)
-        
-        one can define the (global) constraints velocity `v'`, 
-        force `f'`, jacobian matrix `J'` 
+
+        one can define the (global) constraints velocity `v'`,
+        force `f'`, jacobian matrix `J'`
         and admittance matrix `Y'`:
 
         .. math::
@@ -850,21 +860,21 @@ class World(NamedObject):
                 \pre[c]J_c(t)\\
                 \vdots
             \end{bmatrix}\\
-            v'(t) &= 
+            v'(t) &=
             \begin{bmatrix}
                 \pre[0]v(t)\\ \vdots \\ \pre[c]v(t) \\ \vdots
             \end{bmatrix}\\
-            f'(t) &= 
+            f'(t) &=
             \begin{bmatrix}
                 \pre[0]f(t)\\ \vdots \\ \pre[c]f(t) \\ \vdots
             \end{bmatrix}\\
-            Y'(t) &= 
+            Y'(t) &=
             J'(t) \; Y(t) \; J'(t)^T
 
         and get a synthetic expression:
 
         .. math::
-            v'(t+dt) &= J'(t) \; Y(t) 
+            v'(t+dt) &= J'(t) \; Y(t)
             \left( \frac{M(t)}{dt}  \GVel(t) + \GForce(t) \right)
             + Y'(t) \; f'
 
@@ -875,13 +885,13 @@ class World(NamedObject):
 
         - compute `J`, `v`  and `Y`,
 
-        - iterate over each constraint object in order to compute 
-          `\pre[c]f`. At each iteration the force is 
+        - iterate over each constraint object in order to compute
+          `\pre[c]f`. At each iteration the force is
           updated by `\Delta\pre[c]f`
 
         - eventually add each active constraint generalized force to
           world :attr:`~arboros.core.World._gforce` property.
-        
+
         TODO: add an example.
 
         """
@@ -889,24 +899,25 @@ class World(NamedObject):
         constraints = []
         ndol = 0
         for c in self._constraints:
-            c.update(dt)
-            if c.is_active():
-                c._dol = slice(ndol, ndol+c.ndol)
-                ndol = ndol + c.ndol
-                constraints.append(c)
+            if c.is_enabled():
+                c.update(dt)
+                if c.is_active():
+                    c._dol = slice(ndol, ndol+c.ndol)
+                    ndol = ndol + c.ndol
+                    constraints.append(c)
         jac = zeros((ndol, self._ndof))
         gforce = self._gforce.copy()
         for c in constraints:
             jac[c._dol, :] = c.jacobian
             gforce += c.gforce
-        vel = dot(jac, dot(self._admittance, 
+        vel = dot(jac, dot(self._admittance,
                            dot(self._mass, self._gvel/dt) + gforce))
         admittance = dot(jac, dot(self._admittance, jac.T))
 
         k=0
-        while k < 20: 
+        while k < 20:
         #TODO: change the break condition, it should be computed from the error
-            k+=1 
+            k+=1
             for c in constraints:
                 dforce = c.solve(vel[c._dol], admittance[c._dol,c._dol], dt)
                 vel += dot(admittance[:, c._dol], dforce)
@@ -915,14 +926,14 @@ class World(NamedObject):
 
     def integrate(self, dt):
         r"""
-        
-        From the :meth:`update_controllers` and 
-        :meth:`update_constraints` methods we get the new 
+
+        From the :meth:`update_controllers` and
+        :meth:`update_constraints` methods we get the new
         generalized velocity.
 
         .. math::
             \GVel(t+dt) &= Y(t) \left(
-            \frac{M(t)}{dt} \GVel(t) 
+            \frac{M(t)}{dt} \GVel(t)
             + \sum_{c=\text{controllers}} \GForce_{0a}(t)
             + \sum_{c=\text{constraints}} \GForce_{c}(t)
             \right)
@@ -949,9 +960,9 @@ class World(NamedObject):
         array([-0.00709132,  0.03355273, -0.09131555])
         """
         assert dt > 0
-        self._gvel[:] = dot(self._admittance, 
+        self._gvel[:] = dot(self._admittance,
                             dot(self._mass, self._gvel/dt) + self._gforce)
-        
+
         for j in self.iterjoints():
             j.integrate(self._gvel[j.dof], dt)
         self._current_time += dt
@@ -960,11 +971,11 @@ class World(NamedObject):
 class _SubFrame(NamedObject, Frame):
 
     def __init__(self, body, bpose=None, name=None):
-        """Create a frame rigidly fixed to a body. 
-        
+        """Create a frame rigidly fixed to a body.
+
         >>> b = Body()
         >>> f = SubFrame(b, Hg.rotz(3.14/3.),'Brand New Frame')
-        
+
         The ``body`` argument must be a member of the ``Body`` class:
         >>> f = SubFrame(None, Hg.rotz(3.14/3.))
         Traceback (most recent call last):
@@ -982,7 +993,7 @@ class _SubFrame(NamedObject, Frame):
         """
         if bpose is None:
             bpose = eye(4)
-        
+
         NamedObject.__init__(self, name)
         assert Hg.ishomogeneousmatrix(bpose)
         self._bpose = bpose
@@ -994,7 +1005,7 @@ class _SubFrame(NamedObject, Frame):
     @property
     def pose(self):
         return dot(self._body.pose, self._bpose)
-    
+
     @property
     def twist(self):
         return dot(Hg.iadjoint(self._bpose), self._body._twist)
@@ -1067,7 +1078,7 @@ class Body(NamedObject, Frame):
             yield parentbody
             for a in parentbody.iter_ancestor_bodies():
                 yield a
-    
+
     def iter_descendant_joints(self):
         """Iterate over all descendant joints, with a depth-first strategy"""
         for j in self.childrenjoints:
@@ -1116,7 +1127,7 @@ class Body(NamedObject, Frame):
         - c: child body
         - r: reference frame of the joint, rigidly fixed to the parent body
         - n: new frame of the joint, rigidly fixed to the child body
-        
+
         so H_nc and H_pr are constant.
 
         H_gc = H_gp * H_pc
@@ -1131,18 +1142,18 @@ class Body(NamedObject, Frame):
             H_pc = dot(H_pr, dot(H_rn, Hg.inv(H_cn)))
             child_pose = dot(H_gp, H_pc)
             j._frame1.body.update_geometric(child_pose)
-        
+
     def update_dynamic(self, pose, jac, djac, twist):
         r"""Sets the body ``pose, jac, djac, twist`` and computes its children ones.
 
-        This method (1) sets the body dynamical model (pose, jacobian, 
-        hessian and twist) to the values given as argument, (2) computes 
-        the dynamical model of the children bodies and (3) call the 
+        This method (1) sets the body dynamical model (pose, jacobian,
+        hessian and twist) to the values given as argument, (2) computes
+        the dynamical model of the children bodies and (3) call the
         equivalent method on them.
 
-        As a result, the dynamical model of all the bodies is computed 
+        As a result, the dynamical model of all the bodies is computed
         recursively.
-       
+
         :param pose: the body pose relative to the ground: `H_{gb}`
         :type pose: 4x4 ndarray
         :param jac: the body jacobian relative to the world (in body frame):
@@ -1153,22 +1164,22 @@ class Body(NamedObject, Frame):
         :type twist: 6 ndarray
 
         **Algorithm:**
-        
+
         Let's define the following notations:
 
         - `g`: the ground body,
-        - `p`: the parent body (which is the present :class:`arboris.Body` 
+        - `p`: the parent body (which is the present :class:`arboris.Body`
           instance)
         - `c`: a child body,
         - `j`: the joint between the bodies `p` and `c`,
-        - `r`: reference frame of the joint `j`, rigidly fixed to the parent 
+        - `r`: reference frame of the joint `j`, rigidly fixed to the parent
           body
         - `n`: new frame of the joint `j`, rigidly fixed to the child body
-        
+
         .. image:: img/body_model.png
 
         One can notice that `H_{nc}` and `H_{pr}` are constant.
-        
+
         The child body pose can be computed as
 
         .. math::
@@ -1176,7 +1187,7 @@ class Body(NamedObject, Frame):
             H_{gc} &= H_{gp} \; H_{pc} \\
                    &= H_{gp} \; (H_{pr} \; H_{rn} \; H_{nc})
 
-        where `H_{rn}` depends on the joint generalized configuration and is 
+        where `H_{rn}` depends on the joint generalized configuration and is
         given by its :attr:`~arboris.core.Joint.pose` attribute.
 
         The chil body twist is given as
@@ -1185,17 +1196,17 @@ class Body(NamedObject, Frame):
 
             \twist[c]_{c/g} &= \Ad[c]_p \; \twist[p]_{p/g} + \twist[c]_{c/p} \\
             &= \Ad[c]_p \; \twist[p]_{p/g} + \Ad[c]_n \; \twist[n]_{n/r} \\
-            &= \Ad[c]_p \; \J[p]_{p/g} \; \GVel 
+            &= \Ad[c]_p \; \J[p]_{p/g} \; \GVel
                + \Ad[c]_n \; \J[n]_{n/r} \; \GVel_j \\
             &= \J[c]_{c/g} \; \GVel
 
         where  `\twist[n]_{n/r}` isgiven by the joint
-        :attr:`~arboris.core.Joint.twist` attribute. 
-        \GVel_j is the generalized velocity of the joint `j` and is 
+        :attr:`~arboris.core.Joint.twist` attribute.
+        \GVel_j is the generalized velocity of the joint `j` and is
         related to the world generalized velocity by trivial projection
-        
+
         .. math::
-            \GVel_j &= 
+            \GVel_j &=
                 \begin{bmatrix}
                     0 & \cdots &0 & I & 0 & \cdots & 0
                 \end{bmatrix} \; \GVel
@@ -1203,7 +1214,7 @@ class Body(NamedObject, Frame):
         therefore, the child body jacobian is
 
         .. math::
-            \J[c]_{c/g} &= \Ad[c]_p \; \J[p]_{p/g} + 
+            \J[c]_{c/g} &= \Ad[c]_p \; \J[p]_{p/g} +
             \begin{bmatrix}
             0 & \cdots & 0 & \Ad[c]_n \; \J[n]_{n/r} & 0 & \cdots & 0
             \end{bmatrix} \\
@@ -1228,20 +1239,20 @@ class Body(NamedObject, Frame):
             &= \dAd[c]_p \; \J[p]_{p/g} \; \GVel
             + \Ad[c]_p \; \dJ[p]_{p/g} \; \GVel
             + \Ad[c]_n \; \dJ[n]_{n/r} \; \GVel_j \\
-        
-            \dJ[c]_{c/g} 
-            &= \dAd[c]_p \; \J[p]_{p/g} + \Ad[c]_p \; \dJ[p]_{p/g} + 
+
+            \dJ[c]_{c/g}
+            &= \dAd[c]_p \; \J[p]_{p/g} + \Ad[c]_p \; \dJ[p]_{p/g} +
             \begin{bmatrix}
             0 & \cdots & 0 & (\Ad[c]_n \; \dJ[n]_{n/r}) & 0 & \cdots & 0
             \end{bmatrix}
 
-        with 
+        with
 
         .. math::
             \dAd[c]_p &= \Ad[c]_n \; \dAd[n]_r \; \Ad[r]_p
 
-        and where `\dAd[n]_r` and `\dJ[n]_{n/r}` are respectively given by 
-        the joint :attr:`~arboris.core.Joint.idadjoint` and 
+        and where `\dAd[n]_r` and `\dJ[n]_{n/r}` are respectively given by
+        the joint :attr:`~arboris.core.Joint.idadjoint` and
         :attr:`~arboris.core.Joint.djacobian` attributes.
 
         T_ab: velocity of {a} relative to {b} expressed in {a} (body twist)
@@ -1288,13 +1299,13 @@ class Body(NamedObject, Frame):
 
             child_djac = dot(dAd_cp, J_pg) + dot(Ad_cp, dJ_pg)
             child_djac[:, j.dof] += dot(Ad_cn, dJ_nr)
-            j._frame1.body.update_dynamic(child_pose, child_jac, child_djac, 
+            j._frame1.body.update_dynamic(child_pose, child_jac, child_djac,
                                           child_twist)
 
 
 class Observer(object):
     __metaclass__ = ABCMeta
-    
+
     @abstractmethod
     def init(self, world, timeline):
         pass
@@ -1309,7 +1320,7 @@ class Observer(object):
 
 
 def simulate(world, timeline, observers=()):
-    """Run a full simulation, 
+    """Run a full simulation,
 
     :param world: the world to be simulated
     :type world: :class:`arboris.core.World`

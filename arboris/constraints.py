@@ -16,7 +16,7 @@ class JointLimits(Constraint):
     r"""This class describes and solves joint limits constraints.
 
     Let's denote `q` and `\GVel` the joint generalized position and velocity,
-    `m` and `M` the joint limits. This class purpose is to enforce the 
+    `m` and `M` the joint limits. This class purpose is to enforce the
     following constraint on `q`
 
     .. math::
@@ -29,7 +29,7 @@ class JointLimits(Constraint):
         0 \leq q- m \perp \GForce \geq 0  \\
         0 \geq q - M \perp \GForce \leq 0
 
-    
+
     """
 
     def __init__(self, joint, min, max, proximity=None, name=None):
@@ -57,7 +57,7 @@ class JointLimits(Constraint):
     @property
     def jacobian(self):
         return self._jacobian
-    
+
     @property
     def ndol(self):
         return 1
@@ -65,10 +65,10 @@ class JointLimits(Constraint):
     def update(self, dt):
         self._pos0 = self._joint.gpos
         self._force[:] = 0.
-    
+
     def is_active(self):
         return (self._pos0-self._min<self._proximity) or \
-                (self._max-self._pos0<self._proximity)    
+                (self._max-self._pos0<self._proximity)
 
     def solve(self, vel, admittance, dt):
         pred = self._pos0 + dt*(vel - dot(admittance, self._force))
@@ -83,7 +83,7 @@ class JointLimits(Constraint):
             self._force = dot(pinv(admittance), (self._max - pred)/dt)
             dforce = self._force - prev_force
         else:
-            # the joint is within its limits, we ensure the 
+            # the joint is within its limits, we ensure the
             # generalized force is zero
             dforce = -self._force
             self._force[:] = 0.
@@ -95,17 +95,17 @@ class BallAndSocketConstraint(Constraint):
     between two frames which are rigidly fixed to two distinct bodies.
 
     Let's denote 0 and 1 these two frames. The constraint can be expressed
-    as a condition on their relative pose, requiring  than the ball 
+    as a condition on their relative pose, requiring  than the ball
     and socket centers be co-located:
 
     .. math::
-        
-        H_{01} = 
+
+        H_{01} =
         \begin{bmatrix}
             R_{01} & 0\\
             0      & 1
         \end{bmatrix}
-        \Leftrightarrow 
+        \Leftrightarrow
         p_{01} = 0
 
     Solving the constraint means computing the right constraint force that will
@@ -118,24 +118,24 @@ class BallAndSocketConstraint(Constraint):
 
         v &= S \; \twist[0]_{1/0} = \dot{p}_{01} \\
         \wrench[0]_{0/1} &= S^T \; f  \\
-        S &= 
+        S &=
         \begin{bmatrix}
         0 & 0 & 0 & 1 & 0 & 0\\
         0 & 0 & 0 & 0 & 1 & 0\\
         0 & 0 & 0 & 0 & 0 & 1
-        \end{bmatrix} 
+        \end{bmatrix}
 
-    The constraint jacobian is then given by 
+    The constraint jacobian is then given by
     `( \Ad[0]_1 \; \pre[1]J_{1/g} - \pre[0]J_{0/g} )`
- 
+
     In order to solve the constraint, an adjustement `\Delta f` of the
-    constraint force is computed by the ``solve`` method. 
+    constraint force is computed by the ``solve`` method.
     This method is given as argument the current estimation of constraint
     velocity, which corresponds to `\Delta f = 0` and takes into account
     the coupling between the contraints.
 
     .. math::
-        f^k(t) 
+        f^k(t)
         &= f^{k-1}(t) + \Delta f\\
         v^k(t+dt)
         &= v^*(t+dt) + Y(t) \Delta f  \\
@@ -144,10 +144,10 @@ class BallAndSocketConstraint(Constraint):
         H_{01}(t)
         \\
         p_{01}^k(t+dt)
-        &= p_{01}(t) + dt \; (v^*(t+dt) +  Y(t) \; \Delta f) 
+        &= p_{01}(t) + dt \; (v^*(t+dt) +  Y(t) \; \Delta f)
 
     """
-   
+
     def __init__(self, frames, name=None):
         self._force = zeros(3)
         self._pos0 = None
@@ -168,9 +168,9 @@ class BallAndSocketConstraint(Constraint):
 
         .. math::
 
-            H_{01}(t) 
+            H_{01}(t)
             &= \left(H_{g0}(t)\right)^{-1} \; H_{g1}(t) \\
-            H_{01}(t) 
+            H_{01}(t)
             &=
             \begin{bmatrix}
             R_{01}(t) & p_{01}(t) \\
@@ -194,20 +194,20 @@ class BallAndSocketConstraint(Constraint):
         r"""
 
         from this equation
-        
-        .. math::
-            p_{01}^k(t+dt) 
-             &= p_{01}(t) + dt \; ( v^* +  Y \; \Delta f) 
-
-        given that we want `p_{01}(t+dt) = 0`, we return 
 
         .. math::
-            \Delta f = -Y^{-1} \; 
+            p_{01}^k(t+dt)
+             &= p_{01}(t) + dt \; ( v^* +  Y \; \Delta f)
+
+        given that we want `p_{01}(t+dt) = 0`, we return
+
+        .. math::
+            \Delta f = -Y^{-1} \;
             \left(
-                \frac{p_{01}(t)}{dt} + v^* 
+                \frac{p_{01}(t)}{dt} + v^*
             \right)
 
-        and update the constraint force adjustment `\Delta f` 
+        and update the constraint force adjustment `\Delta f`
 
         The function arguments are
 
@@ -239,18 +239,18 @@ class BallAndSocketConstraint(Constraint):
 
 class PointContact(Constraint):
     r"""Parent class for all point contacts.
-    
+
     Solving a contact constraint involves two steps:
 
     - the ``update`` method does the collision detection then updates
       the contacts frames,
 
     - the ``solve`` method, called at each iteration of the
-      Gauss-Seidel algorithm computes contact forces compatible 
+      Gauss-Seidel algorithm computes contact forces compatible
       with the contact model.
 
     The :class:`PointContact` class implements the first step by calling a
-    ``collision_solver`` function. Implementing the second one is the 
+    ``collision_solver`` function. Implementing the second one is the
     responsability of a daughter class.
 
     """
@@ -298,19 +298,19 @@ class PointContact(Constraint):
 
 
 class SoftFingerContact(PointContact):
-    r"""This class implements a "soft-finger" point contact constraint. 
+    r"""This class implements a "soft-finger" point contact constraint.
 
     Let's consider two convex objects (shapes) and attach a frame to each of
     them in such a way that:
-    
-        - their origin are chosen on the object surface, where the 
+
+        - their origin are chosen on the object surface, where the
           (signed) distance between the objects is minimal,
         - the two frames are aligned,
         - the normal to the object's surface is along their z-axis.
 
-    If we denote 0 and 1 the two frames, their coordinate 
+    If we denote 0 and 1 the two frames, their coordinate
     change matrix has the following form:
-    
+
     .. math::
         H_{01} &=
         \begin{bmatrix}
@@ -319,13 +319,13 @@ class SoftFingerContact(PointContact):
         0 & 0 & 1 & d \\
         0 & 0 & 0 & 1
         \end{bmatrix}
-    
-    where `d` is the signed distance between the objects. 
-    If `d = 0`, the objects are in contact, if `d < 0` they 
+
+    where `d` is the signed distance between the objects.
+    If `d = 0`, the objects are in contact, if `d < 0` they
     penetrate each other.
 
     We consider here point contacts with a Coulomb friction model,
-    extended to involve torque resisting to torsion, as described in 
+    extended to involve torque resisting to torsion, as described in
     Liu2003_ and Trinkle2001_ and often denoted as "soft finger
     contact". The contact wrench can be decomposed as:
 
@@ -346,9 +346,9 @@ class SoftFingerContact(PointContact):
     which are often summarized as `0 \le d \perp f_z \ge 0`.
 
     TODO: check the contact rupture condition is good. (Duindam, in his phd, chose a very specific one).
-    
-    Additionnaly, the Coulomb law of friction with the elliptic friction 
-    model states that the contact is in static friction mode and only 
+
+    Additionnaly, the Coulomb law of friction with the elliptic friction
+    model states that the contact is in static friction mode and only
     rolling motion occurs if `d = 0` and:
 
     .. math::
@@ -356,16 +356,16 @@ class SoftFingerContact(PointContact):
         &\le \mu^2 \cdot f_z^2
 
     where `e_p`, `e_x`, `e_y` are normalization coefficents
-    and `\mu` is the coefficient of friction. 
+    and `\mu` is the coefficient of friction.
     In such a case, the contact relative twist has the form:
-    
+
     .. math::
         \twist[0]_{1/0} &=
         \begin{bmatrix}
         \omega_x \\ \omega_y \\ 0 \\ 0 \\ 0 \\ 0
         \end{bmatrix}
 
-    Otherwise, the friction is said to be dynamic, and additionnal 
+    Otherwise, the friction is said to be dynamic, and additionnal
     sliding and pivoting motions occur:
 
     .. math::
@@ -394,24 +394,24 @@ class SoftFingerContact(PointContact):
         \frac{m_z^2}{e_p^2} + \frac{f_x^2}{e_x^2} + \frac{f_y^2}{e_y^2}
         &= \mu^2 \cdot f_z^2
 
-    
+
 
     References:
 
     .. _Liu2003:
-        T. Liu and M. Y. Wang, 
-        “Computation of three dimensional rigid body dynamics of 
-        multiple contacts using time-stepping and Gauss-Seidel 
-        method”, 
-        IEEE Transaction on Automation Science and Engineering, 
+        T. Liu and M. Y. Wang,
+        “Computation of three dimensional rigid body dynamics of
+        multiple contacts using time-stepping and Gauss-Seidel
+        method”,
+        IEEE Transaction on Automation Science and Engineering,
         submitted, November 2003
 
     .. _Trinkle2001:
-        J.C. Trinkle, J. Tzitzoutis, and J.S. Pang, 
-        "Dynamic Multi-Rigid-Body Systems with Concurrent 
-        Distributed Contacts: Theory and Examples", 
-        Philosophical Trans. on Mathematical, Physical, 
-        and Engineering Sciences, Series A, 359(1789):2575-2593, 
+        J.C. Trinkle, J. Tzitzoutis, and J.S. Pang,
+        "Dynamic Multi-Rigid-Body Systems with Concurrent
+        Distributed Contacts: Theory and Examples",
+        Philosophical Trans. on Mathematical, Physical,
+        and Engineering Sciences, Series A, 359(1789):2575-2593,
         December, 2001
 
     """
@@ -431,7 +431,7 @@ class SoftFingerContact(PointContact):
         H_01 = dot(Hg.inv(self._frames[0].pose), self._frames[1].pose)
         return (dot(Hg.adjoint(H_01)[2:6, :], self._frames[1].jacobian)
                 -self._frames[0].jacobian[2:6, :])
-    
+
     def solve(self, vel, admittance, dt):
         r"""
 
@@ -443,40 +443,40 @@ class SoftFingerContact(PointContact):
 
 
         Let's define the constraint velocity
- 
+
         .. math::
-            v =  
+            v =
             \begin{bmatrix}
                 \omega_z \\ v_x \\ v_y \\ v_z
             \end{bmatrix}
             = S \; \twist[0]_{1/0}
-        
+
         with
- 
+
         .. math::
-            S &= 
+            S &=
             \begin{bmatrix}
                 0 & 0 & 1 & 0 & 0 & 0\\
                 0 & 0 & 0 & 1 & 0 & 0\\
                 0 & 0 & 0 & 0 & 1 & 0\\
                 0 & 0 & 0 & 0 & 0 & 1
-            \end{bmatrix} 
- 
+            \end{bmatrix}
+
         and the constraint force
- 
+
         .. math::
-            f = 
+            f =
             \begin{bmatrix}
                 m_z \\ f_x \\ f_y \\ f_z
-            \end{bmatrix} 
- 
-        so that  
-        
+            \end{bmatrix}
+
+        so that
+
         .. math::
             \wrench[0]_{0/1} = S^T \; f
- 
+
         at the `k`-iest iteration of the Gauss-Seidel algorithm, we have
- 
+
         .. math::
             f^k(t) &= f^{k-1}(t) + \Delta f \\
             v^k(t+dt) &= v^*(t+dt) + Y \; \Delta f \\
@@ -485,16 +485,16 @@ class SoftFingerContact(PointContact):
                 0 & 0 & 0 & 1
             \end{bmatrix}
             \left( v^*(t+dt) + Y \; \Delta f \right)
- 
-        for static friction we'll need 
- 
+
+        for static friction we'll need
+
         .. math::
             d^k(t+dt) &= 0
-        
+
         and
-        
+
         .. math::
-            
+
             \begin{bmatrix}
                 1 & 0 & 0 & 0 \\
                 0 & 1 & 0 & 0 \\
@@ -505,153 +505,153 @@ class SoftFingerContact(PointContact):
             \begin{bmatrix}
                 0 \\ 0 \\ 0
             \end{bmatrix}
- 
+
         which leads to
- 
+
         .. math::
-            \Delta f &= -Y^{-1} 
-            \left( 
-            v^*(t+dt) + 
+            \Delta f &= -Y^{-1}
+            \left(
+            v^*(t+dt) +
             \begin{bmatrix}
                 0 \\ 0 \\ 0 \\ \frac{d(t)}{dt}
             \end{bmatrix}
             \right)
- 
+
         for dynamic friction, the condition on sliding velocity and contact
         persistance lead to
- 
+
         .. math::
             v^k(t+dt)
             &=
-            s 
+            s
             \begin{bmatrix}
             \frac{1}{e_p^2} & 0 & 0 & 0 \\
             0 & \frac{1}{e_x^2} & 0 & 0 \\
             0 & 0 & \frac{1}{e_y^2} & 0 \\
             0 & 0 & 0 & 0
-            \end{bmatrix} 
+            \end{bmatrix}
             (f^{k-1}+\Delta f)
             +
             \begin{bmatrix}
             0 \\ 0 \\ 0 \\ -\frac{d(t)}{dt}
             \end{bmatrix} \\
-            \Leftrightarrow 
+            \Leftrightarrow
             v^*(t+dt) + Y \Delta f
             &=
-            s 
+            s
             \begin{bmatrix}
             \frac{1}{e_p^2} & 0 & 0 & 0 \\
             0 & \frac{1}{e_x^2} & 0 & 0 \\
             0 & 0 & \frac{1}{e_y^2} & 0 \\
             0 & 0 & 0 & 0
-            \end{bmatrix} 
+            \end{bmatrix}
             \left( f^{k-1}+\Delta f \right)
             +
             \begin{bmatrix}
             0 \\ 0 \\ 0 \\ -\frac{d(t)}{dt}
             \end{bmatrix}
 
-        Finally, we get 
+        Finally, we get
 
         .. math::
             0 &=
             \alpha + \left(
-            Y - s 
+            Y - s
             \begin{bmatrix}
             \frac{1}{e_p^2} & 0 & 0 & 0 \\
             0 & \frac{1}{e_x^2} & 0 & 0 \\
             0 & 0 & \frac{1}{e_y^2} & 0 \\
             0 & 0 & 0 & 0
-            \end{bmatrix} 
+            \end{bmatrix}
             \right)
             \left( f^{k-1}+\Delta f \right)
 
-        and 
-            
+        and
+
         .. math::
             \left( f^{k-1}+\Delta f \right)
             &=
             - \left(
-            Y - s 
+            Y - s
             \begin{bmatrix}
             \frac{1}{e_p^2} & 0 & 0 & 0 \\
             0 & \frac{1}{e_x^2} & 0 & 0 \\
             0 & 0 & \frac{1}{e_y^2} & 0 \\
             0 & 0 & 0 & 0
-            \end{bmatrix} 
-            \right)^{-1} \alpha 
- 
+            \end{bmatrix}
+            \right)^{-1} \alpha
+
         while denoting
- 
+
         .. math::
             \alpha &=
-            v^*(t+dt) - 
+            v^*(t+dt) -
             \begin{bmatrix}
             0 \\ 0 \\ 0 \\ -\frac{d(t)}{dt}
             \end{bmatrix} - Y f^{k-1}
- 
+
         Note that `s` is still unknown. However,
- 
+
         .. math::
             \frac{m_z^2}{e_p^2} + \frac{f_x^2}{e_x^2} + \frac{f_y^2}{e_y^2}
             &= \mu^2 \cdot f_z^2
- 
+
         can be rewritten
- 
+
         .. math::
- 
+
             \left( f^{k-1}+\Delta f \right)^T
             \begin{bmatrix}
             \frac{1}{e_p^2} & 0 & 0 & 0 \\
             0 & \frac{1}{e_x^2} & 0 & 0 \\
             0 & 0 & \frac{1}{e_y^2} & 0 \\
             0 & 0 & 0 & -\mu^2
-            \end{bmatrix} 
+            \end{bmatrix}
             \left( f^{k-1}+\Delta f \right)
             &=0
- 
+
         so that if we can find `s` solution of
- 
+
         .. math::
             \alpha^T
             \left(
-            Y - s 
+            Y - s
             \begin{bmatrix}
             \frac{1}{e_p^2} & 0 & 0 & 0 \\
             0 & \frac{1}{e_x^2} & 0 & 0 \\
             0 & 0 & \frac{1}{e_y^2} & 0 \\
             0 & 0 & 0 & 0
-            \end{bmatrix} 
+            \end{bmatrix}
             \right)^{-T}
             \begin{bmatrix}
             \frac{1}{e_p^2} & 0 & 0 & 0 \\
             0 & \frac{1}{e_x^2} & 0 & 0 \\
             0 & 0 & \frac{1}{e_y^2} & 0 \\
             0 & 0 & 0 & -\mu^2
-            \end{bmatrix} 
+            \end{bmatrix}
             \left(
-            Y - s 
+            Y - s
             \begin{bmatrix}
             \frac{1}{e_p^2} & 0 & 0 & 0 \\
             0 & \frac{1}{e_x^2} & 0 & 0 \\
             0 & 0 & \frac{1}{e_y^2} & 0 \\
             0 & 0 & 0 & 0
-            \end{bmatrix} 
-            \right)^{-1} \alpha 
+            \end{bmatrix}
+            \right)^{-1} \alpha
             &=0 \text{,}
- 
+
         then we're done.
 
         Let's decompose `Y`, using numpy notations, noticing that it is
         symmetric:
 
         .. math::
-            Y &= 
+            Y &=
             \begin{bmatrix}
             Y_{0:3,0:3} & Y_{0:3,3} \\
             Y_{3,0:3}   & Y_{3,3}
             \end{bmatrix}
-            = 
+            =
             \begin{bmatrix}
             Y_t   & Y_c \\
             Y_c^T & y_n
@@ -661,7 +661,7 @@ class SoftFingerContact(PointContact):
 
         .. math::
             \left(
-            Y - s 
+            Y - s
             \begin{bmatrix}
             \frac{1}{e_p^2} & 0 & 0 & 0 \\
             0 & \frac{1}{e_x^2} & 0 & 0 \\
@@ -676,11 +676,11 @@ class SoftFingerContact(PointContact):
                 \frac{1}{e_p^2} & 0 & 0 \\
                 0 & \frac{1}{e_x^2} & 0 \\
                 0 & 0 & \frac{1}{e_y^2}
-                \end{bmatrix} 
+                \end{bmatrix}
             & Y_c \\
             Y_c^T & y_n
             \end{bmatrix}
-            \\ 
+            \\
             &=
             \begin{bmatrix}
             I_{3 \times 3} & Y_c/y_n \\
@@ -692,7 +692,7 @@ class SoftFingerContact(PointContact):
                 \frac{1}{e_p^2} & 0 & 0 \\
                 0 & \frac{1}{e_x^2} & 0 \\
                 0 & 0 & \frac{1}{e_y^2}
-                \end{bmatrix} 
+                \end{bmatrix}
                            & 0_{3 \times 1} \\
             0_{1 \times 3} & y_n
             \end{bmatrix}
@@ -700,12 +700,12 @@ class SoftFingerContact(PointContact):
             I_{3 \times 3} &  0_{3 \times 1} \\
             Y_c^T/y_n      & 1
             \end{bmatrix}
-            
+
         and its inverse
 
         .. math::
             \left(
-            Y - s 
+            Y - s
             \begin{bmatrix}
             \frac{1}{e_p^2} & 0 & 0 & 0 \\
             0 & \frac{1}{e_x^2} & 0 & 0 \\
@@ -732,7 +732,7 @@ class SoftFingerContact(PointContact):
             I_{3 \times 3} & -Y_c/y_n \\
             0_{1 \times 3} & y_n^{-1}
             \end{bmatrix}
-        
+
         injecting this last expression into, it can be shown that `s` is
         an eigen value of the `B` matrix
 
@@ -761,7 +761,7 @@ class SoftFingerContact(PointContact):
         where the following values have been introduced
 
         .. math::
-            \beta &= 
+            \beta &=
             \begin{bmatrix}
                 I_{3 \times 3} & -Y_c/y_n \\
                 \end{bmatrix} \alpha \\
@@ -785,14 +785,14 @@ class SoftFingerContact(PointContact):
             return dforce
 
         else:
-            # if there is contact, the normal velocity is given by the 
-            # restitution model (here, zero for strictly inelastic 
-            # contact). 
+            # if there is contact, the normal velocity is given by the
+            # restitution model (here, zero for strictly inelastic
+            # contact).
             # The tangent velocity is given by the Coulomb
-            # friction model. 
-            
+            # friction model.
+
             # First, try with static friction: zero tangent velocity
-            dforce = dot(-pinv(admittance), 
+            dforce = dot(-pinv(admittance),
                            hstack((vel[0:3], vel[3]+self._sdist/dt)))
             force = self._force + dforce
 
@@ -820,7 +820,7 @@ class SoftFingerContact(PointContact):
                 B[0:3, 3:6] = -dot(E, dot(beta, beta.T)/(a**2))
                 B[3:6, 0:3] = dot(E, dot(b, b.T)) - eye(3)
 
-                # s is the real part of the eigenvalue with the smallest 
+                # s is the real part of the eigenvalue with the smallest
                 # imaginary par within those with a positive real part
                 S = eigvals(B)
                 S = S[logical_and(S.imag == 0, S.real <= 0)]
@@ -834,7 +834,7 @@ class SoftFingerContact(PointContact):
                 self._force = solve(A, -alpha)
                 dforce = self._force - prev_force
                 return dforce
-        
+
 
 def get_all_contacts(world, contact_class=None, **args):
     """Init all the possible collisions in world.
@@ -866,13 +866,13 @@ def get_all_contacts(world, contact_class=None, **args):
         for j in range(i+1, len(shapes)):
             s1 = shapes[j]
             if s0.frame.body is s1.frame.body:
-                # Contact between two rigidly linked bodies would be 
+                # Contact between two rigidly linked bodies would be
                 # pointless.
-                pass 
+                pass
             else:
                 try:
                     contacts.append(contact_class((s0, s1), **args))
                 except NotImplementedError:
                     #The collison detection is impossible.
-                    pass 
+                    pass
     return contacts
