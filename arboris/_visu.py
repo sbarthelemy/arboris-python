@@ -78,11 +78,6 @@ class DrawerDriver():
         :rtype: dict
 
         """
-        body_palette = []
-        ncolor = 20
-        for k in range(ncolor):
-            h = 360./ncolor * k
-            body_palette.append(hsv_to_rgb((h, 0.9 , 0.9)))
         options = {
             'display frame arrows': True,
             'display links': True,
@@ -96,7 +91,6 @@ class DrawerDriver():
             'point radius': 0.008 * scale,
             'plane half extents': (1. * scale, 1. * scale),
             'text size': 0.1 * scale,
-            'body palette': body_palette,
             'center of interest': (0., 0., 0.),
             'camera position': (3.,3.,3.),
             'force length': 0.1 * scale,
@@ -173,18 +167,36 @@ class Drawer(object):
 
     it does not animate it !
 
-    TODO : use colors
-    TODO : add shapes
     TODO : add links
+
     """
 
     def __init__(self, driver, flat=False):
         self.transform_nodes = {}
         self.body_colors = {}
+        self._body_palette = []
+        ncolor = 20
+        for k in range(ncolor):
+            h = 360./ncolor * k
+            self._body_palette.append(hsv_to_rgb((h, 0.9 , 0.9)))
         self._flat = flat
         # TODO: guess driver
         assert isinstance(driver, DrawerDriver)
         self._driver = driver
+
+    def _get_body_color(self, body, alpha=1.):
+        """Select a colour in the palette for the body.
+        """
+        if body in self.body_colors:
+            color = self.body_colors[body]
+        else:
+            try:
+                c = self._body_palette.pop()
+                color = (c[0], c[1], c[2], alpha)
+                self.body_colors[body] = color
+            except IndexError:
+                color = (1., 1., 1., alpha)
+        return color
 
     def init_parse(self, ground, up, current_time):
         self._ground_node = self._driver.add_ground(up)
@@ -279,7 +291,7 @@ class Drawer(object):
             self.transform_nodes[obj] = node
             self._driver.add_child(self.frame_nodes[obj.body], node)
         if isinstance(obj, arboris.core.Shape):
-            color = (1, 0, 0, 1) #TODO: fix color
+            color = self._get_body_color(obj.frame.body)
             if isinstance(obj, arboris.shapes.Sphere):
                 node = self._driver.create_sphere(obj.radius, color)
             if isinstance(obj, arboris.shapes.Point):
