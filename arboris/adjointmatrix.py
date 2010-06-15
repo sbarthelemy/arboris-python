@@ -3,7 +3,7 @@
 Functions for working with adjoint matrices
 
 H = [ R p
-      0 1 ]    
+      0 1 ]
 Ad(H) = [  R   0
           pxR  R ]
 """
@@ -19,7 +19,7 @@ def isadjointmatrix(a):
     return (a.shape == (6, 6)) and (
         np.linalg.det(a[0:3, 0:3])==1) and (
         a[0:3, 0:3]==a[3:6, 3:6]).all() and (
-        a[0:3, 3:6]==np.zeros((3, 3))).all() 
+        a[0:3, 3:6]==np.zeros((3, 3))).all()
 
 
 def inv(Ad):

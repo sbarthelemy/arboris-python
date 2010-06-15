@@ -32,16 +32,16 @@ def ismassmatrix(M, tol=tol, semi=False):
 
 def transport(M, H):
     """Transport (express) the mass matrix into another frame.
-        
+
     :param M: the mass matrix expressed in the original frame (say, `a`)
     :type M: (6,6)-shaped array
     :param H: homogeneous matrix from the new frame (say `b`) to the
               original one: `H_{ab}`
     :type H: (4,4)-shaped array
     :rtype: (6,6)-shaped array
-    
+
     **Example:**
-    
+
     >>> M_a = diag((3., 2., 4., 1., 1., 1.))
     >>> H_ab = Hg.transl(1., 3., 0.)
     >>> M_b = transport(M_a, H_ab)
@@ -52,7 +52,7 @@ def transport(M, H):
            [  0.,   0.,   3.,   1.,   0.,   0.],
            [  0.,   0.,  -1.,   0.,   1.,   0.],
            [ -3.,   1.,   0.,   0.,   0.,   1.]])
-    
+
     """
     assert ismassmatrix(M)
     assert Hg.ishomogeneousmatrix(H)
@@ -71,7 +71,7 @@ def principalframe(M):
     frame `m`
 
     **Example:**
-    
+
     >>> M_a = diag((3.,2.,4.,1.,1.,1.))
     >>> H_ab = Hg.transl(1., 3., 0.)
     >>> M_b = transport(M_a, H_ab)
@@ -81,7 +81,7 @@ def principalframe(M):
            [ 0.,  1.,  0.,  0.],
            [ 0.,  0.,  1.,  0.],
            [ 0.,  0.,  0.,  1.]])
-    
+
     """
     assert ismassmatrix(M)
     m = M[5,5]
@@ -99,9 +99,9 @@ def principalframe(M):
 
 def box(half_extents, mass):
     """Mass matrix of an homogeneous parallelepiped.
-    
+
     **Example:**
-    
+
     >>> box((2., 4., 6.), 3.)
     array([[ 52.,   0.,   0.,   0.,   0.,   0.],
            [  0.,  40.,   0.,   0.,   0.,   0.],
@@ -109,7 +109,7 @@ def box(half_extents, mass):
            [  0.,   0.,   0.,   3.,   0.,   0.],
            [  0.,   0.,   0.,   0.,   3.,   0.],
            [  0.,   0.,   0.,   0.,   0.,   3.]])
-    
+
     """
     (x, y, z) = half_extents
     Ix = mass/3.*(y**2+z**2)
@@ -121,7 +121,7 @@ def box(half_extents, mass):
 def ellipsoid(radii, mass):
     """Mass matrix of an homogeneous ellipsoid.
     Dimensions are expressed at x,y,z coordinates
-    
+
     >>> ellipsoid((3.,1.,2.), 5.)
     array([[  5.,   0.,   0.,   0.,   0.,   0.],
            [  0.,  13.,   0.,   0.,   0.,   0.],
@@ -129,17 +129,17 @@ def ellipsoid(radii, mass):
            [  0.,   0.,   0.,   5.,   0.,   0.],
            [  0.,   0.,   0.,   0.,   5.,   0.],
            [  0.,   0.,   0.,   0.,   0.,   5.]])
-     
+
     """
     (x, y, z) = radii
     Ix = mass/5.*(y**2+z**2)
     Iy = mass/5.*(x**2+z**2)
     Iz = mass/5.*(x**2+y**2)
     return  diag( (Ix, Iy, Iz, mass, mass, mass) )
-    
+
 def cylinder(length, radius, mass):
     """Mass matrix of an homogeneous cylinder, whose symmetry axis is along the z-axis.
-    
+
     >>> cylinder(1., 0.1, 12.)
     array([[  1.03,   0.  ,   0.  ,   0.  ,   0.  ,   0.  ],
            [  0.  ,   1.03,   0.  ,   0.  ,   0.  ,   0.  ],
@@ -153,11 +153,11 @@ def cylinder(length, radius, mass):
     R = radius
     Itan = mass*(R**2/4. + L**2/12.)
     Iaxe = mass*R**2/2.
-    return diag( (Itan, Itan, Iaxe, mass, mass, mass) )    
+    return diag( (Itan, Itan, Iaxe, mass, mass, mass) )
 
 def sphere(radius, mass):
     """Mass matrix of an homogeneous sphere.
-    
+
     >>> sphere(1., 5.)
     array([[ 2.,  0.,  0.,  0.,  0.,  0.],
            [ 0.,  2.,  0.,  0.,  0.,  0.],
@@ -165,7 +165,7 @@ def sphere(radius, mass):
            [ 0.,  0.,  0.,  5.,  0.,  0.],
            [ 0.,  0.,  0.,  0.,  5.,  0.],
            [ 0.,  0.,  0.,  0.,  0.,  5.]])
-    
+
     """
     I = 2.*mass*radius**2/5.
     return diag( (I, I, I, mass, mass, mass) )

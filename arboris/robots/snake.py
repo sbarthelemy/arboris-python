@@ -17,12 +17,12 @@ from numpy import dot
 def add_snake(w, nbody, lengths=None, masses=None, gpos=None, gvel=None,
         is_fixed=True):
     """Add a snake-shape robot to the world.
-    
+
     **Example:**
-    
+
         >>> w = World()
         >>> add_snake(w, 3, lengths=[1.5, 1., 5.])
-    
+
     """
     assert isinstance(w, World)
     if lengths is None:
@@ -37,7 +37,7 @@ def add_snake(w, nbody, lengths=None, masses=None, gpos=None, gvel=None,
     if gvel is None:
         gvel = [0.] * nbody
     assert nbody == len(gvel)
-    
+
     if is_fixed:
         frame = w.ground
     else:
@@ -58,5 +58,5 @@ def add_snake(w, nbody, lengths=None, masses=None, gpos=None, gvel=None,
         frame = SubFrame(body, transl(0., length, 0.))
     w.register(frame)
     w.init()
-    
-    
+
+

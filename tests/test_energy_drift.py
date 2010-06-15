@@ -23,7 +23,7 @@ def run_simulation(is_fixed=False, with_weight=True):
         t_end = 2.08
     else:
         t_end = 1.430
-    nrj = observers.EnergyMonitor()      
+    nrj = observers.EnergyMonitor()
     timeline = arange(0, t_end, 0.005)
     simulate(world, timeline, (nrj,))
 
@@ -37,7 +37,7 @@ def run_simulation(is_fixed=False, with_weight=True):
         if with_weight:
             name += 'with_weight'
         else:
-            name += 'without_weight' 
+            name += 'without_weight'
         g[name] = nrj.kinetic_energy
         g.close()
     #nrj.plot()
@@ -53,7 +53,7 @@ class EnergyDriftTestCase(TestCase):
                                         nrj.kinetic_energy)
         finally:
             g.close()
- 
+
 if __name__ == '__main__':
     unittest.main()
 

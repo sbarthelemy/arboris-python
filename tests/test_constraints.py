@@ -18,7 +18,7 @@ class JointLimitsTestCase(TestCase):
         self.shoulder = joints['Shoulder']
         c = JointLimits(self.shoulder, -3.14/2, 3.14/2)
         self.world.register(c)
-   
+
     def test_max_joint_limit(self):
         self.shoulder.gpos[0] = 3.14/2 - 0.1
         time = arange(0., 0.1, 1e-3)
@@ -35,7 +35,7 @@ class BallAndSocketTestCase(TestCase):
     """
     A body under gravity, fixed to the ground via a ball and socket constraint.
     """
-    
+
     def runTest(self):
         b0 = Body(mass=eye(6))
         w = World()

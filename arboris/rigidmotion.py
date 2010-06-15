@@ -2,7 +2,7 @@
 
 __author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
-from numpy import dot 
+from numpy import dot
 import arboris.homogeneousmatrix as Hg
 import arboris.twistvector as T
 from abc import ABCMeta, abstractproperty
@@ -28,7 +28,7 @@ class RigidMotion(object):
 
     @abstractproperty
     def pose(self):
-        """Return the pose as an homogeneous matrix. 
+        """Return the pose as an homogeneous matrix.
         """
         pass
 
@@ -40,7 +40,7 @@ class RigidMotion(object):
 
     @abstractproperty
     def twist(self):
-        """Return the velocity as a twist vector. 
+        """Return the velocity as a twist vector.
         """
         pass
 
@@ -67,7 +67,7 @@ class RigidMotion(object):
     @property
     def dadjoint(self):
         return dot(self.adjoint, self.adjacency)
-    
+
     @property
     def idadjoint(self):
         return dot(self.iadjoint, self.iadjacency)

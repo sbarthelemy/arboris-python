@@ -30,11 +30,11 @@ class FreeJoint(Joint):
         self.gpos = array(gpos).reshape((4,4))
         self.gvel = array(gvel).reshape((6))
         Joint.__init__(self, name)
-        
+
     @property
     def ndof(self):
         return 6
-    
+
     @property
     def pose(self):
         return self.gpos.copy()
@@ -73,8 +73,8 @@ class RzRyRxJoint(LinearConfigurationSpaceJoint):
     @property
     def jacobian(self):
         """
-        T_n/r = 
-        """   
+        T_n/r =
+        """
         sx = sin(self.gpos[2])
         cx = cos(self.gpos[2])
         sy = sin(self.gpos[1])
@@ -86,7 +86,7 @@ class RzRyRxJoint(LinearConfigurationSpaceJoint):
              [  0.    ,   0. , 0. ],
              [  0.    ,   0. , 0. ],
              [  0.    ,   0. , 0. ]])
-    
+
     @property
     def djacobian(self):
         sx = sin(self.gpos[2])
@@ -120,8 +120,8 @@ class RzRyJoint(LinearConfigurationSpaceJoint):
     @property
     def jacobian(self):
         """
-        T_n/r = 
-        """   
+        T_n/r =
+        """
         sy = sin(self.gpos[1])
         cy = cos(self.gpos[1])
         return array(
@@ -131,7 +131,7 @@ class RzRyJoint(LinearConfigurationSpaceJoint):
              [  0. , 0. ],
              [  0. , 0. ],
              [  0. , 0. ]])
-    
+
     @property
     def djacobian(self):
         sy = sin(self.gpos[1])
@@ -144,8 +144,8 @@ class RzRyJoint(LinearConfigurationSpaceJoint):
              [   0.   , 0.  ],
              [   0.   , 0.  ],
              [   0.   , 0.  ]])
-             
-             
+
+
 class RzRxJoint(LinearConfigurationSpaceJoint):
     """Fingered Ball (2-dof) implemented with 2 serial hinges
 
@@ -170,7 +170,7 @@ class RzRxJoint(LinearConfigurationSpaceJoint):
              [ 0. , 0. ],
              [ 0. , 0. ],
              [ 0. , 0. ]])
-    
+
     @property
     def djacobian(self):
         sx = sin(self.gpos[1])
@@ -183,8 +183,8 @@ class RzRxJoint(LinearConfigurationSpaceJoint):
              [   0.   , 0.  ],
              [   0.   , 0.  ],
              [   0.   , 0.  ]])
-             
-             
+
+
 class RyRxJoint(LinearConfigurationSpaceJoint):
     """Fingered Ball (2-dof) implemented with 2 serial hinges
 
@@ -209,7 +209,7 @@ class RyRxJoint(LinearConfigurationSpaceJoint):
              [  0. , 0. ],
              [  0. , 0. ],
              [  0. , 0. ]])
-    
+
     @property
     def djacobian(self):
         sx = sin(self.gpos[1])
@@ -222,19 +222,19 @@ class RyRxJoint(LinearConfigurationSpaceJoint):
              [ 0.    , 0. ],
              [ 0.    , 0. ],
              [ 0.    , 0. ]])
-             
+
 
 class RzJoint(LinearConfigurationSpaceJoint):
     """Hinge (1-dof) with axis in the z-direction
-    
+
     example:
-    
+
     >>> j = RzJoint(gpos = 3.14/2., gvel = 1.)
     >>> j.gpos
     array([ 1.57])
     >>> j.gvel
     array([ 1.])
-   
+
     """
     @property
     def ndof(self):
@@ -324,7 +324,7 @@ class RyJoint(LinearConfigurationSpaceJoint):
     @property
     def djacobian(self):
         return zeros((6,1))
-        
+
 class RxJoint(LinearConfigurationSpaceJoint):
     """Hinge (1-dof) with axis in the x-direction
     """

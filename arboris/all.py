@@ -1,6 +1,6 @@
 # coding=utf-8
 
-"""Import all useful functions, classes and modules from arboris. 
+"""Import all useful functions, classes and modules from arboris.
 
 This is meant for interactive use.
 """

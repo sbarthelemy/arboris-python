@@ -33,7 +33,7 @@ def transl(t_x, t_y, t_z):
 
 def rotzyx(angle_z, angle_y, angle_x):
     """homogeneous transformation matrix from pitch-roll-yaw angles
-    
+
     In short:  R = Rz * Ry * Rx
 
     **Example:**
@@ -45,7 +45,7 @@ def rotzyx(angle_z, angle_y, angle_x):
            [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
     """
-    
+
     sz = sin(angle_z)
     cz = cos(angle_z)
     sy = sin(angle_y)
@@ -57,11 +57,11 @@ def rotzyx(angle_z, angle_y, angle_x):
          [ sz*cy, sz*sy*sx+cz*cx, sz*sy*cx-cz*sx, 0.],
          [-sy   , cy*sx         , cy*cx         , 0.],
          [ 0.   , 0.            , 0.            , 1.]])
-         
-         
+
+
 def rotzy(angle_z, angle_y):
     """homogeneous transformation matrix from pitch-roll-yaw angles)
-    
+
     In short:  R = Rz * Ry
 
     Example:
@@ -86,7 +86,7 @@ def rotzy(angle_z, angle_y):
 
 def rotzx(angle_z, angle_x):
     """homogeneous transformation matrix from pitch-roll-yaw angles)
-    
+
     In short:  R = Rz * Rx
 
     **Example:**
@@ -107,11 +107,11 @@ def rotzx(angle_z, angle_x):
          [ sz, cz*cx,-cz*sx, 0.],
          [ 0., sx   , cx   , 0.],
          [ 0., 0.   , 0.   , 1.]])
-         
-         
+
+
 def rotyx(angle_y, angle_x):
     """homogeneous transformation matrix from pitch-roll-yaw angles)
-    
+
     In short:  R = Ry * Rx
 
     **Example:**
@@ -136,7 +136,7 @@ def rotyx(angle_y, angle_x):
 def rotx(angle):
     """
     Homogeneous matrix of a rotation around the x-axis
-   
+
     Example:
 
     >>> rotx(3.14/6)
@@ -278,7 +278,7 @@ def adjoint(H):
     """
     Adjoint (6x6 matrix) of the homogeneous matrix.
 
-    :param H: homogeneous matrix 
+    :param H: homogeneous matrix
     :type H: 4x4 ndarray
     :return: adjoint matrix
     :rtype: 6x6 ndarray

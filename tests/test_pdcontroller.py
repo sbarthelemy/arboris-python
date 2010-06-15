@@ -12,7 +12,7 @@ class PdControllerTestCase(arboristest.TestCase):
         joints = world.getjoints()
         gpos_des = (3.14/4, 3.14/4, 3.14/4)
         kp = 7*diag((1.,1.,1.))
-        c = controllers.ProportionalDerivativeController(joints, 
+        c = controllers.ProportionalDerivativeController(joints,
             gpos_des=gpos_des,
             kp=kp,
             kd=kp/sqrt(2))

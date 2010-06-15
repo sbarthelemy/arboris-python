@@ -1,10 +1,10 @@
 # coding=utf-8
 """
-This module provides helpers to run simulation with arboris-python and 
+This module provides helpers to run simulation with arboris-python and
 arboris-matlab, store the result in hdf5 files and compare them.
 
 """
-__author__ = ("Joseph Salini <joseph.salini@gmail.com>", 
+__author__ = ("Joseph Salini <joseph.salini@gmail.com>",
               "Sébastien Barthélemy <sebastien.barthelemy@gmail.com>")
 
 import os
@@ -31,7 +31,7 @@ def load_matpy(name, mode='r'):
     matxp = h5py.File(name+'_mat.h5', mode)
     pyxp = h5py.File(name+'_py.h5', mode)
     return (matxp, pyxp)
-    
+
 def diff_matpy(xp_mat, xp_py):
     return compute_diff(xp_mat, xp_py)
 
@@ -51,37 +51,37 @@ def max_error(diff):
 
 def plot_diff(diff, time=None):
     from numpy.linalg import norm
-    
+
     if time is None:
         time = range(len(diff['time']))
     else:
         assert len(time) == len(diff['time'])
-    
+
     def ewnorm(iterable):
         return [norm(i) for i in iterable]
-        
+
     figure()
     plot(time, diff['gpos'][:,0:3,3])
     title('Root body position Difference')
-    
+
     figure()
     plot(time, ewnorm(diff['gpos'][:,0:3,0:3]))
     title('Root body rotational Difference')
-    
+
     figure()
     plot(time, ewnorm(diff['gvel']))
     title('Generalized Velocity Difference')
-        
+
     figure()
     plot(time, ewnorm(diff['mass']))
     title('Mass Matrix norm difference')
-    
+
     figure()
     plot(time, ewnorm(diff['nleffects']))
     title('Non-linear Effects Matrix norm difference')
-    
+
     show()
 
 
 
-    
+

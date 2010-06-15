@@ -211,14 +211,14 @@ def _box_sphere_collision(H_g0, half_extents0, p_g1, radius1):
     :param half_extents0: half lengths of the box
     :type half_extents0: (3,) array
     :param p_g1: center of the sphere
-    :type p_g1: (3,) array 
+    :type p_g1: (3,) array
     :param radius1: radius of the sphere
     :type radius1: float
 
     .. image:: img/box_sphere_collision.png
 
     **Tests:**
-    
+
     >>> from numpy import array, eye
     >>> H_g0 = eye(4)
     >>> lengths0 = array([1., 2., 3.])
@@ -283,7 +283,7 @@ def _box_sphere_collision(H_g0, half_extents0, p_g1, radius1):
         f_g = Hg.pdot(H_g0, f_0)
         sdist = -norm(f_g - p_g1)-radius1
     else:
-        # find the point x inside the box that is the nearest to 
+        # find the point x inside the box that is the nearest to
         # the sphere center:
         f_0 = zeros(3)
         for i in range(3):

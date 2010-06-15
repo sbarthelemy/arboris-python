@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 class EnergyMonitor(arboris.core.Observer):
     """Compute and store the world energy at each time step.
-    
+
     **Example:**
 
         >>> from arboris.core import World, simulate
@@ -25,7 +25,7 @@ class EnergyMonitor(arboris.core.Observer):
         >>> #obs.plot()
 
     """
-    
+
     def init(self, world, timeline):
         self._world = world
         self.time = []
@@ -39,7 +39,7 @@ class EnergyMonitor(arboris.core.Observer):
 
     def update(self, dt):
         self.time.append(self._world.current_time)
-        Ec = dot(self._world.gvel, 
+        Ec = dot(self._world.gvel,
                  dot(self._world.mass, self._world.gvel) )/2.
         self.kinetic_energy.append(Ec)
         Ep = 0.
@@ -104,7 +104,7 @@ class PerfMonitor(arboris.core.Observer):
         self._computation_time.append(current_time - self._last_time)
         self._last_time = current_time
         if self._logger is not None:
-            self._logger.info('current time (s): %.3f', 
+            self._logger.info('current time (s): %.3f',
                               self._world.current_time)
 
     def finish(self):
@@ -124,9 +124,9 @@ class PerfMonitor(arboris.core.Observer):
 min computation time (s): {1}
 mean computation time (s): {2}
 max computation time (s): {3}""".format(
-    total, 
-    min(self._computation_time), 
-    total/len(self._computation_time), 
+    total,
+    min(self._computation_time),
+    total/len(self._computation_time),
     max(self._computation_time))
 
 
@@ -134,7 +134,7 @@ class Hdf5Logger(arboris.core.Observer):
     """An observer that saves the simulation data in an hdf5 file.
     """
     def __init__(self, filename, group = "/",
-                 mode = 'a', save_viewer_data = True , 
+                 mode = 'a', save_viewer_data = True ,
                  save_dyn_model = False):
         import h5py
         arboris.core.Observer.__init__(self)
@@ -148,7 +148,7 @@ class Hdf5Logger(arboris.core.Observer):
         # what to save
         self._save_viewer_data = save_viewer_data
         self._save_dyn_model = save_dyn_model
- 
+
     def init(self, world, timeline):
         """Create the datasets.
         """
@@ -156,28 +156,28 @@ class Hdf5Logger(arboris.core.Observer):
         self._nb_steps = len(timeline)-1
         self._current_step = 0
         self._root.require_dataset("timeline", (self._nb_steps,), 'f8')
-        
+
         if self._save_viewer_data:
             self._matrix = self._world.getbodies()[1:]
             for m in self._matrix:
-                d = self._transforms.require_dataset(m.name, 
+                d = self._transforms.require_dataset(m.name,
 				               (self._nb_steps, 4,4), 'f8')
                 #d.attrs["ArborisViewerType"] = "matrix"
             #self._wrench = []
             #for w in self._wrench:
-            #    d = self._root.require_dataset(w.name, 
+            #    d = self._root.require_dataset(w.name,
             #        (self._nb_steps, 6), 'f8')
             #    d.attrs["ArborisViewerType"] = "wrench"
             #    dset.attrs["ArborisViewerParent"] = w.parent.name
         if self._save_dyn_model:
             ndof = self._world.ndof
-            #self._root.require_dataset("gpos", 
+            #self._root.require_dataset("gpos",
             #        (self._nb_steps, 4, 4), 'f8')
-            self._root.require_dataset("gvel", 
+            self._root.require_dataset("gvel",
                     (self._nb_steps, ndof), 'f8')
-            self._root.require_dataset("mass", 
+            self._root.require_dataset("mass",
                     (self._nb_steps, ndof, ndof), 'f8')
-            self._root.require_dataset("nleffects", 
+            self._root.require_dataset("nleffects",
                     (self._nb_steps, ndof, ndof), 'f8')
 
     def update(self, dt):

@@ -9,7 +9,7 @@ __author__ = ("Joseph SALINI <joseph.salini@gmail.com>",
 
 from arboris.core import Body, SubFrame, Joint, World
 from arboris import joints, shapes
-from numpy import zeros, eye, array, arange, hstack 
+from numpy import zeros, eye, array, arange, hstack
 from numpy.core import array2string
 
 def a2s(a):
@@ -24,29 +24,29 @@ class ConversionError(RuntimeError):
 
 class MatlabConverter(object):
     """Convert an arboris-python joint to another one that is compatible with arboris-matlab.
-    
+
     This works around two caveats of arboris-matlab:
-    
+
     - the first joint should always be a FreeJoint
-    
+
     - the other joints can only have one rotational dof.
-    
+
     # TODO: we should handle gpos and gvel
-    
+
     **Examples:**
-        
+
         >>> from arboris.robots.human36 import add_human36
         >>> w = World()
         >>> add_human36(w)
         >>> MatlabConverter().convert_robot(w, w.getjoints()[0])
-    
+
         >>> from arboris.robots.simplearm import add_simplearm
         >>> w = World()
         >>> add_simplearm(w)
         >>> MatlabConverter().convert_robot(w, w.getjoints()[0])
 
     """
-    
+
     def __init__(self):
         # default taken from arboris-matlab human36:
         self.small_mass = 1.0e-2
@@ -59,7 +59,7 @@ class MatlabConverter(object):
     def convert_root_joint(self, world, root_joint):
         assert isinstance(root_joint, Joint)
         assert isinstance(world, World)
-        assert root_joint.frames[0].body is world.ground 
+        assert root_joint.frames[0].body is world.ground
         if isinstance(root_joint, joints.FreeJoint):
             # nothing to do
             pass
@@ -70,12 +70,12 @@ class MatlabConverter(object):
             from arboris.constraints import SoftFingerContact
             # add a "free-floating" base body to the robot
             base = Body(mass=boxmass(self.base_lengths, self.base_mass))
-            world.replace_joint(root_joint, 
-                                root_joint.frames[0], 
-                                joints.FreeJoint(), 
+            world.replace_joint(root_joint,
+                                root_joint.frames[0],
+                                joints.FreeJoint(),
                                 base,
                                 base,
-                                root_joint, 
+                                root_joint,
                                 root_joint.frames[1])
             # add a ground plane
             r = self.contact_radius
@@ -90,7 +90,7 @@ class MatlabConverter(object):
                 world.register(sh)
                 contact = SoftFingerContact((ground_plane, sh), self.friction_coeff)
                 world.register(contact)
-              
+
     def convert_robot(self, world, root_joint):
         child_body = root_joint.frames[1].body
         self.convert_root_joint(world, root_joint)
@@ -105,26 +105,26 @@ class MatlabConverter(object):
             # try a conversion:
             self.convert_nonroot_joint(world, joint)
             # recurse:
-            self._traverse(world, child_body)         
+            self._traverse(world, child_body)
 
-    
+
     def convert_nonroot_joint(self, world, joint):
         """Convert a joint, which is assume not to be the root one of the robot."""
         assert isinstance(joint, Joint)
         assert isinstance(world, World)
-        assert joint.frames[0].body is not world.ground 
+        assert joint.frames[0].body is not world.ground
         frame0, frame1 = joint.frames
-        
+
         def name(suffix):
             if joint.name is None:
                 return None
             else:
                 return joint.name+suffix
-                        
+
         def mass():
             from numpy import diag
             return self.base_mass*diag([1.0, 1.0, 1.0, 0.1, 0.1, 0.1])
-        
+
         if isinstance(joint, joints.RzJoint) or \
             isinstance(joint, joints.RyJoint) or \
             isinstance(joint, joints.RxJoint):
@@ -169,26 +169,26 @@ class MatlabSimulationGenerator(object):
         >>> timeline = arange(0, 1., 1.0e-1)
         >>> MatlabSimulationGenerator().generate_simulation(w, timeline, stream)
         >>> stream.close()
-        
+
     """
     def __init__(self):
         pass
-        
+
     def generate_simulation(self, world, timeline, stream, simu_name):
         from arboris.controllers import WeightController
-        
+
         t_start = timeline[0]
         dt = timeline[1]-timeline[0]
         t_end = timeline[-1]+dt
-        if not (arange(t_start, t_end, dt) == array(timeline)).all(): 
+        if not (arange(t_start, t_end, dt) == array(timeline)).all():
             raise GenerationError('timeline elements should be equally spaced.')
         t_end -= 1.5*dt
         if len(world.ground.childrenjoints) != 1:
             raise GenerationError('the ground can only have one child joint. (multiple robots are not supported yet.)')
-        
+
         if len(world._constraints) > 0:
             raise GenerationError('constraints are not handled yet')
-            
+
         gravity = 0.
         for a in world._controllers:
             if isinstance(a, WeightController):
@@ -213,7 +213,7 @@ if (nargin < 1)
     t_start = {t_start};
 end
 
-global globs; 
+global globs;
 init_globs();
 
 r = create_{rname}();
@@ -237,7 +237,7 @@ class  MatlabRobotGenerator(object):
     """Generates a matlab file that would create the arboris-matlab equivalent to an arboris-python robot.
 
     **Tests:**
-    
+
     >>> from arboris.core import simplearm
     >>> import cStringIO
     >>> w = simplearm()
@@ -256,10 +256,10 @@ class  MatlabRobotGenerator(object):
     GenerationError: Cannot generate joints of type "<class 'arboris.joints.RzRyRxJoint'>".
     >>> stream.close()
 
-    The tests uses ``cStringIO.StringIO()`` instead of ``open()`` in 
-    order to avoid cluttering the filesystem, but the expected usage is 
+    The tests uses ``cStringIO.StringIO()`` instead of ``open()`` in
+    order to avoid cluttering the filesystem, but the expected usage is
     to write in files.
-    
+
     """
 
     def __init__(self, world):
@@ -267,7 +267,7 @@ class  MatlabRobotGenerator(object):
         self._b_map = {}
         self._gpos = []
         self._gvel = []
-    
+
     def make_robot(self, root_joint, stream, name=None):
         assert isinstance(root_joint, Joint)
         if not isinstance(root_joint, joints.FreeJoint):
@@ -286,7 +286,7 @@ class  MatlabRobotGenerator(object):
 
     def _add_tree(self, name):
         """Add the headings for a new (empty) tree."""
-        
+
         text = """
 function robot = create_{name}()
 %Returns a robot, named {name}.
@@ -294,8 +294,8 @@ function robot = create_{name}()
 % create a tree struct that will be later converted
 tree.name = '{name}';
 """.format(name=name) #TODO: we should ensure name is a valid matlab function name (no -,+...)
-        self.stream.write(text) 
-    
+        self.stream.write(text)
+
     def _finish(self):
         gvel = [self._gvel[0][3:6], self._gvel[0][0:3]] + self._gvel[1:]
         text="""
@@ -305,26 +305,26 @@ robot.model.q = {1}';
 robot.model.T = {2}';
 
 end
-""".format(self._gpos[0], 
+""".format(self._gpos[0],
            hstack(self._gpos[1:]),
            hstack(gvel))
         self.stream.write(text)
 
-    
+
     def _add_branch(self, num_br, parent=(0,0) ):
         """Add the headings for a new (empty) branch."""
-    
+
         text = """
 %% Create branch {br}:
 tree.br({br}).name = 'branch {br}';
 tree.br({br}).root_jk={par};
 """.format(br=num_br, par="{"+str(parent[0])+" "+str(parent[1])+"}")
-        self.stream.write(text) 
-        
-    
+        self.stream.write(text)
+
+
     def _add_link(self, joint, num_br, num_bd):
         """Add a link (a joint and its child body)."""
-        
+
         H00L1 = joint.frames[0].bpose
         H11L0 = joint.frames[1].bpose
         body = joint.frames[1].body
@@ -363,10 +363,10 @@ tree.br({br}).bd({bd}).M = ...
         H1 = a2s(H11L0)
         )
         self.stream.write(text)
-       
-        
+
+
     def _add_shapes(self):
-        """Add the shapes for all the links."""        
+        """Add the shapes for all the links."""
         num_in_bd = {}
         _shapes = self.w.getshapes()
         for v in _shapes:
@@ -410,7 +410,7 @@ tree.br(1).bd(1).shape(1).H = eye(4);
 tree.br(1).bd(1).shape(1).gr_props = {'FaceColor','Visible'; [1 0 0] ,'on'};
 """
             self.stream.write(text)
-    
+
     def _traverse(self, joints, br, bd):
         """Recurse through the tree."""
         parent = (br, bd-1)

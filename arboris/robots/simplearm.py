@@ -52,7 +52,7 @@ def add_simplearm(world, name='', lengths=(0.5 ,0.4 , 0.2),
     # create a joint between the ground and the arm
     shoulder = RzJoint(name=name+'Shoulder')
     world.add_link(world.ground, shoulder, arm)
-    
+
     # add a frame to the arm, where the forearm will be anchored
     f = SubFrame(arm,
         Hg.transl(0, lengths[0], 0),

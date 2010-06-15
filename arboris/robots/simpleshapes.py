@@ -28,7 +28,7 @@ def add_sphere(world, radius=1., mass=1., name=None):
     world.add_link(world.ground, FreeJoint(), ball)
     world.register(Sphere(ball, radius))
     world.init()
- 
+
 
 def add_box(world, half_extents=(1., 1., 1.), mass=1., name='Box'):
     """Build a box robot.
@@ -66,8 +66,8 @@ def add_cylinder(world, length=1., radius=1., mass=1., name='Cylinder'):
     world.add_link(world.ground, FreeJoint(), cylinder)
     world.register(Cylinder(cylinder, length, radius))
     world.init()
-    
-    
+
+
 def add_groundplane(world):
     """Add a ground plane using a plane shape.
     """

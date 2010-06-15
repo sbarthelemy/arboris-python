@@ -33,10 +33,10 @@ def plot_energy(xp_mat, xp_py, ymax=None):
     ylabel('energy (J)')
     if ymax is not None:
         ax = list(axis())
-        ax[3] = ymax 
+        ax[3] = ymax
         axis(ax)
     show()
-        
+
 t_start, t_end, dt = 0., 2.08, 0.005
 t_end = 1.430 ####
 timeline = arange(t_start, t_end, dt)
@@ -56,7 +56,7 @@ name = "haha"
 
 if with_weight:
     world.register(WeightController(world))
-    
+
 simulate_mat(world, timeline, name)
 simulate_py(world, timeline, name)
 

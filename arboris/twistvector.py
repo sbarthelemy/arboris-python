@@ -62,7 +62,7 @@ def exp(tw):
         cc = 1./2.
         sc = 1.-t**2/6.
         dsc = 1./6.
-    
+
     R = eye(3) + sc*wx + cc*dot(wx, wx)
     w_3x1 = w.reshape(3, 1) #TODO improve efficiency
     p = dot(sc*eye(3) + cc*wx + dsc*dot(w_3x1, w_3x1.T), v)

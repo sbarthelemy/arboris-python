@@ -6,7 +6,7 @@ import unittest
 import doctest
 import glob
 import os
-    
+
 suite = unittest.TestSuite()
 for module_name in arboris.__all__:
     exec('from arboris import {0} as module'.format(module_name))
