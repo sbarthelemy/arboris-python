@@ -67,8 +67,9 @@ class JointLimits(Constraint):
         self._force[:] = 0.
 
     def is_active(self):
-        return (self._pos0-self._min<self._proximity) or \
-                (self._max-self._pos0<self._proximity)
+        return self._is_enabled and (
+               (self._pos0-self._min<self._proximity) or \
+               (self._max-self._pos0<self._proximity))
 
     def solve(self, vel, admittance, dt):
         pred = self._pos0 + dt*(vel - dot(admittance, self._force))
@@ -182,7 +183,7 @@ class BallAndSocketConstraint(Constraint):
         self._pos0 = H_01[0:3, 3]
 
     def is_active(self):
-        return True
+        return self._is_enabled
 
     @property
     def jacobian(self):
@@ -294,7 +295,7 @@ class PointContact(Constraint):
         self._force[:] = 0.
 
     def is_active(self):
-        return self._is_active
+        return self._is_active and self._is_enabled
 
 
 class SoftFingerContact(PointContact):

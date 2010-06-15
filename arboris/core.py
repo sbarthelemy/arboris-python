@@ -269,6 +269,13 @@ class Constraint(NamedObject):
 
     def __init__(self, name=None):
         NamedObject.__init__(self, name)
+        self._is_enabled = True
+
+    def enable(self):
+        self._is_enabled = True
+
+    def disable(self):
+        self._is_enabled = False
 
     @abstractmethod
     def init(self, world):
