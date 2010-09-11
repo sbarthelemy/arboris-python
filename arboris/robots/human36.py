@@ -4,15 +4,11 @@
 This module serve as a factory for anthropometric humanoid models.
 
 The model is based on the ``human36`` anatomical model from the `HuMAnS
-toolbox`_ software developed at the INRIA in Grenoble.
+toolbox`_ software, developed at the INRIA in Grenoble.
 
-To the end-user, only the :func:`human36` should be useful.
+To the end-user, only the :func:`add_human36` function should be useful.
 
-TODO: decide if we support or no the ArborisName field in tags
-TODO: fix errors in matlab-arboris
-
-Finding the anatomical parameters in the HuMAnS toolbox source code
-===================================================================
+**Finding the anatomical parameters in the HuMAnS toolbox source code**
 
 HuMAnS (at version 1.0.7) uses Maple-generated C-code for computing
 the lagrangian model matrices and performs the integration and contact
@@ -23,14 +19,14 @@ describes
 - the lagrangian dynamics,
 - the contact kinematics,
 - and the "tags" kinematics (in the HuMAnS vocable, Tags are
-  caracteristic points such as the anatomical landmarks used for human
-  motion reconstruction).
+  feature points such as the anatomical landmarks used for human
+  motion reconstruction, as defined as "Sites" in H-anim).
 
 These files generate the C files that are then called from scilab. The functions
 take as parameters the human state (generalized positions and velocities) and
 anatomical parameters which are divided in
 
-- parameters nedded for kinematic model (the ``L`` variable in
+- parameters needed for kinematic model (the ``L`` variable in
   ``HuMAnS/LagrangianModel/Human36/MapleCodeGeneration/kinematicData.maple``),
 
 - parmeters needed for motion reconstruction and contacts (the ``AddL``
@@ -41,12 +37,18 @@ The two arrays of parameters are computed from the human's total height in the
 function ``SetModelSize`` from the file
 ``HuMAnS/LagrangianModel/Human36/human36.c``.
 
+The data about mass geomerty are located in
+``HuMAnS/LagrangianModel/Model/Human36/MapleCodeGeneration/DynamicData.maple``.
+
+Warning: the HuMAnS doc about inertia computation was erroneous (the real math
+is in the ``IOMatrix`` proc in ``DynamicData.maple``).
+
 .. _`HuMAnS toolbox`:
     http://bipop.inrialpes.fr/software/humans/
     Human Motion Analysis and Simulation toolbox
 
 """
-from arboris.core import World, Body, SubFrame
+from arboris.core import World, Body, SubFrame, NamedObjectsList
 import numpy as np
 from numpy import array, diag, dot, hstack
 import arboris.homogeneousmatrix as Hg
@@ -54,241 +56,125 @@ from arboris.homogeneousmatrix import adjoint
 from arboris.joints import *
 from arboris.shapes import Point
 
-def anatomical_lengths(height):
-    """Returns a dict of anatomical lengths as defined in HuMAnS.
+def anat_lengths_from_height(height):
+    """Dict-like object storing anatomical lengths as defined in HuMAnS.
 
     :param height: the human height
     :type height: float
     :return: anatomical lengths, scaled according to ``height``
     :rtype: dict
 
-    This function simply calls :func:`_humans_anatomical_lengths`
-    and removes the useless stuff from it result.
-
     **Examples:**
 
-    >>> L = anatomical_lengths(1.741)
+    >>> L = anat_lengths_from_height(1.741)
     >>> L['ysternoclavL']
     0.17061800000000002
-    >>> L = anatomical_lengths(2.)
+    >>> L = anat_lengths_from_height(2.)
     >>> L['ysternoclavL']
     0.19600000000000001
 
-    """
-    lengths_list = _humans_anatomical_lengths(height)
-    lengths_dict = {}
-    for length in lengths_list:
-        lengths_dict[length["HumansName"]] = length["Value"]
-    return lengths_dict
+    ** Differences with HuMAnS **
 
-def _humans_anatomical_lengths(height):
-    """Returns data about anatomical lengths as defined in HuMAnS.
+    The data comes from the file ``LagrangianModel/Human36/Human36.c``
+    in HuMAnS.
+    The lengths defined in this class correspond to the ``L`` variable in
+    ``HuMAnS/LagrangianModel/Human36/MapleCodeGeneration/kinematicData.maple``,
+    with the addition of ``xheelR`` and ``xheelL`` lenghts are not defined
+    in ``anatomicalLengths`` but in ``tagMultSize``
 
-    :param height: the human height
-    :type height: float
-    :return: anatomical lengths date, scaled according to ``height``.
-    The keys are:
-        - "HumansName": the name used in HuMAnS to denote a parameter,
-        - "HumansId": the number used in HuMAnS doc to denote a parameter,
-        - "Value": the length value in meters,
-        - "Description": a short descriptive text.
-    :rtype: list of dicts
-
-    the data come from HuMAnS' ``LagrangianModel/Human36/Human36.c``
-    file.
-
-    **Errors in matlab-arboris ?**
+    ** Differences with matlab-arboris **
 
     In this implementation, the "zshoulder", "zhip" and "xfoot" lengths are
     computed as in HuMAnS, which is different from the way they were
     computed in matlab-arboris.
 
     """
+    lengths = {}
+    def add_length(name, value, descr=None):
+        """Add an anatomical length.
+
+        :param name: the length name, taken from HuMAnS when possible
+        :type name: string
+        :param value: length value, in meters
+        :type value: float
+        :param descr: a short descriptive text
+        :type descr: string or None
+
+        ``descr`` is discarded for now.
+
+        """
+        name = unicode(name)
+        lengths[name] = float(value)
 
     yfoot =  0.0222 * height
     ytibia = 0.2493 * height
     yfemur = 0.2425 * height
     ysternoclav = 0.0980 * height
-    zsternoclav = 0.5 * 0.0254 # zsternoclav  = 0.5 inch
+    zsternoclav = 0.5 * 0.0254 # zsternoclav = 0.5 inch
     xsternoclav = 0.1052 *  height
     yshoulder = 0.0104 * height
     zshoulder = 0.1295 * height - zsternoclav
-    xshoulder = 0.0526 *  height
+    xshoulder = 0.0526 * height
     yhumerus = 0.1618 * height
     yforearm = 0.1544 * height
     yhand = 0.1091 * height
     xfoot = 0.1482 * height
-
-    lengths = []
-    lengths.append({
-        "HumansName": "yvT10",
-        'HumansId': 1,
-        "Value": 0.2075*height,
-        "Description": "hip joint centers/T10 vertebra"})
-    lengths.append({
-        "HumansName": "xvT10",
-        'HumansId': 2,
-        "Value": 0.0526 *  height,
-        "Description": "hip joint center middle point/T10 vertebra"})
-    lengths.append({
-        "HumansName": "zhip",
-        'HumansId': 3,
-        "Value": 0.1002 * height,
-        "Description": "left hip joint center/right hip joint center"})
-    lengths.append({
-        "HumansName": "yfootR",
-        'HumansId': 4,
-        "Value": yfoot,
-        "Description": "right foot height"})
-    lengths.append({
-        "HumansName": "ytibiaR",
-        'HumansId': 5,
-        "Value": ytibia,
-        "Description": "right lateral malleolus/right knee joint center"})
-    lengths.append({
-        "HumansName": "yfemurR",
-        'HumansId': 6,
-        "Value": yfemur,
-        "Description": "right knee Joint center/right hip joint center"})
-    lengths.append({
-        "HumansName": "ysternoclavR",
-        'HumansId': 7,
-        "Value": ysternoclav,
-        "Description": "T10 vertebra/suprasternale"})
-    lengths.append({
-        "HumansName": "zsternoclavR",
-        'HumansId': 8,
-        "Value": zsternoclav,
-        "Description": "?"})
-    lengths.append({
-        "HumansName": "xsternoclavR",
-        'HumansId': 9,
-        "Value": xsternoclav,
-        "Description": "T10 vertebra/right sternoclavicular joint center"})
-    lengths.append({
-        "HumansName": "yshoulderR",
-        'HumansId': 10,
-        "Value": yshoulder,
-        "Description": "suprasternale/right shoulder joint center"})
-    lengths.append({
-        "HumansName": "zshoulderR",
-        'HumansId': 11,
-        "Value": zshoulder,
-        "Description": "suprasternale/right shoulder joint center"})
-    lengths.append({
-        "HumansName": "xshoulderR",
-        'HumansId': 12,
-        "Value": xshoulder,
-        "Description": "suprasternale/right shoulder joint center"})
-    lengths.append({
-        "HumansName": "yhumerusR",
-        'HumansId': 13,
-        "Value": yhumerus,
-        "Description": "right shoulder joint center/right elbow joint center"})
-    lengths.append({
-        "HumansName": "yfootL",
-        'HumansId': 14,
-        "Value": yfoot,
-        "Description": "left foot height"})
-    lengths.append({
-        "HumansName": "ytibiaL",
-        'HumansId': 15,
-        "Value": ytibia,
-        "Description": "left lateral malleolus/left knee joint center"})
-    lengths.append({
-        "HumansName": "yfemurL",
-        'HumansId': 16,
-        "Value": yfemur,
-        "Description": "left knee Joint center/left hip joint center"})
-    lengths.append({
-        "HumansName": "ysternoclavL",
-        'HumansId': 17,
-        "Value": ysternoclav,
-        "Description": "T10 vertebra/suprasternale"})
-    lengths.append({
-        "HumansName": "zsternoclavL",
-        'HumansId': 18,
-        "Value": zsternoclav,
-        "Description": "?"})
-    lengths.append({
-        "HumansName": "xsternoclavL",
-        'HumansId': 19,
-        "Value": xsternoclav,
-        "Description": "T10 vertebra/left sternoclavicular joint center"})
-    lengths.append({
-        "HumansName": "yshoulderL",
-        'HumansId': 20,
-        "Value": yshoulder,
-        "Description": "suprasternale/left shoulder joint center"})
-    lengths.append({
-        "HumansName": "zshoulderL",
-        'HumansId': 21,
-        "Value": zshoulder,
-        "Description": "suprasternale/left shoulder joint center"})
-    lengths.append({
-        "HumansName": "xshoulderL",
-        'HumansId': 22,
-        "Value": xshoulder,
-        "Description": "suprasternale/left shoulder joint center"})
-    lengths.append({
-        "HumansName": "yhumerusL",
-        'HumansId': 23,
-        "Value": yhumerus,
-        "Description": "left shoulder joint center/left elbow joint center"})
-    lengths.append({
-        "HumansName": "yforearmR",
-        'HumansId': 24,
-        "Value": yforearm,
-        "Description": "right elbow joint center/right wrist joint center"})
-    lengths.append({
-        "HumansName": "yforearmL",
-        'HumansId': 25,
-        "Value": yforearm,
-        "Description": "left elbow joint center/left wrist joint center"})
-    lengths.append({
-        "HumansName": "yvC7",
-        'HumansId': 26,
-        "Value": 0.139*height,
-        "Description": "T10 vertebra/C7 vertebra"})
-    lengths.append({
-        "HumansName": "yhandR",
-        'HumansId': 27,
-        "Value": yhand,
-         "Description": "right wrist joint center/right 3rd dactilion"})
-    lengths.append({
-        "HumansName": "yhandL",
-        'HumansId': 28,
-        "Value": yhand,
-        "Description": "left wrist joint center/left 3rd dactilion"})
-    lengths.append({
-        "HumansName": "yhead",
-        'HumansId': 29,
-        "Value": 0.1395*height,
-        "Description": "C7 vertebra/Vertex"})
-    lengths.append({
-        "HumansName": "xfootR",
-        'HumansId': 30,
-        "Value": xfoot,
-        "Description": "right foot length"})
-    lengths.append({
-        "HumansName": "xfootL",
-        'HumansId': 31,
-        "Value": xfoot,
-        "Description": "left foot length"})
+    xheel = 0.0248 * height
+    add_length("yvT10", 0.2075 * height, "hip joint centers/T10 vertebra")
+    add_length("xvT10", 0.0526 * height, "hip joint center middle point/T10 vertebra")
+    add_length("zhip", 0.1002 * height, "left hip joint center/right hip joint center")
+    add_length("yfootR", yfoot, "right foot height")
+    add_length("ytibiaR", ytibia, "right lateral malleolus/right knee joint center")
+    add_length("yfemurR", yfemur, "right knee Joint center/right hip joint center")
+    add_length("ysternoclavR", ysternoclav, "T10 vertebra/suprasternale")
+    add_length("zsternoclavR", zsternoclav)
+    add_length("xsternoclavR", xsternoclav, "T10 vertebra/right sternoclavicular joint center")
+    add_length("yshoulderR", yshoulder,  "suprasternale/right shoulder joint center")
+    add_length("zshoulderR", zshoulder,  "suprasternale/right shoulder joint center")
+    add_length("xshoulderR", xshoulder,  "suprasternale/right shoulder joint center")
+    add_length("yhumerusR", yhumerus,  "right shoulder joint center/right elbow joint center")
+    add_length("yfootL", yfoot, "left foot height")
+    add_length("ytibiaL", ytibia, "left lateral malleolus/left knee joint center")
+    add_length("yfemurL", yfemur, "left knee Joint center/left hip joint center")
+    add_length("ysternoclavL", ysternoclav, "T10 vertebra/suprasternale")
+    add_length("zsternoclavL", zsternoclav, )
+    add_length("xsternoclavL", xsternoclav, "T10 vertebra/left sternoclavicular joint center")
+    add_length("yshoulderL", yshoulder, "suprasternale/left shoulder joint center")
+    add_length("zshoulderL", zshoulder, "suprasternale/left shoulder joint center")
+    add_length("xshoulderL", xshoulder, "suprasternale/left shoulder joint center")
+    add_length("yhumerusL", yhumerus, "left shoulder joint center/left elbow joint center")
+    add_length("yforearmR", yforearm, "right elbow joint center/right wrist joint center")
+    add_length("yforearmL", yforearm, "left elbow joint center/left wrist joint center")
+    add_length("yvC7", 0.139 * height, "T10 vertebra/C7 vertebra")
+    add_length("yhandR", yhand, "right wrist joint center/right 3rd dactilion")
+    add_length("yhandL", yhand, "left wrist joint center/left 3rd dactilion")
+    add_length("yhead", 0.1395 * height, "C7 vertebra/Vertex")
+    add_length("xfootR", xfoot,  "right foot length")
+    add_length("xfootL", xfoot, "left foot length")
+    add_length("xheelR", xheel, 'right ankle/right heel')
+    add_length("xheelL", xheel, 'left ankle/left heel')
     return lengths
 
-def height(lengths):
-    """Computes a human height according to its anatomical lenghts.
+def height_from_anat_lengths(lengths):
+    """Computes a human height according to its anatomical lengths.
 
-    An exception is thrown if the human is asymetric (one leg longuer than the
+    An exception is thrown if the human is asymmetric (one leg longer than the
     other...).
+
+    :return height: the human height
+    :rtype: float
+    :raises: ValueError if one leg is longer than the other
 
     **Examples:**
 
-    >>> height(anatomical_lengths(1.741))
+    >>> L = anat_lengths_from_height(1.741)
+    >>> height_from_anat_lengths(L)
     1.7410000000000001
-    >>> height(anatomical_lengths(2.))
-    2.0
+    >>> L['ytibiaL'] = .95 * L['ytibiaL'] # shorten the left leg
+    >>> height_from_anat_lengths(L)
+    Traceback (most recent call last):
+        ...
+    ValueError: The legs have different lengths
 
     """
     right_leg = lengths['yfootR'] + lengths['ytibiaR'] + lengths['yfemurR']
@@ -297,446 +183,225 @@ def height(lengths):
         raise ValueError("The legs have different lengths")
     return left_leg + lengths['yvT10'] + lengths['yvC7'] + lengths['yhead']
 
-def _humans_tags(height):
-    """Returns data about anatomical landmarks as defined in HuMAnS.
 
-    :param height: the human height
+def add_human36(world, height=1.741, mass=73, anat_lengths=None, name='',
+                return_lists=False):
+    """Add an anthropometric humanoid model to the world.
+
+    :param height: the human height in meters. Ignored if ``anat_lengths``
+                   is provided.
     :type height: float
-    :return: anatomical landmarks data, scaled according to ``height``.
-    The keys are:
-        - "ArborisName": the name used in arboris-matlab to denote the landmark,
-        - "HumansName": the name used in HuMAnS to denote the landmark,
-        - "HumansId": the number used in HuMAnS doc to denote the landmark,
-        - "HumansBodyId": the number used in HuMAnS to denote the body the
-          landmark is attached to,
-        - "Position": the length value in meters.
-    :rtype: list of dicts
+    :param mass: the human mass in kilograms.
+    :type mass: float
+    :param anat_lengths: the human anatomical lengths.
+                         Computed from ``height`` if not provided
+    :type anat_lengths: dict
+    :param name: name of the human, used to prefix every object name.
+    :type name: string
+    :param return_lists: if True, returns of a tuple of the added objects
+    :type return_lists: boolean
+    :return: None or a tuple of ``NamedObjectsList``s of the added objects
+             ``(joints, bodies, tags, shapes)``
 
-    - ``HumansName`` and ``HumansId`` come from
-      ``AdditionnalData.maple``.
-    - ``Position`` refers to ``AddL`` and come from ``Humans36.c``
+    **Exemples**
 
-    """
-    h = height
-    L = anatomical_lengths(h)
-    tags= []
-    tags.append({
-        'ArborisName': 'RightFootSecondDigit',
-        'HumansName': 'Right foot toe tip',
-        'HumansId': 1,
-        'HumansBodyId': 4,
-        'Position': [0.1235*h, -L['yfootR'], 0.]})
-    tags.append({
-        'ArborisName': 'RightCalcaneousPost',
-        'HumansName': 'Right foot heel',
-        'HumansId' : 2,
-        'HumansBodyId': 4,
-        'Position': [-0.0248*h, -L['yfootR'],0.]})
-    tags.append({
-        'ArborisName': 'RightFifthMetatarsal',
-        'HumansName': 'Right foot phalange 5',
-        'HumansId': 3,
-        'HumansBodyId': 4,
-        'Position': [0.0662*h, -L['yfootR'], 0.0305*h] })
-    tags.append({
-        'ArborisName': 'RightFirstMetatarsal',
-        'HumansName': 'Right foot Phalange 1',
-        'HumansId': 4,
-        'HumansBodyId': 4,
-        'Position': [0.0662*h, -L['yfootR'], -0.0305*h]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Right foot lateral malleolus',
-        'HumansId': 5,
-        'HumansBodyId': 3,
-        'Position': [0., -L['ytibiaR'], 0.0249*h]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Femoral lateral epicondyle',
-        'HumansId': 6,
-        'HumansBodyId': 2,
-        'Position': [0., -L['yfemurR'], 0.0290*h]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Right great trochanter',
-        'HumansId': 7,
-        'HumansBodyId': 2,
-        'Position': [0., 0., 0.0941*h-L['zhip']/2.]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Right iliac crest',
-        'HumansId': 8,
-        'HumansBodyId': 1,
-        'Position': [0.0271*h, 0.0366*h, 0.0697*h]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Left foot toe tip',
-        'HumansId': 9,
-        'HumansBodyId': 7,
-        'Position': [0.1235*h, -L['yfootL'], 0.]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Left foot heel',
-        'HumansId': 10,
-        'HumansBodyId': 7,
-        'Position': [-0.0248*h, -L['yfootL'], 0.]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Left foot phalange 5',
-        'HumansId': 11,
-        'HumansBodyId': 7,
-        'Position': [0.0662*h, -L['yfootL'], -0.0305*h]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Left foot phalange 1',
-        'HumansId': 12,
-        'HumansBodyId': 7,
-        'Position': [0.0662*h, -L['yfootL'], 0.0305*h]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Left foot lateral malleolus',
-        'HumansId': 13,
-        'HumansBodyId': 6,
-        'Position': [0, -L['ytibiaL'], -0.0249*h]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Left femoral lateral epicondyle',
-        'HumansId': 14,
-        'HumansBodyId': 5,
-        'Position':  [0,-L['yfemurL'], -0.0290*h]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Left great trochanter',
-        'HumansId': 15,
-        'HumansBodyId': 5,
-        'Position':  [0, 0, -0.0941*h+L['zhip']/2.]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Left iliac crest',
-        'HumansId': 16,
-        'HumansBodyId': 1,
-        'Position': [0.0271*h, 0.0366*h, -0.0697*h]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Substernale (Xyphoid)',
-        'HumansId': 17,
-        'HumansBodyId': 8,
-        'Position': [0.1219*h, 0, 0]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Suprasternale',
-        'HumansId': 18,
-        'HumansBodyId': 8,
-        'Position': [(L['xsternoclavL']+L['xsternoclavL'])/2.,
-                     (L['ysternoclavL']+L['ysternoclavL'])/2.,
-                     0]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Right acromion',
-        'HumansId': 19,
-        'HumansBodyId': 9,
-        'Position': [-L['xshoulderR'],
-                     0.0198*h+L['yshoulderR'],
-                     L['zshoulderR']]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Right humeral lateral epicondyle (radiale)',
-        'HumansId': 20,
-        'HumansBodyId': 10,
-        'Position': [0., -L['yhumerusR'], 0.0211*h]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Right stylion',
-        'HumansId': 21,
-        'HumansBodyId': 11,
-        'Position': [0., -0.1533*h, 0.0331*h]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Right 3rd dactylion',
-        'HumansId': 22,
-        'HumansBodyId': 12,
-        'Position': [0., -0.1091*h, 0.]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Left acromion',
-        'HumansId': 23,
-        'HumansBodyId': 13,
-        'Position': [-L['xshoulderL'], 0.0198*h+L['yshoulderL'], -L['zshoulderL']]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Left humeral lateral epicondyle (radiale)',
-        'HumansId': 24,
-        'HumansBodyId': 14,
-        'Position': [0., -L['yhumerusL'], -0.0211*h]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Left stylion',
-        'HumansId': 25,
-        'HumansBodyId': 15,
-        'Position': [0., -0.1533*h, -0.0331*h]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Left 3rd dactylion',
-        'HumansId': 26,
-        'HumansBodyId': 16,
-        'Position': [0., -0.1091*h, 0.]})
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Cervicale',
-        'HumansId': 27,
-        'HumansBodyId': 8,
-        'Position': [-0.0392*0. +L['xvT10'], L['yvC7'], 0.]})#79???
-    tags.append({
-        'ArborisName': '',
-        'HumansName': 'Vertex',
-        'HumansId': 28,
-        'HumansBodyId': 17,
-        'Position': [0., 0.1395*h, 0.]})
-    return tags
+    >>> w = World()
+    >>> # add a normal human
+    >>> add_human36(w, height=1.8, name="Bob's ")
+    >>> # add a human with a shorter left arm
+    >>> L = anat_lengths_from_height(1.8)
+    >>> L['yhumerusL'] *= .7
+    >>> L['yforearmL'] *= .7
+    >>> L['yhandL'] *= .7
+    >>> add_human36(w, anat_lengths=L, name="Casimodo's ")
+    >>> frames = w.getframes()
 
-
-def tags(height):
-    """
-
-    """
-    tdict = {}
-    for t in _humans_tags(height):
-        tdict[t['HumansName']] =  t['Position']
-    return tdict
-
-
-def _humans_bodies(height, mass):
-    """
-
-    Example:
-
-    >>> b = _humans_bodies(1.741, 73)
-    """
-    L = anatomical_lengths(height)
-    T = tags(height)
-    bodies=[]
-    bodies.append(
-        {"HumansName": "LPT", # Lower Part of Trunk
-         'HumansId': 1,
-         "Mass": 0.275 * mass,
-         "CenterOfMass": [0, 0.5108*L['yvT10'], 0],
-         "GyrationRadius": array([0.2722, 0.2628, 0.226])*L['yvT10']})
-    bodies.append(
-        {"HumansName": "ThighR",
-         'HumansId': 2,
-         "Mass": 0.1416 * mass,
-         "CenterOfMass": [0, -0.4095*L['yfemurR'], 0],
-         "GyrationRadius": array([0.329, 0.149, 0.329])*L['yfemurR']})
-    bodies.append(
-        {"HumansName": "ShankR",
-         'HumansId': 3,
-         "Mass": 0.0433 * mass,
-         "CenterOfMass": [0, -0.4459*L['ytibiaR'], 0],
-         "GyrationRadius": array([0.255, 0.103, 0.249])*L['ytibiaR']})
-    bodies.append(
-        {"HumansName": "FootR",
-         'HumansId': 4,
-         "Mass": 0.0137 * mass,
-         "CenterOfMass": [
-            0.4415*L['xfootR'] + T['Right foot heel'][0],
-            -L['yfootR']/2.,
-            0.],
-         "GyrationRadius": array([0.124, 0.257, 0.245])*L['xfootR']})
-    bodies.append(
-        {"HumansName": "ThighL",
-         'HumansId': 5,
-         "Mass": 0.1416 * mass,
-         "CenterOfMass": [0, -0.4095*L['yfemurL'], 0],
-         "GyrationRadius": array([0.329, 0.149, 0.329])*L['yfemurL']})
-    bodies.append(
-        {"HumansName": "ShankL",
-         'HumansId': 6,
-         "Mass": 0.0433 * mass,
-         "CenterOfMass": [0, -0.4459*L['ytibiaL'], 0],
-         "GyrationRadius": array([0.255, 0.103, 0.249])*L['ytibiaL']})
-    bodies.append(
-        {"HumansName": "FootL",
-         'HumansId': 7,
-         "Mass": 0.0137 * mass,
-         "CenterOfMass":
-             [0.4415*L['xfootL'] + T['Left foot heel'][0],
-             -L["yfootL"]/2,
-             0.],
-         "GyrationRadius": array([0.124, 0.257, 0.245])*L['xfootL']})
-    bodies.append(
-        {"HumansName": "UPT", # Upper Part of Trunk
-         'HumansId': 8,
-         "Mass": 0.1596 * mass,
-         "CenterOfMass": [(L['xsternoclavR'] + L['xsternoclavL'])/4.,
-                          0.7001*(L['ysternoclavR']+L['ysternoclavL'])/2.,
-                          0.],
-         "GyrationRadius": array([0.716, 0.659, 0.454])*L['ysternoclavR']})
-    bodies.append(
-        {"HumansName": "ScapulaR", # right shoulder
-         'HumansId': 9,
-         "Mass": 0.,
-         "CenterOfMass": [0., 0., 0.],
-         "GyrationRadius": array([0., 0., 0.])})
-    bodies.append(
-        {"HumansName": "ArmR",
-         'HumansId': 10,
-         "Mass": 0.0271 * mass,
-         "CenterOfMass": [0., -0.5772*L['yhumerusR'], 0.],
-         "GyrationRadius": array([0.285, 0.158, 0.269])*L['yhumerusR']})
-    bodies.append(
-        {"HumansName": "ForearmR",
-         'HumansId': 11,
-         "Mass": 0.0162 * mass,
-         "CenterOfMass": [0., -0.4574*L['yforearmR'], 0.],
-         "GyrationRadius": array([0.276, 0.121, 0.265])*L['yforearmR']})
-    bodies.append(
-        {"HumansName": "HandR",
-         'HumansId': 12,
-         "Mass": 0.0061 * mass,
-         "CenterOfMass": [0, -0.3691*L['yhandR'], 0],
-         "GyrationRadius": array([0.235, 0.184, 0.288])*L['yhandR']})
-    bodies.append(
-        {"HumansName": "ScapulaL", # left shoulder
-         'HumansId': 13,
-         "Mass": 0.,
-         "CenterOfMass": [0., 0., 0.],
-         "GyrationRadius": array([0., 0., 0.])})
-    bodies.append(
-        {"HumansName": "ArmL",
-         'HumansId': 14,
-         "Mass": 0.0271 * mass,
-         "CenterOfMass": [0, -0.5772*L['yhumerusL'], 0.],
-         "GyrationRadius": array([0.285, 0.158, 0.269])*L['yhumerusL']})
-    bodies.append(
-        {"HumansName": "ForearmL",
-         'HumansId': 15,
-         "Mass": 0.0162 * mass,
-         "CenterOfMass": [0, -0.4574*L['yforearmL'], 0],
-         "GyrationRadius": array([0.276, 0.121, 0.265])*L['yforearmL']})
-    bodies.append(
-        {"HumansName": "HandL",
-         'HumansId': 16,
-         "Mass": 0.0061 * mass,
-         "CenterOfMass": [0, -0.3691*L['yhandL'], 0],
-         "GyrationRadius": array([0.288, 0.184, 0.235])*L['yhandL']})
-    bodies.append(
-        {"HumansName": "Head",
-         'HumansId': 17,
-         "Mass": 0.0694 * mass,
-         "CenterOfMass": [0, 0.4998*L['yhead'], 0],
-         "GyrationRadius": array([0.303, 0.261, 0.315])*L['yhead']})
-    return bodies
-
-def _human36(world, height=1.741, mass=73, name=''):
-    """
-
-    TODO: HuMAnS' doc about inertia is erroneous (the real math is in the IOMatrix proc in DynamicData.maple)
+    >> frames["Bob's Left stylion"].bpose[0:3, 3]
+    >> frames["Bob's Left stylion"].pose[0:3, 3]
+    >> frames["Casimodo's Left stylion"].bpose[0:3, 3]
 
     """
     assert isinstance(world, World)
     w = world
-    L = anatomical_lengths(height)
+    if anat_lengths is None:
+        L = anat_lengths_from_height(height)
+    else:
+        L = anat_lengths
+    h = height_from_anat_lengths(L)
+    prefix = name
 
-    bodies = {}
-    humansbodyid_to_humansbodyname_map = {}
-    for b in _humans_bodies(height, mass):
-
+    # create the bodies
+    bodies = NamedObjectsList()
+    def add_body(name, mass, com_position, gyration_radius):
         #mass matrix at com
-        mass_g = b['Mass'] * diag(
-            hstack((b['GyrationRadius']**2, (1,1,1))))
+        mass_g = mass * diag(hstack((gyration_radius**2, (1,1,1))))
         H_fg = eye(4)
-        H_fg[0:3,3] = b['CenterOfMass']
+        H_fg[0:3,3] = com_position
         H_gf = Hg.inv(H_fg)
         #mass matrix at body's frame origin:
         mass_o = dot(adjoint(H_gf).T, dot(mass_g, adjoint(H_gf)))
+        if name:
+            name = prefix + name
+        bodies.append(Body(name=name, mass=mass_o))
+    # Lower Part of Trunk
+    add_body("LPT", 0.275 * mass,
+             [0, 0.5108*L['yvT10'], 0],
+             array([0.2722, 0.2628, 0.226])*L['yvT10'])
+    add_body("ThighR", 0.1416 * mass,
+             [0, -0.4095*L['yfemurR'], 0],
+              array([0.329, 0.149, 0.329])*L['yfemurR'])
+    add_body("ShankR", 0.0433 * mass,
+             [0, -0.4459*L['ytibiaR'], 0],
+             array([0.255, 0.103, 0.249])*L['ytibiaR'])
+    add_body("FootR", 0.0137 * mass,
+             [0.4415*L['xfootR'] - L['xheelR'], -L['yfootR']/2., 0.],
+             array([0.124, 0.257, 0.245])*L['xfootR'])
+    add_body("ThighL", 0.1416 * mass,
+             [0, -0.4095*L['yfemurL'], 0],
+              array([0.329, 0.149, 0.329])*L['yfemurL'])
+    add_body("ShankL", 0.0433 * mass,
+             [0, -0.4459*L['ytibiaL'], 0],
+             array([0.255, 0.103, 0.249])*L['ytibiaL'])
+    add_body("FootL", 0.0137 * mass,
+             [0.4415*L['xfootL'] - L['xheelL'], -L["yfootL"]/2, 0.],
+             array([0.124, 0.257, 0.245])*L['xfootL'])
+    # Upper Part of Trunk
+    add_body("UPT", 0.1596 * mass,
+             [(L['xsternoclavR'] + L['xsternoclavL'])/4.,
+              0.7001*(L['ysternoclavR']+L['ysternoclavL'])/2.,
+              0.],
+             array([0.716, 0.659, 0.454])*L['ysternoclavR'])
+    # right shoulder
+    add_body("ScapulaR", 0.,
+             [0., 0., 0.],
+             array([0., 0., 0.]))
+    add_body("ArmR", 0.0271 * mass,
+             [0., -0.5772*L['yhumerusR'], 0.],
+             array([0.285, 0.158, 0.269])*L['yhumerusR'])
+    add_body("ForearmR", 0.0162 * mass,
+             [0., -0.4574*L['yforearmR'], 0.],
+             array([0.276, 0.121, 0.265])*L['yforearmR'])
+    add_body("HandR", 0.0061 * mass,
+             [0, -0.3691*L['yhandR'], 0],
+             array([0.235, 0.184, 0.288])*L['yhandR'])
+    # left shoulder
+    add_body("ScapulaL", 0.,
+             [0., 0., 0.],
+             array([0., 0., 0.]))
+    add_body("ArmL", 0.0271 * mass,
+             [0, -0.5772*L['yhumerusL'], 0.],
+             array([0.285, 0.158, 0.269])*L['yhumerusL'])
+    add_body("ForearmL", 0.0162 * mass,
+             [0, -0.4574*L['yforearmL'], 0],
+             array([0.276, 0.121, 0.265])*L['yforearmL'])
+    add_body("HandL", 0.0061 * mass,
+             [0, -0.3691*L['yhandL'], 0],
+             array([0.288, 0.184, 0.235])*L['yhandL'])
+    add_body("Head", 0.0694 * mass,
+             [0, 0.4998*L['yhead'], 0],
+             array([0.303, 0.261, 0.315])*L['yhead'])
 
-        bodies[b['HumansName']] = Body(
-            name=b['HumansName'],
-            mass=mass_o)
+    # create the joints and add the links (i.e. joints+bodies)
+    joints = NamedObjectsList()
+    def add_link(body0, transl, joint, body1):
+        if not isinstance(body0, Body):
+            body0 = bodies[prefix+body0]
+        frame0 = SubFrame(body0, Hg.transl(*transl))
+        joints.append(joint)
+        w.add_link(frame0, joint, bodies[prefix+body1])
 
-        humansbodyid_to_humansbodyname_map[b['HumansId']] = b['HumansName']
+    add_link(w.ground, (0, L['yfootL']+L['ytibiaL']+L['yfemurL'], 0),
+             FreeJoint(), 'LPT')
+    add_link('LPT', (0, 0, L['zhip']/2.),
+             RzRyRxJoint(), 'ThighR')
+    add_link('ThighR', (0, -L['yfemurR'], 0),
+             RzJoint(), 'ShankR')
+    add_link('ShankR', (0, -L['ytibiaR'], 0),
+             RzRxJoint(), 'FootR')
+    add_link('LPT', (0, 0, -L['zhip']/2.),
+             RzRyRxJoint(), 'ThighL')
+    add_link('ThighL', (0, -L['yfemurL'], 0),
+             RzJoint(), 'ShankL')
+    add_link('ShankL', (0, -L['ytibiaL'], 0),
+             RzRxJoint(), 'FootL')
+    add_link('LPT', (-L['xvT10'], L['yvT10'], 0),
+             RzRyRxJoint(), 'UPT')
+    add_link('UPT', (L['xsternoclavR'], L['ysternoclavR'], L['zsternoclavR']),
+             RyRxJoint(), 'ScapulaR')
+    add_link('ScapulaR', (-L['xshoulderR'], L['yshoulderR'], L['zshoulderR']),
+             RzRyRxJoint(), 'ArmR')
+    add_link('ArmR', (0, -L['yhumerusR'], 0),
+             RzRyJoint(), 'ForearmR')
+    add_link('ForearmR', (0, -L['yforearmR'], 0),
+             RzRxJoint(), 'HandR')
+    add_link('UPT', (L['xsternoclavL'], L['ysternoclavL'], -L['zsternoclavL']),
+             RyRxJoint(), 'ScapulaL')
+    add_link('ScapulaL', (-L['xshoulderL'], L['yshoulderL'], -L['zshoulderL']),
+             RzRyRxJoint(), 'ArmL')
+    add_link('ArmL', (0, -L['yhumerusL'], 0),
+             RzRyJoint(), 'ForearmL')
+    add_link('ForearmL', (0, -L['yforearmL'], 0),
+             RzRxJoint(), 'HandL')
+    add_link('UPT', (L['xvT10'], L['yvC7'], 0),
+             RzRyRxJoint(), 'Head')
 
-    rf = SubFrame(w.ground,
-        Hg.transl(0, L['yfootL']+L['ytibiaL']+L['yfemurL'], 0))
-    w.add_link(rf, FreeJoint(), bodies['LPT'])
+    # add the tags
+    tags = NamedObjectsList()
+    def add_tag(name, body, position):
+        """Returns data about anatomical landmarks as defined in HuMAnS.
 
-    rf = SubFrame(bodies['LPT'], Hg.transl(0, 0, L['zhip']/2.))
-    j = RzRyRxJoint()
-    w.add_link(rf, j, bodies['ThighR'])
+        :param name: name of the tag (copied from HuMAnS)
+        :param body: name of the body in whose frame the point is defined
+        :position: tag coordinates in meters
 
-    rf = SubFrame(bodies['ThighR'], Hg.transl(0, -L['yfemurR'], 0))
-    w.add_link(rf, RzJoint(), bodies['ShankR'])
-
-    rf = SubFrame(bodies['ShankR'], Hg.transl(0, -L['ytibiaR'], 0))
-    w.add_link(rf, RzRxJoint(), bodies['FootR'])
-
-    rf = SubFrame(bodies['LPT'], Hg.transl(0, 0, -L['zhip']/2.))
-    w.add_link(rf, RzRyRxJoint(), bodies['ThighL'])
-
-    rf = SubFrame(bodies['ThighL'], Hg.transl(0, -L['yfemurL'], 0))
-    w.add_link(rf, RzJoint(), bodies['ShankL'])
-
-    rf = SubFrame(bodies['ShankL'], Hg.transl(0, -L['ytibiaL'], 0))
-    w.add_link(rf, RzRxJoint(), bodies['FootL'])
-
-    rf = SubFrame(bodies['LPT'], Hg.transl(-L['xvT10'], L['yvT10'], 0))
-    w.add_link(rf, RzRyRxJoint(), bodies['UPT'])
-
-    rf = SubFrame(bodies['UPT'],
-        Hg.transl(L['xsternoclavR'], L['ysternoclavR'], L['zsternoclavR']))
-    j = RyRxJoint()
-    w.add_link(rf, j, bodies['ScapulaR'])
-
-    rf = SubFrame(bodies['ScapulaR'],
-        Hg.transl(-L['xshoulderR'], L['yshoulderR'], L['zshoulderR']))
-    w.add_link(rf, RzRyRxJoint(), bodies['ArmR'])
-
-    rf = SubFrame(bodies['ArmR'], Hg.transl(0, -L['yhumerusR'], 0))
-    w.add_link(rf, RzRyJoint(), bodies['ForearmR'])
-
-    rf = SubFrame(bodies['ForearmR'], Hg.transl(0, -L['yforearmR'], 0))
-    w.add_link(rf, RzRxJoint(), bodies['HandR'])
-
-    rf = SubFrame(bodies['UPT'], Hg.transl(
-        L['xsternoclavL'], L['ysternoclavL'], -L['zsternoclavL']))
-    w.add_link(rf, RyRxJoint(), bodies['ScapulaL'])
-
-    rf = SubFrame(bodies['ScapulaL'],
-        Hg.transl(-L['xshoulderL'], L['yshoulderL'], -L['zshoulderL']))
-    w.add_link(rf, RzRyRxJoint(), bodies['ArmL'])
-
-    rf = SubFrame(bodies['ArmL'], Hg.transl(0, -L['yhumerusL'], 0))
-    w.add_link(rf, RzRyJoint(), bodies['ForearmL'])
-
-    rf = SubFrame(bodies['ForearmL'], Hg.transl(0, -L['yforearmL'], 0))
-    w.add_link(rf, RzRxJoint(), bodies['HandL'])
-
-    rf = SubFrame(bodies['UPT'], Hg.transl(L['xvT10'], L['yvC7'], 0))
-    w.add_link(rf, RzRyRxJoint(), bodies['Head'])
-
-    # add tags
-    tags = {}
-    for t in _humans_tags(height):
-        bodyname = humansbodyid_to_humansbodyname_map[t['HumansBodyId']]
-        tag = SubFrame(
-            bodies[bodyname],
-            Hg.transl(t['Position'][0], t['Position'][1], t['Position'][2]),
-            t['HumansName'])
-        tags[t['HumansName']] = tag
+        """
+        if name:
+            name = prefix + name
+        tag = SubFrame(bodies[prefix+body], Hg.transl(*position), name)
+        tags.append(tag)
         w.register(tag)
+    add_tag('Right foot toe tip', 'FootR', [.1235*h, -L['yfootR'], 0.])
+    add_tag('Right foot heel', 'FootR', [-L['xheelR'], -L['yfootR'],0.])
+    add_tag('Right foot phalange 5', 'FootR', [0.0662*h, -L['yfootR'], 0.0305*h] )
+    add_tag('Right foot Phalange 1', 'FootR', [0.0662*h, -L['yfootR'], -0.0305*h])
+    add_tag('Right foot lateral malleolus', "ShankR", [0., -L['ytibiaR'], 0.0249*h])
+    add_tag('Femoral lateral epicondyle', "ThighR", [0., -L['yfemurR'], 0.0290*h])
+    add_tag('Right great trochanter', "ThighR", [0., 0., 0.0941*h-L['zhip']/2.])
+    add_tag('Right iliac crest', "LPT", [0.0271*h, 0.0366*h, 0.0697*h])
+    add_tag('Left foot toe tip', "FootL", [0.1235*h, -L['yfootL'], 0.])
+    add_tag('Left foot heel', "FootL", [-L['xheelL'], -L['yfootL'], 0.])
+    add_tag('Left foot phalange 5', "FootL", [0.0662*h, -L['yfootL'], -0.0305*h])
+    add_tag('Left foot phalange 1', "FootL", [0.0662*h, -L['yfootL'], 0.0305*h])
+    add_tag('Left foot lateral malleolus', "ShankL", [0, -L['ytibiaL'], -0.0249*h])
+    add_tag('Left femoral lateral epicondyle', "ThighL", [0,-L['yfemurL'], -0.0290*h])
+    add_tag('Left great trochanter', "ThighL",  [0, 0, -0.0941*h+L['zhip']/2.])
+    add_tag('Left iliac crest', "LPT", [0.0271*h, 0.0366*h, -0.0697*h])
+    add_tag('Substernale (Xyphoid)', "UPT", [0.1219*h, 0, 0])
+    add_tag('Suprasternale', "UPT", [(L['xsternoclavL']+L['xsternoclavL'])/2., (L['ysternoclavL']+L['ysternoclavL'])/2., 0])
+    add_tag('Right acromion', "ScapulaR", [-L['xshoulderR'], 0.0198*h+L['yshoulderR'], L['zshoulderR']])
+    add_tag('Right humeral lateral epicondyle (radiale)', "ArmR", [0., -L['yhumerusR'], 0.0211*h])
+    add_tag('Right stylion', "ForearmR", [0., -0.1533*h, 0.0331*h])
+    add_tag('Right 3rd dactylion', "HandR", [0., -0.1091*h, 0.])
+    add_tag('Left acromion', "ScapulaL", [-L['xshoulderL'], 0.0198*h+L['yshoulderL'], -L['zshoulderL']])
+    add_tag('Left humeral lateral epicondyle (radiale)', "ArmL", [0., -L['yhumerusL'], -0.0211*h])
+    add_tag('Left stylion', "ForearmL", [0., -0.1533*h, -0.0331*h])
+    add_tag('Left 3rd dactylion', "HandL", [0., -0.1091*h, 0.])
+    add_tag('Vertex', "Head", [0., 0.1395*h, 0.])
+    add_tag('Cervicale', "UPT", [-0.0392*0. +L['xvT10'], L['yvC7'], 0.])
 
+    shapes = NamedObjectsList()
     # Add point shapes to the feet
     for k in ('Right foot toe tip', 'Right foot heel',
              'Right foot phalange 5', 'Right foot Phalange 1',
              'Left foot toe tip','Left foot heel',
               'Left foot phalange 5','Left foot phalange 1'):
-        shape = Point(tags[k], name=k)
+        name = prefix + k
+        shape = Point(tags[name], name=name)
+        shapes.append(shape)
         w.register(shape)
 
     w.init()
-    return (bodies, tags)
-
-def add_human36(world, height=1.741, mass=73, name=''):
-    _human36(height=height, mass=mass, name=name, world=world)
-
-
+    if return_lists:
+        return (joints, bodies, tags, shapes)
+    else:
+        return None
