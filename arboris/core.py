@@ -85,6 +85,8 @@ class NamedObjectsList(list):
 
     """
     def __init__(self, iterable=None):
+        if iterable is None:
+            iterable = tuple()
         self.extend(iterable)
 
     def find(self, name):
