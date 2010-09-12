@@ -360,7 +360,8 @@ def add_human36(world, height=1.741, mass=73, anat_lengths=None, name='',
         tag = SubFrame(bodies[prefix+body], Hg.transl(*position), name)
         tags.append(tag)
         w.register(tag)
-    add_tag('Right foot toe tip', 'FootR', [.1235*h, -L['yfootR'], 0.])
+    # we add 1e-4*h to keep the compatibility with HuMAnS:
+    add_tag('Right foot toe tip', 'FootR', [L['xfootR']-L['xheelR']+1e-4*h, -L['yfootR'], 0.])
     add_tag('Right foot heel', 'FootR', [-L['xheelR'], -L['yfootR'],0.])
     add_tag('Right foot phalange 5', 'FootR', [0.0662*h, -L['yfootR'], 0.0305*h] )
     add_tag('Right foot Phalange 1', 'FootR', [0.0662*h, -L['yfootR'], -0.0305*h])
@@ -368,7 +369,8 @@ def add_human36(world, height=1.741, mass=73, anat_lengths=None, name='',
     add_tag('Femoral lateral epicondyle', "ThighR", [0., -L['yfemurR'], 0.0290*h])
     add_tag('Right great trochanter', "ThighR", [0., 0., 0.0941*h-L['zhip']/2.])
     add_tag('Right iliac crest', "LPT", [0.0271*h, 0.0366*h, 0.0697*h])
-    add_tag('Left foot toe tip', "FootL", [0.1235*h, -L['yfootL'], 0.])
+    # we add 1e-4*h to keep the compatibility with HuMAnS:
+    add_tag('Left foot toe tip', "FootL", [L['xfootL']-L['xheelL']+1e-4*h, -L['yfootL'], 0.])
     add_tag('Left foot heel', "FootL", [-L['xheelL'], -L['yfootL'], 0.])
     add_tag('Left foot phalange 5', "FootL", [0.0662*h, -L['yfootL'], -0.0305*h])
     add_tag('Left foot phalange 1', "FootL", [0.0662*h, -L['yfootL'], 0.0305*h])
@@ -381,13 +383,13 @@ def add_human36(world, height=1.741, mass=73, anat_lengths=None, name='',
     add_tag('Right acromion', "ScapulaR", [-L['xshoulderR'], 0.0198*h+L['yshoulderR'], L['zshoulderR']])
     add_tag('Right humeral lateral epicondyle (radiale)', "ArmR", [0., -L['yhumerusR'], 0.0211*h])
     add_tag('Right stylion', "ForearmR", [0., -0.1533*h, 0.0331*h])
-    add_tag('Right 3rd dactylion', "HandR", [0., -0.1091*h, 0.])
+    add_tag('Right 3rd dactylion', "HandR", [0., -L['yhandR'], 0.])
     add_tag('Left acromion', "ScapulaL", [-L['xshoulderL'], 0.0198*h+L['yshoulderL'], -L['zshoulderL']])
     add_tag('Left humeral lateral epicondyle (radiale)', "ArmL", [0., -L['yhumerusL'], -0.0211*h])
     add_tag('Left stylion', "ForearmL", [0., -0.1533*h, -0.0331*h])
-    add_tag('Left 3rd dactylion', "HandL", [0., -0.1091*h, 0.])
-    add_tag('Vertex', "Head", [0., 0.1395*h, 0.])
+    add_tag('Left 3rd dactylion', "HandL", [0., -L['yhandL'], 0.])
     add_tag('Cervicale', "UPT", [-0.0392*0. +L['xvT10'], L['yvC7'], 0.])
+    add_tag('Vertex', "Head", [0., L["yhead"], 0.])
 
     shapes = NamedObjectsList()
     # Add point shapes to the feet
