@@ -184,8 +184,7 @@ def height_from_anat_lengths(lengths):
     return left_leg + lengths['yvT10'] + lengths['yvC7'] + lengths['yhead']
 
 
-def add_human36(world, height=1.741, mass=73, anat_lengths=None, name='',
-                return_lists=False):
+def add_human36(world, height=1.741, mass=73, anat_lengths=None, name=''):
     """Add an anthropometric humanoid model to the world.
 
     :param height: the human height in meters. Ignored if ``anat_lengths``
@@ -199,9 +198,7 @@ def add_human36(world, height=1.741, mass=73, anat_lengths=None, name='',
     :param name: name of the human, used to prefix every object name.
     :type name: string
     :param return_lists: if True, returns of a tuple of the added objects
-    :type return_lists: boolean
-    :return: None or a tuple of ``NamedObjectsList``s of the added objects
-             ``(joints, bodies, tags, shapes)``
+    :return: None
 
     **Exemples**
 
@@ -302,12 +299,10 @@ def add_human36(world, height=1.741, mass=73, anat_lengths=None, name='',
              array([0.303, 0.261, 0.315])*L['yhead'])
 
     # create the joints and add the links (i.e. joints+bodies)
-    joints = NamedObjectsList()
     def add_link(body0, transl, joint, body1):
         if not isinstance(body0, Body):
             body0 = bodies[prefix+body0]
         frame0 = SubFrame(body0, Hg.transl(*transl))
-        joints.append(joint)
         w.add_link(frame0, joint, bodies[prefix+body1])
 
     add_link(w.ground, (0, L['yfootL']+L['ytibiaL']+L['yfemurL'], 0),
@@ -391,7 +386,6 @@ def add_human36(world, height=1.741, mass=73, anat_lengths=None, name='',
     add_tag('Cervicale', "UPT", [-0.0392*0. +L['xvT10'], L['yvC7'], 0.])
     add_tag('Vertex', "Head", [0., L["yhead"], 0.])
 
-    shapes = NamedObjectsList()
     # Add point shapes to the feet
     for k in ('Right foot toe tip', 'Right foot heel',
              'Right foot phalange 5', 'Right foot Phalange 1',
@@ -399,11 +393,7 @@ def add_human36(world, height=1.741, mass=73, anat_lengths=None, name='',
               'Left foot phalange 5','Left foot phalange 1'):
         name = prefix + k
         shape = Point(tags[name], name=name)
-        shapes.append(shape)
         w.register(shape)
 
     w.init()
-    if return_lists:
-        return (joints, bodies, tags, shapes)
-    else:
-        return None
+    return None

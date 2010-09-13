@@ -214,9 +214,9 @@ class Human36AgainstHumansTestCase(TestCase):
                 positions.append(frame._bpose[0:3,3])
             return positions
         for h, ht in htd.iteritems():
-            (joints, bodies, tags, shapes) = add_human36(World(), height=h,
-                                                         return_lists=True)
-            at = tags_local_positions(tags)
+            w = World()
+            add_human36(w, height=h)
+            at = tags_local_positions(w.getframes())
             self.assertListsAlmostEqual(ht, at)
 
     def test_tags_absolute_positions_against_HuMAnS(self):
@@ -253,7 +253,7 @@ class Human36AgainstHumansTestCase(TestCase):
                  (  0.00000000e+00,   1.49813050e+00,   0.00000000e+00),
                  (  0.00000000e+00,   1.74100000e+00,   0.00000000e+00))}
         w = World()
-        (joints, bodies, tags, shapes) = add_human36(w, return_lists=True)
+        add_human36(w)
         w.update_geometric()
         def tags_absolute_positions(tag_frames):
             """returns the tags absolute positions
@@ -269,7 +269,7 @@ class Human36AgainstHumansTestCase(TestCase):
                 frame = tag_frames[name]
                 positions.append(dot(frame.body.pose, frame._bpose)[0:3,3])
             return positions
-        p = tags_absolute_positions(tags)
+        p = tags_absolute_positions(w.getframes())
         self.assertListsAlmostEqual(p, htd['q0'])
 
 if __name__ == '__main__':
