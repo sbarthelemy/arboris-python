@@ -97,12 +97,23 @@ class ColladaDriver(arboris._visu.DrawerDriver):
 
     def _init_scene(self, up):
 
-        def asset():
+        def asset(up):
             """Generate the "asset" collada tag."""
             asset = Element("asset")
             SubElement(asset, "created").text = '2005-06-27T21:00:00Z'  #TODO add date
             SubElement(asset, "modified").text = '2005-06-27T21:00:00Z' #TODO add date
             SubElement(asset, "unit", {"meter":"1", "name":"meter"}) #TODO useful ?
+            if (up == [1., 0., 0.]).all():
+                up = 'X_UP'
+            elif (up == [0., 1., 0.]).all():
+                up = 'Y_UP'
+            elif (up == [0., 0., 1.]).all():
+                up = 'Z_UP'
+            else:
+                up = None
+                warning('the up vector is not compatible with collada')
+            if up:
+                SubElement(asset, "up_axis").text = up
             return asset
 
         def _create_frame_arrows(length):
@@ -124,11 +135,11 @@ class ColladaDriver(arboris._visu.DrawerDriver):
             vertices = SubElement(mesh, "vertices", {"id":id+"_vertices"})
             SubElement(vertices, "input", {"semantic":"POSITION",
                 "source":'#'+id+'_position'})
-            lines = SubElement(mesh, "lines", {"count":"3"})
-            SubElement(lines, "input", {"semantic":"VERTEX",
-                "source":'#'+id+'_vertices'})
-            primitive = SubElement(lines, "p")
-            primitive.text = "0 1   0 2   0 3"
+            for axis, text in [("x", "1"), ("y", "2"), ("z", "3")]:
+                line = SubElement(mesh, "lines", {"count":"1", "material":axis+"_axis"})
+                SubElement(line, "input", {"semantic":"VERTEX","source":'#'+id+'_vertices',"offset":"0"})
+                primitive = SubElement(line, "p")
+                primitive.text = "0 "+text
             return geom
 
         def _create_box():
@@ -150,17 +161,37 @@ class ColladaDriver(arboris._visu.DrawerDriver):
             vertices = SubElement(mesh, "vertices", {"id":id+"_vertices"})
             SubElement(vertices, "input", {"semantic":"POSITION",
                 "source":'#'+id+'_position'})
-            triangles = SubElement(mesh, "triangles", {"count":"12"})
+            triangles = SubElement(mesh, "triangles", {"count":"12", "material":"box_mat"})
             SubElement(triangles, "input", {"semantic":"VERTEX",
-                "source":'#'+id+'_vertices'})
+                "source":'#'+id+'_vertices',"offset":"0"})
             primitive = SubElement(triangles, "p")
             primitive.text = "0 1 2 2 3 0 4 7 6 6 5 4 0 4 5 5 1 0 1 5 6 6 2 " \
                     "1 2 6 7 7 3 2 4 0 3 3 7 4"
             return geom
 
+
+        def lib_materials_and_effects():
+            lib_mat = Element("library_materials")
+            lib_fx = Element("library_effects")
+            for color, text in [("Red", "1. 0. 0. 1."), ("Green", "0. 1. 0. 1."), ("Blue", "0. 0. 1. 1."), ("Grey", ".5 .5 .5 1.")]: #TODO: complete this list???
+                m = SubElement(lib_mat, "material", {"id":color})
+                SubElement(m, "instance_effect", {"url": "#"+color+"-fx"})
+                e = SubElement(lib_fx, "effect", {"id":color+"-fx"})
+                e = SubElement(e, "profile_COMMON")
+                e = SubElement(e, "technique", {"sid":"blender"})
+                e = SubElement(e, "constant") #phong, constant
+                e = SubElement(e, "emission") #diffuse, emission, ambient, specular
+                e = SubElement(e, "color")
+                e.text = text
+            return lib_mat, lib_fx
+
+
         self.collada = Element("COLLADA", {"version":"1.4.1",
                 "xmlns":"http://www.collada.org/2005/11/COLLADASchema"})
-        self.collada.append(asset())
+        self.collada.append(asset(up))
+        lib_mat, lib_fx = lib_materials_and_effects()
+        self.collada.append(lib_mat)
+        self.collada.append(lib_fx)
         #self.collada.append(self._anim()) #TODO: remove
         lib = SubElement(self.collada, "library_geometries")
         lib.append(_create_frame_arrows(self._options['frame arrows length']))
@@ -169,18 +200,6 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         scene_name = 'myscene'
         self.visual_scene = SubElement(library_visual_scenes, "visual_scene",
                 {'id':scene_name})
-        if (up == [1., 0., 0.]).all():
-            up = 'X_UP'
-        elif (up == [0., 1., 0.]).all():
-            up = 'Y_UP'
-        elif (up == [0., 0., 1.]).all():
-            up = 'Z_UP'
-        else:
-            up = None
-            warning('the up vector is not compatible with collada')
-        if up:
-            asset = SubElement(self.visual_scene, "asset")
-            SubElement(asset, "up_axis").text = up
         scene = SubElement(self.collada, "scene")
         SubElement(scene, "instance_visual_scene", {"url":'#'+scene_name})
         return self.visual_scene
@@ -213,7 +232,12 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         return node
 
     def create_frame_arrows(self):
-        return Element("instance_geometry", {"url":"#frame_arrows"})
+        elem = Element("instance_geometry", {"url":"#frame_arrows"})
+        se = SubElement(elem, "bind_material")
+        se = SubElement(se, "technique_common")
+        for axis, color in [("x", "Red"), ("y", "Green"), ("z", "Blue")]:
+            SubElement(se, "instance_material", {"symbol":axis+"_axis", "target":"#"+color})
+        return elem
 
     def create_box(self, half_extents, color):
         # instead of creating a new box, we use the #box and scale it
@@ -221,7 +245,10 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         node = Element("node")
         scale = SubElement(node, 'scale')
         scale.text = "{0} {1} {2}".format(*half_extents)
-        SubElement(node, "instance_geometry", {"url":"#box"})
+        elem = SubElement(node, "instance_geometry", {"url":"#box"})
+        se = SubElement(elem, "bind_material")
+        se = SubElement(se, "technique_common")
+        SubElement(se, "instance_material", {"symbol":"box_mat", "target":"#Grey"})
         return node
 
     def finish(self):
