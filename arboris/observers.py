@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 class EnergyMonitor(arboris.core.Observer):
     """Compute and store the world energy at each time step.
-    
+
     **Example:**
 
         >>> from arboris.core import World, simulate
@@ -25,7 +25,7 @@ class EnergyMonitor(arboris.core.Observer):
         >>> #obs.plot()
 
     """
-    
+
     def init(self, world, timeline):
         self._world = world
         self.time = []
@@ -39,7 +39,7 @@ class EnergyMonitor(arboris.core.Observer):
 
     def update(self, dt):
         self.time.append(self._world.current_time)
-        Ec = dot(self._world.gvel, 
+        Ec = dot(self._world.gvel,
                  dot(self._world.mass, self._world.gvel) )/2.
         self.kinetic_energy.append(Ec)
         Ep = 0.
@@ -104,7 +104,7 @@ class PerfMonitor(arboris.core.Observer):
         self._computation_time.append(current_time - self._last_time)
         self._last_time = current_time
         if self._logger is not None:
-            self._logger.info('current time (s): %.3f', 
+            self._logger.info('current time (s): %.3f',
                               self._world.current_time)
 
     def finish(self):
@@ -124,18 +124,18 @@ class PerfMonitor(arboris.core.Observer):
 min computation time (s): {1}
 mean computation time (s): {2}
 max computation time (s): {3}""".format(
-    total, 
-    min(self._computation_time), 
-    total/len(self._computation_time), 
+    total,
+    min(self._computation_time),
+    total/len(self._computation_time),
     max(self._computation_time))
 
 
 class Hdf5Logger(arboris.core.Observer):
     """An observer that saves the simulation data in an hdf5 file.
-    
+
     :param filename: name of the output hdf5 file
     :type filename: str
-    :param group: subgroup defaults to "/"
+    :param group: subgroup within the hdf5 file. Defaults to "/"
     :type group: str
     :param mode: mode used to open the hdf5 file. Can be 'w' or 'a' (default)
     :type mode: str
@@ -240,7 +240,7 @@ class Hdf5Logger(arboris.core.Observer):
                     self._arb_transforms[j.frames[1].name] = j
             for k in self._arb_transforms.iterkeys():
                 d = self._transforms.require_dataset(k,
-                                                    (self._nb_steps, 4,4), 
+                                                    (self._nb_steps, 4,4),
                                                     'f8')
         if self._save_model:
             self._model = self._root.require_group('transforms')
