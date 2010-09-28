@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+	<asset>
+		<created>2005-06-27T21:00:00Z</created>
+		<modified>2005-06-27T21:00:00Z</modified>
+		<unit meter="1" name="meter"/>
+		<up_axis>Y_UP</up_axis>
+	</asset>
+	<library_materials>
+		<material id="Red">
+			<instance_effect url="#Red-fx"/>
+		</material>
+		<material id="Green">
+			<instance_effect url="#Green-fx"/>
+		</material>
+		<material id="Blue">
+			<instance_effect url="#Blue-fx"/>
+		</material>
+		<material id="Grey">
+			<instance_effect url="#Grey-fx"/>
+		</material>
+	</library_materials>
+	<library_effects>
+		<effect id="Red-fx">
+			<profile_COMMON>
+				<technique sid="blender">
+					<constant>
+						<emission>
+							<color>1. 0. 0. 1.</color>
+						</emission>
+					</constant>
+				</technique>
+			</profile_COMMON>
+		</effect>
+		<effect id="Green-fx">
+			<profile_COMMON>
+				<technique sid="blender">
+					<constant>
+						<emission>
+							<color>0. 1. 0. 1.</color>
+						</emission>
+					</constant>
+				</technique>
+			</profile_COMMON>
+		</effect>
+		<effect id="Blue-fx">
+			<profile_COMMON>
+				<technique sid="blender">
+					<constant>
+						<emission>
+							<color>0. 0. 1. 1.</color>
+						</emission>
+					</constant>
+				</technique>
+			</profile_COMMON>
+		</effect>
+		<effect id="Grey-fx">
+			<profile_COMMON>
+				<technique sid="blender">
+					<constant>
+						<emission>
+							<color>.5 .5 .5 1.</color>
+						</emission>
+					</constant>
+				</technique>
+			</profile_COMMON>
+		</effect>
+	</library_effects>
+	<library_geometries>
+		<geometry id="frame_arrows">
+			<mesh>
+				<source id="frame_arrows_position">
+					<float_array count="12" id="frame_arrows_position_array">0. 0. 0. 0.08 0. 0. 0. 0.08 0. 0. 0. 0.08</float_array>
+					<technique_common>
+						<accessor count="4" source="#frame_arrows_position_array" stride="3">
+							<param name="X" type="float"/>
+							<param name="Y" type="float"/>
+							<param name="Z" type="float"/>
+						</accessor>
+					</technique_common>
+				</source>
+				<vertices id="frame_arrows_vertices">
+					<input semantic="POSITION" source="#frame_arrows_position"/>
+				</vertices>
+				<lines count="1" material="x_axis">
+					<input offset="0" semantic="VERTEX" source="#frame_arrows_vertices"/>
+					<p>0 1</p>
+				</lines>
+				<lines count="1" material="y_axis">
+					<input offset="0" semantic="VERTEX" source="#frame_arrows_vertices"/>
+					<p>0 2</p>
+				</lines>
+				<lines count="1" material="z_axis">
+					<input offset="0" semantic="VERTEX" source="#frame_arrows_vertices"/>
+					<p>0 3</p>
+				</lines>
+			</mesh>
+		</geometry>
+		<geometry id="box">
+			<mesh>
+				<source id="box_position">
+					<float_array count="24" id="box_position_array">1 1 -1 1 -1 -1 -1 -1 -1 -1 1 -1 1 1 1 1 -1 1 -1 -1 1 -1 1 1</float_array>
+					<technique_common>
+						<accessor count="8" source="#box_position_array" stride="3">
+							<param name="X" type="float"/>
+							<param name="Y" type="float"/>
+							<param name="Z" type="float"/>
+						</accessor>
+					</technique_common>
+				</source>
+				<vertices id="box_vertices">
+					<input semantic="POSITION" source="#box_position"/>
+				</vertices>
+				<triangles count="12" material="box_mat">
+					<input offset="0" semantic="VERTEX" source="#box_vertices"/>
+					<p>0 1 2 2 3 0 4 7 6 6 5 4 0 4 5 5 1 0 1 5 6 6 2 1 2 6 7 7 3 2 4 0 3 3 7 4</p>
+				</triangles>
+			</mesh>
+		</geometry>
+	</library_geometries>
+</COLLADA>

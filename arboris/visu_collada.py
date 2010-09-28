@@ -83,6 +83,8 @@ def _indent(elem, level=0):
 
 class ColladaDriver(arboris._visu.DrawerDriver):
 
+    shapes = os.path.join(os.path.dirname(__file__), 'shapes.dae')
+
     def __init__(self, filename, scale=1., options=None):
         arboris._visu.DrawerDriver.__init__(self, scale, options)
         self._file = open(filename, 'w')
@@ -116,86 +118,9 @@ class ColladaDriver(arboris._visu.DrawerDriver):
                 SubElement(asset, "up_axis").text = up
             return asset
 
-        def _create_frame_arrows(length):
-            """Generate geometry to draw frame arrows."""
-            id = 'frame_arrows'
-            geom = Element("geometry", {"id":id})
-            mesh = SubElement(geom, "mesh")
-            source = SubElement(mesh, "source", {"id":id+"_position"})
-            array = SubElement(source, "float_array", {"count":"12",
-                "id":id+"_position_array"})
-            array.text = "0. 0. 0. {0} 0. 0. 0. {0} 0. 0. 0. {0}".format(
-                    length)
-            tcommon = SubElement(source, "technique_common")
-            accessor = SubElement(tcommon, "accessor", {"count":"4",
-                "source":'#'+id+'_position_array', "stride":"3"})
-            SubElement(accessor, "param", {"type":"float", "name":"X"})
-            SubElement(accessor, "param", {"type":"float", "name":"Y"})
-            SubElement(accessor, "param", {"type":"float", "name":"Z"})
-            vertices = SubElement(mesh, "vertices", {"id":id+"_vertices"})
-            SubElement(vertices, "input", {"semantic":"POSITION",
-                "source":'#'+id+'_position'})
-            for axis, text in [("x", "1"), ("y", "2"), ("z", "3")]:
-                line = SubElement(mesh, "lines", {"count":"1", "material":axis+"_axis"})
-                SubElement(line, "input", {"semantic":"VERTEX","source":'#'+id+'_vertices',"offset":"0"})
-                primitive = SubElement(line, "p")
-                primitive.text = "0 "+text
-            return geom
-
-        def _create_box():
-            """Generate geometry to draw a box."""
-            id = 'box'
-            geom = Element("geometry", {"id":id})
-            mesh = SubElement(geom, "mesh")
-            source = SubElement(mesh, "source", {"id":id+"_position"})
-            array = SubElement(source, "float_array", {"count":"24",
-                "id":id+"_position_array"})
-            array.text = "1 1 -1 1 -1 -1 -1 -1 -1 -1 1 -1 " \
-                         "1 1 1 1 -1 1 -1 -1 1 -1 1 1"
-            tcommon = SubElement(source, "technique_common")
-            accessor = SubElement(tcommon, "accessor", {"count":"8",
-                "source":'#'+id+'_position_array', "stride":"3"})
-            SubElement(accessor, "param", {"type":"float", "name":"X"})
-            SubElement(accessor, "param", {"type":"float", "name":"Y"})
-            SubElement(accessor, "param", {"type":"float", "name":"Z"})
-            vertices = SubElement(mesh, "vertices", {"id":id+"_vertices"})
-            SubElement(vertices, "input", {"semantic":"POSITION",
-                "source":'#'+id+'_position'})
-            triangles = SubElement(mesh, "triangles", {"count":"12", "material":"box_mat"})
-            SubElement(triangles, "input", {"semantic":"VERTEX",
-                "source":'#'+id+'_vertices',"offset":"0"})
-            primitive = SubElement(triangles, "p")
-            primitive.text = "0 1 2 2 3 0 4 7 6 6 5 4 0 4 5 5 1 0 1 5 6 6 2 " \
-                    "1 2 6 7 7 3 2 4 0 3 3 7 4"
-            return geom
-
-
-        def lib_materials_and_effects():
-            lib_mat = Element("library_materials")
-            lib_fx = Element("library_effects")
-            for color, text in [("Red", "1. 0. 0. 1."), ("Green", "0. 1. 0. 1."), ("Blue", "0. 0. 1. 1."), ("Grey", ".5 .5 .5 1.")]: #TODO: complete this list???
-                m = SubElement(lib_mat, "material", {"id":color})
-                SubElement(m, "instance_effect", {"url": "#"+color+"-fx"})
-                e = SubElement(lib_fx, "effect", {"id":color+"-fx"})
-                e = SubElement(e, "profile_COMMON")
-                e = SubElement(e, "technique", {"sid":"blender"})
-                e = SubElement(e, "constant") #phong, constant
-                e = SubElement(e, "emission") #diffuse, emission, ambient, specular
-                e = SubElement(e, "color")
-                e.text = text
-            return lib_mat, lib_fx
-
-
         self.collada = Element("COLLADA", {"version":"1.4.1",
                 "xmlns":"http://www.collada.org/2005/11/COLLADASchema"})
         self.collada.append(asset(up))
-        lib_mat, lib_fx = lib_materials_and_effects()
-        self.collada.append(lib_mat)
-        self.collada.append(lib_fx)
-        #self.collada.append(self._anim()) #TODO: remove
-        lib = SubElement(self.collada, "library_geometries")
-        lib.append(_create_frame_arrows(self._options['frame arrows length']))
-        lib.append(_create_box())
         library_visual_scenes = SubElement(self.collada, "library_visual_scenes")
         scene_name = 'myscene'
         self.visual_scene = SubElement(library_visual_scenes, "visual_scene",
@@ -232,11 +157,13 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         return node
 
     def create_frame_arrows(self):
-        elem = Element("instance_geometry", {"url":"#frame_arrows"})
+        elem = Element("instance_geometry",
+                       {"url": self.shapes+"#frame_arrows"})
         se = SubElement(elem, "bind_material")
         se = SubElement(se, "technique_common")
         for axis, color in [("x", "Red"), ("y", "Green"), ("z", "Blue")]:
-            SubElement(se, "instance_material", {"symbol":axis+"_axis", "target":"#"+color})
+            SubElement(se, "instance_material",
+                       {"symbol":axis+"_axis", "target":self.shapes+"#"+color})
         return elem
 
     def create_box(self, half_extents, color):
@@ -245,10 +172,12 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         node = Element("node")
         scale = SubElement(node, 'scale')
         scale.text = "{0} {1} {2}".format(*half_extents)
-        elem = SubElement(node, "instance_geometry", {"url":"#box"})
+        elem = SubElement(node, "instance_geometry",
+                          {"url": self.shapes+"#box"})
         se = SubElement(elem, "bind_material")
         se = SubElement(se, "technique_common")
-        SubElement(se, "instance_material", {"symbol":"box_mat", "target":"#Grey"})
+        SubElement(se, "instance_material",
+                   {"symbol":"box_mat", "target": self.shapes+"#Grey"})
         return node
 
     def finish(self):

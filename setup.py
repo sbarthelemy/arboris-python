@@ -73,6 +73,7 @@ setup(name='arboris',
       license='LGPL',
       packages=['arboris',
                 'arboris.robots'],
+      package_data={'arboris': ['shapes.dae']},
       classifiers=[
               'Development Status :: 4 - Beta',
               'Environment :: Console',
