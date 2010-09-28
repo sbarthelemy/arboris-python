@@ -5,31 +5,64 @@ from numpy import eye, zeros, all, array, ndarray, linspace, pi
 from arboris.homogeneousmatrix import inv, rotzyx_angles
 import arboris.core
 import arboris._visu
+import subprocess
+import os
+import tempfile
+tempdir = tempfile.gettempdir()
 
 def write_collada_scene(world, dae_filename, flat=False):
+    """Write a visual description of the scene in a collada file.
+
+    :param world: the world to convert
+    :type world: :class:`arboris.core.World` instance
+    :param dae_filename: path of the output collada scene file
+    :type dae_filename: str
+    :param flat: if True, each body is a child of the ground. Otherwise
+                 the hierarchy is copied from arboris
+    :type flat: bool
+
+    """
     assert isinstance(world, arboris.core.World)
     drawer = arboris._visu.Drawer(ColladaDriver(dae_filename), flat)
     world.parse(drawer)
     drawer.finish()
 
-def write_collada_animation(world, dae_filename, hdf5_filename, hdf5_group="/",
-                            flat=False):
-    import h5py
-    assert isinstance(world, arboris.core.World)
-    drawer = arboris._visu.Drawer(ColladaDriver(dae_filename), flat)
-    world.parse(drawer)
-    hdf5_file = h5py.File(hdf5_filename, 'r')
-    group = hdf5_file
-    for g in hdf5_group.split('/'):
-        if g:
-            group = group.require_group(g)
-    timeline = group['timeline']
-    group = group.require_group('transforms')
-    #transforms = arboris.core.NamedList(drawer.transforms.keys())
-    #for (k, v) in group.iteritems():
-    #    node = drawer.transform_nodes[transforms[k]]
-    drawer._driver.add_animation(group, timeline)
-    drawer.finish()
+def write_collada_animation(dae_animation, dae_scene, hdf5_filename,
+                            hdf5_group="/"):
+    """Combine a collada scene and an HDF5 file into a collada animation.
+
+    :param dae_animation: path of the output animation collada file
+    :type dae_animation: str
+    :param dae_scene: path of the input scene collada file
+    :type dae_scene: str
+    :param hdf5_filename: path of the input HDF5 file.
+    :type hdf5_filename: str
+    :param hdf5_group: subgroup within the HDF5 file. Defaults to "/".
+    :type hdf5_group: str
+
+    This function is a simple Wrapper around the ``h5toanim`` command, which
+    should be installed.
+
+    """
+    subprocess.check_call(('h5toanim',
+            '--hdf5-file', hdf5_filename,
+            '--hdf5-group', hdf5_group,
+            '--scene-file', dae_scene,
+            '--output', dae_animation))
+
+def view_collada_animation(dae_scene, hdf5_filename, hdf5_group="/"):
+    """Display the animation corresponding to a simulation.
+
+    This function is a Wrapper around the ``h5toanim`` and ``daenim`` commands.
+    It creates a collada animation file using ``h5toanim`` in a temporary
+    location, then calls ``daenim`` to view it.
+
+    Both ``h5toanim`` and ``daenim`` should be installed.
+
+    """
+    dae_animation = os.path.join(tempdir, "arboris_animation.dae")
+    write_collada_animation(dae_animation, dae_scene, hdf5_filename, hdf5_group)
+    subprocess.check_call(('daenim', dae_animation))
 
 def _indent(elem, level=0):
     """Indent the xml subtree starting at elem."""
@@ -151,94 +184,6 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         scene = SubElement(self.collada, "scene")
         SubElement(scene, "instance_visual_scene", {"url":'#'+scene_name})
         return self.visual_scene
-
-    def add_animation(self, transforms, timeline):
-
-        def source(id, param_names, data):
-            """Add a 1d source"""
-            data = array(data)
-            type = None
-            if data.dtype.kind == 'S':
-                type = 'Name'
-            elif data.dtype.kind == 'f':
-                type = 'float'
-            elif data.dtype.kind == 'i':
-                type = 'int'
-            elif data.dtype.kind == 'b':
-                type = 'bool'
-            else:
-                raise ValueError('Unknown data')
-            array_id = id + "-array"
-            stride = len(param_names)
-            src = Element("source", {"id":id})
-            arr = SubElement(src, type+'_array', {'id':array_id, 'count':str(data.size)})#TODO: use sid instead of id
-            arr.text = str(data.reshape(-1)).strip("[]").replace("'", "")
-            tch = SubElement(src, "technique_common")
-            acs = SubElement(tch, "accessor",
-                    {"source":"#"+array_id,
-                     "count":str(data.size/stride),
-                     "stride":str(stride)})
-            for param_name in param_names:
-                par = SubElement(acs, "param", {'type':type})
-                if param_name:
-                    par.attrib['name'] = param_name
-            return src
-
-        def sampler(id, input, output, interpolation):
-            """Add a sampler and a channel"""
-            spl = Element("sampler", {"id":id})
-            SubElement(spl,"input", {'semantic':"INPUT", 'source':input})
-            SubElement(spl,"input", {'semantic':"OUTPUT", 'source':output})
-            SubElement(spl,"input",
-                       {'semantic':"INTERPOLATION", 'source':interpolation})
-            return spl
-
-        def anim(timeline, transforms, animation_name="myanim"):
-            anims = []
-            n = len(timeline)
-            for node_id, poses in transforms.iteritems():
-                # decompose the poses into 4 transforms:
-                # a translation and 3 rotations
-                # H = T * Rz * Ry * Rz
-                transl = poses[:,0:3,3]
-                rotz = zeros(n)
-                roty = zeros(n)
-                rotx = zeros(n)
-                for i in range(n):
-                    (rotz[i], roty[i], rotx[i]) = rotzyx_angles(poses[i])
-                coeff = 180./pi
-                rotz *= coeff
-                roty *= coeff
-                rotx *= coeff
-                # generate a data source, a sampler and a channel for each
-                for transform, param_names, data in (
-                        ('translate', ('X','Y','Z'), transl),
-                        ('rotateZ', ('ANGLE',), rotz),
-                        ('rotateY', ('ANGLE',), roty),
-                        ('rotateX', ('ANGLE',), rotx)):
-                    id = node_id + '-' + transform
-                    sanim = Element('animation', {'id':id})
-                    sanim.append(source(id+'-input', ('TIME',), timeline))
-                    if transform == 'translate':
-                        sanim.append(source(id+'-interpolation',
-                                            ('X', 'Y', 'Z'),
-                                            array(['STEP']*3*n)))
-                        target = node_id+"/"+transform
-                    else:
-                        sanim.append(source(id+'-interpolation', ('ANGLE',),
-                            array(['STEP']*n)))
-                        target = node_id+"/"+transform+'.ANGLE'
-                    sanim.append(source(id+'-output', param_names, data))
-                    sanim.append(sampler(id+'-sampler', '#'+id+'-input',
-                        '#'+id+'-output', '#'+id+'-interpolation'))
-                    sanim.append(Element('channel', {'source':'#'+id+'-sampler',
-                            'target':target}))
-                    anims.append(sanim)
-            return anims
-        lib = Element("library_animations")
-        for a in anim(timeline, transforms):
-            lib.append(a)
-        self.collada.append(lib)
 
     def add_child(self, parent, child):
         parent.append(child)

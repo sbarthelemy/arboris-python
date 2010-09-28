@@ -1,6 +1,6 @@
 # coding=utf-8
 
-"""Import all useful functions, classes and modules from arboris. 
+"""Import all useful functions, classes and modules from arboris.
 
 This is meant for interactive use.
 """
@@ -20,7 +20,8 @@ from arboris.robots.simpleshapes import add_sphere, add_box, add_cylinder, \
                                         add_groundplane
 from arboris.robots.simplearm import add_simplearm
 from arboris.robots.snake import add_snake
-from arboris.visu_collada import write_collada_animation, write_collada_scene
+from arboris.visu_collada import write_collada_animation, write_collada_scene, \
+        view_collada_animation
 try:
     from arboris.visu_osg import OsgObserver
 except ImportError:
