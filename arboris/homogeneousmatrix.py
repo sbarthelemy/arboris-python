@@ -3,7 +3,7 @@
 
 __author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
-from numpy import array, zeros, sin, cos, dot, hstack, vstack
+from numpy import array, zeros, sin, cos, dot, hstack, vstack, arctan2
 import numpy
 
 tol=1e-9
@@ -324,3 +324,28 @@ def iadjoint(H):
     """
     return adjoint(inv(H))
 
+def rotzyx_angles(H):
+    """Returns the angles such that `H[0:3, 0:3] = R_z(a_z) R_y(a_y) R_x_(a_x)`
+
+    :param H: homogeneous matrix
+    :type H: 4x4 ndarray
+    :rtype: 3-tuple
+
+    Exemple:
+    >>> angles = array((3.14/3, 3.14/6, 1))
+    >>> (rotzyx_angles(rotzyx(*angles)) == angles).all()
+    True
+    """
+    assert ishomogeneousmatrix(H)
+    if abs(H[0,0])<tol and abs(H[1,0])<tol:
+        # singularity
+        az = 0
+        ay = arctan2(-H[2,0], H[0,0])
+        ax = arctan2(-H[1,2], H[1,1])
+    else:
+         az= arctan2(H[1,0],H[0,0])
+         sz = sin(az)
+         cz = cos(az)
+         ay = arctan2(-H[2,0], cz*H[0,0] + sz*H[1,0])
+         ax = arctan2(sz*H[0,2] - cz*H[1,2], cz*H[1,1] - sz*H[0,1])
+    return (az, ay, ax)

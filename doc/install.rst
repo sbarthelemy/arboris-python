@@ -44,45 +44,25 @@ diagrams, graphviz is needed too.
 ...for the visualization
 ------------------------
 
-We use `OpenSceneGraph <http://www.openscenegraph.org>`_, 
+We use the `OpenSceneGraph <http://www.openscenegraph.org>`_ library,
 through the `osgswig <http://code.google.com/p/osgswig>`_ bindings.
 
 On linux, we use OSG version 2.8. On Windows, we use version 2.6 because 
 there is no installer for the 2.8 series.
 
 
-Installation on Ubuntu Karmic Koala (9.10)
-==========================================
+Installation on Lucid Lynx (10.04)
+==================================
 
 Installing Python, Numpy and IPython
 ------------------------------------
 
 Install the packaged stuff::
 
-  sudo aptitude install python2.6-doc python-numpy python-numpy-doc ipython
+  sudo aptitude install python2.6-doc ipython2.6 \
+                        python-numpy python-numpy-doc \
+                        ipython python-h5py
 
-Installing compilation tools
-----------------------------
-
-::
-
-  sudo aptitude install build-essentials cmake
-
-Installing h5py
----------------
-
-Install hdf5 library and headers::
-
-  sudo aptitude install libhdf5-serial-dev python2.6-dev
-
-Download, compile and install the python bindings (h5py)::
-
-  cd /tmp
-  wget http://h5py.googlecode.com/files/h5py-1.2.1.tar.gz
-  tar -xzf h5py-1.2.1.tar.gz
-  cd h5py-1.2.1
-  python setup.py build
-  python setup.py install --prefix=~/.local
 
 Installing arboris-python
 -------------------------
@@ -91,59 +71,59 @@ unzip, go in the new directory, then run::
 
   python setup.py install --user
 
-Installing OpenSceneGraph
--------------------------
-
-...as a package
-~~~~~~~~~~~~~~~
-
-OpenSceneGraph 2.8 is packaged::
-
-  sudo aptitude install libopenscenegraph-dev openscenegraph openscenegraph-doc
-
-...from source
-~~~~~~~~~~~~~~
-
-Install OpenSceneGraph 2.8.2 from source::
-
-  sudo aptitude install wx-common libwxgtk2.8-dev #TODO: not sure this is useful
-  svn export http://www.openscenegraph.org/svn/osg/OpenSceneGraph/tags/OpenSceneGraph-2.8.2
-  cd OpenSceneGraph-2.8.2
-  mkdir build
-  cd build
-  ccmake ..
-
-Then check the option to compile the wrappers (``BUILD_OSG_WRAPPERS``), 
-compile and install (warning, the compilation takes lots of memory and time)::
-
-  make
-  sudo make install
-  TODO: how to check everything was fine?
-
 Installing osgswig
 ------------------
 
-Install OpenSceneGraph python bindings from sources (inspired by 
-`this wiki page <http://code.google.com/p/osgswig/wiki/BuildInstructions>`_)::
+OpenSceneGraph build dependancies::
+
+  sudo aptitude build-depends libopenscenegraph-dev
+  sudo aptitude install subversion build-essential cmake
+
+Get the code source and compile it (compilation is quite long)::
+
+  svn co \
+  http://www.openscenegraph.org/svn/osg/OpenSceneGraph/tags/OpenSceneGraph-2.9.7
+  cd OpenSceneGraph-2.9.7
+  mkdir build
+  cd build
+  cmake .. -DCMAKE_BUILD_TYPE=Release \
+           -DCMAKE_CXX_FLAGS=-D__STDC_CONSTANT_MACROS \
+           -DBUILD_OSG_WRAPPERS=ON \
+           -DBUILD_OSG_APPLICATIONS=OFF
+  make
+  sudo make install
+
+OSG libraries were installed in ``/usr/local``. Ensure that ``ld`` will find
+them::
+
+  echo $LD_LIBRARY_DIR
+
+OsgSwig dependancies::
 
   sudo aptitude install swig python-dev
-  svn checkout -r207 http://osgswig.googlecode.com/svn/trunk/ osgswig
+
+Install the python bindings from sources (inspired by
+`this wiki page <http://code.google.com/p/osgswig/wiki/BuildInstructions>`_)::
+
+  cd /tmp
+  svn checkout http://osgswig.googlecode.com/svn/trunk/ osgswig
   cd osgswig
   mkdir build
   cd build
   cmake .. -DCMAKE_BUILD_TYPE=Release
   make
-  cp -r lib/python/osgswig-0.9.1/* ~/.local/lib/python2.6/site-packages/
+  cp  lib/python/osgswig-0.9.1/* ~/.local/lib/python2.6/site-packages/
 
 Don't worry about the hundreds of warnings during the compilation.
+(It worked with revision 227 of osgswig).
 
 Installing cvxmod
 -----------------
 
-Install cvxopt from ubuntu and cvxmod from sources::
+Install cvxopt from ubuntu and then cvxmod from sources::
 
   sudo aptitude install python-cvxopt
-  cd /tmp/
+  cd /tmp
   wget http://cvxmod.net/dist/cvxmod-0.4.6.tar.gz
   tar xzf cvxmod-0.4.6.tar.gz
   cd cvxmod-0.4.6/

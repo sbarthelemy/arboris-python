@@ -20,5 +20,6 @@ def optional_modules():
 
 __all__ = ['adjointmatrix', 'collisions', 'constraints', 'controllers',
            'core', 'homogeneousmatrix', 'joints', 'massmatrix',
-           'observers', 'rigidmotion', 'robots', 'shapes', 'twistvector']
+           'observers', 'rigidmotion', 'robots', 'shapes', 'twistvector',
+           'visu_collada']
 __all__.extend(optional_modules())

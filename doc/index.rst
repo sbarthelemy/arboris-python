@@ -16,6 +16,7 @@ Contents:
    controllers
    constraints
    collisions
+   visu
    modules
    notations
    install

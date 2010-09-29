@@ -31,13 +31,12 @@ def get_version():
 
     def get_version_from_file():
         """Returns the version as defined in the ``VERSION.txt`` file."""
-        f = open('VERSION.txt', "r")
         try:
-            version = f.readlines()[0].strip()
-        except OSError:
-            return None
-        finally:
+            f = open('VERSION.txt', "r")
+            version = f.readline().strip()
             f.close()
+        except IOError:
+            version = None
         return version
 
     def update_version_file(version):
@@ -74,6 +73,7 @@ setup(name='arboris',
       license='LGPL',
       packages=['arboris',
                 'arboris.robots'],
+      package_data={'arboris': ['shapes.dae']},
       classifiers=[
               'Development Status :: 4 - Beta',
               'Environment :: Console',
