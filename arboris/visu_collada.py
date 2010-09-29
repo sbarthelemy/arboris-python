@@ -173,10 +173,10 @@ class ColladaDriver(arboris._visu.DrawerDriver):
                    {"symbol":"material", "target": self.shapes+"#Grey"})
         return node
 
-    def create_sphere(self, radius, color):
+    def create_ellipsoid(self, radii, color):
         node = Element("node")
         scale = SubElement(node, 'scale')
-        scale.text = "{0} {1} {2}".format(radius, radius, radius)
+        scale.text = "{0} {1} {2}".format(*radii)
         elem = SubElement(node, "instance_geometry",
                           {"url": self.shapes+"#sphere"})
         se = SubElement(elem, "bind_material")

@@ -121,13 +121,15 @@ class DrawerDriver():
     def create_link(self):
         pass
 
-    #@abstractmethod
-    def create_ellipsoid(self):
+    @abstractmethod
+    def create_ellipsoid(self, radii, color):
         pass
 
-    @abstractmethod
     def create_sphere(self, radius, color):
-        pass
+        return self.create_ellipsoid([radius] * 3, color)
+
+    def create_point(self, color):
+        return self.create_sphere(self._options['point radius'], color)
 
     @abstractmethod
     def create_box(self, half_extents, color):
@@ -135,10 +137,6 @@ class DrawerDriver():
 
     #@abstractmethod
     def create_plane(self, coeffs, color):
-        pass
-
-    #@abstractmethod
-    def create_point(self, color):
         pass
 
     #@abstractmethod
