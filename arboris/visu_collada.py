@@ -157,14 +157,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         return node
 
     def create_frame_arrows(self):
-        elem = Element("instance_geometry",
-                       {"url": self.shapes+"#frame_arrows"})
-        se = SubElement(elem, "bind_material")
-        se = SubElement(se, "technique_common")
-        for axis, color in [("x", "Red"), ("y", "Green"), ("z", "Blue")]:
-            SubElement(se, "instance_material",
-                       {"symbol":axis+"_axis", "target":self.shapes+"#"+color})
-        return elem
+        return Element("instance_node", {"url": self.shapes+"#frame_arrows"})
 
     def create_box(self, half_extents, color):
         # instead of creating a new box, we use the #box and scale it
@@ -177,7 +170,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         se = SubElement(elem, "bind_material")
         se = SubElement(se, "technique_common")
         SubElement(se, "instance_material",
-                   {"symbol":"box_mat", "target": self.shapes+"#Grey"})
+                   {"symbol":"material", "target": self.shapes+"#Grey"})
         return node
 
     def create_sphere(self, radius, color):
@@ -189,7 +182,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         se = SubElement(elem, "bind_material")
         se = SubElement(se, "technique_common")
         SubElement(se, "instance_material",
-                   {"symbol":"sphere_mat", "target": self.shapes+"#Grey"})
+                   {"symbol":"material", "target": self.shapes+"#Grey"})
         return node
 
     def finish(self):
