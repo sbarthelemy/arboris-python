@@ -180,6 +180,18 @@ class ColladaDriver(arboris._visu.DrawerDriver):
                    {"symbol":"box_mat", "target": self.shapes+"#Grey"})
         return node
 
+    def create_sphere(self, radius, color):
+        node = Element("node")
+        scale = SubElement(node, 'scale')
+        scale.text = "{0} {1} {2}".format(radius, radius, radius)
+        elem = SubElement(node, "instance_geometry",
+                          {"url": self.shapes+"#sphere"})
+        se = SubElement(elem, "bind_material")
+        se = SubElement(se, "technique_common")
+        SubElement(se, "instance_material",
+                   {"symbol":"sphere_mat", "target": self.shapes+"#Grey"})
+        return node
+
     def finish(self):
         # write to  file
         _indent(self.collada)
