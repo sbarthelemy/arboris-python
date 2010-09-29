@@ -140,8 +140,16 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         SubElement(scene, "instance_visual_scene", {"url":'#'+scene_name})
         return self.visual_scene
 
-    def add_child(self, parent, child):
-        parent.append(child)
+    def add_child(self, parent, child, category=None):
+        assert category in (None, 'frame arrows', 'shape')
+        def plural(noun):
+            """Return the plural of a noun"""
+            if noun[-1] is 's':
+                return noun
+            else:
+                return noun + 's'
+        if category is None or self._options['display '+plural(category)]:
+                parent.append(child)
 
     def create_transform(self, pose, is_constant, name=None):
         """Generate the node corresponding to the pose."""

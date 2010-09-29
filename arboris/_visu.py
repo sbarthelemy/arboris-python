@@ -144,7 +144,7 @@ class DrawerDriver():
         pass
 
     @abstractmethod
-    def add_child(self, parent, child):
+    def add_child(self, parent, child, category=None):
         pass
 
 class AnimatorDriver(DrawerDriver):
@@ -202,7 +202,8 @@ class Drawer(object):
 
     def _add_frame(self, pose, is_constant, name):
         node = self._driver.create_transform(pose, is_constant, name)
-        self._driver.add_child(node, self._driver.create_frame_arrows())
+        self._driver.add_child(node, self._driver.create_frame_arrows(),
+                'frame arrows')
         #TODO: add frame name as node
         return node
 
@@ -301,7 +302,7 @@ class Drawer(object):
                 node = self._driver.create_plane(obj.coeffs, color)
             if isinstance(obj, arboris.shapes.Box):
                 node = self._driver.create_box(obj.half_extents, color)
-            self._driver.add_child(self.frame_nodes[obj.frame], node)
+            self._driver.add_child(self.frame_nodes[obj.frame], node, 'shape')
 
     def finish(self):
         self._driver.finish()
