@@ -66,7 +66,7 @@ def view_collada_animation(dae_scene, hdf5_filename, hdf5_group="/"):
 
 def _indent(elem, level=0):
     """Indent the xml subtree starting at elem."""
-    istr = " "*8
+    istr = "\t"
     i = "\n" + level*istr
     if len(elem):
         if not elem.text or not elem.text.strip():
