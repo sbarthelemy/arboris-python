@@ -10,60 +10,6 @@ import os
 import tempfile
 tempdir = tempfile.gettempdir()
 
-def write_collada_scene(world, dae_filename, flat=False):
-    """Write a visual description of the scene in a collada file.
-
-    :param world: the world to convert
-    :type world: :class:`arboris.core.World` instance
-    :param dae_filename: path of the output collada scene file
-    :type dae_filename: str
-    :param flat: if True, each body is a child of the ground. Otherwise
-                 the hierarchy is copied from arboris
-    :type flat: bool
-
-    """
-    assert isinstance(world, arboris.core.World)
-    drawer = arboris._visu.Drawer(ColladaDriver(dae_filename), flat)
-    world.parse(drawer)
-    drawer.finish()
-
-def write_collada_animation(dae_animation, dae_scene, hdf5_filename,
-                            hdf5_group="/"):
-    """Combine a collada scene and an HDF5 file into a collada animation.
-
-    :param dae_animation: path of the output animation collada file
-    :type dae_animation: str
-    :param dae_scene: path of the input scene collada file
-    :type dae_scene: str
-    :param hdf5_filename: path of the input HDF5 file.
-    :type hdf5_filename: str
-    :param hdf5_group: subgroup within the HDF5 file. Defaults to "/".
-    :type hdf5_group: str
-
-    This function is a simple Wrapper around the ``h5toanim`` command, which
-    should be installed.
-
-    """
-    subprocess.check_call(('h5toanim',
-            '--hdf5-file', hdf5_filename,
-            '--hdf5-group', hdf5_group,
-            '--scene-file', dae_scene,
-            '--output', dae_animation))
-
-def view_collada_animation(dae_scene, hdf5_filename, hdf5_group="/"):
-    """Display the animation corresponding to a simulation.
-
-    This function is a Wrapper around the ``h5toanim`` and ``daenim`` commands.
-    It creates a collada animation file using ``h5toanim`` in a temporary
-    location, then calls ``daenim`` to view it.
-
-    Both ``h5toanim`` and ``daenim`` should be installed.
-
-    """
-    dae_animation = os.path.join(tempdir, "arboris_animation.dae")
-    write_collada_animation(dae_animation, dae_scene, hdf5_filename, hdf5_group)
-    subprocess.check_call(('daenim', dae_animation))
-
 def _indent(elem, level=0):
     """Indent the xml subtree starting at elem."""
     istr = "\t"
@@ -90,6 +36,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         arboris._visu.DrawerDriver.__init__(self, scale, options)
         self._file = open(filename, 'w')
         self._file.write('<?xml version="1.0" encoding="utf-8"?>\n')
+        self._colors = []
 
     def init(self):
         pass
@@ -119,6 +66,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
                 SubElement(asset, "up_axis").text = up
             return asset
 
+
         def _create_scaled_frame_arrows(scale):
             node = Element("node", {'id': 'frame_arrows'})
             elem = SubElement(node, 'scale')
@@ -129,6 +77,8 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         self.collada = Element("COLLADA", {"version":"1.4.1",
                 "xmlns":"http://www.collada.org/2005/11/COLLADASchema"})
         self.collada.append(asset(up))
+        self.lib_materials = SubElement(self.collada, "library_materials")
+        self.lib_effects = SubElement(self.collada, "library_effects")
         if self._options['display frame arrows']:
             lib_nodes = SubElement(self.collada, "library_nodes")
             lib_nodes.append(_create_scaled_frame_arrows(self._options['frame arrows length']))
@@ -201,10 +151,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         scale.text = "{0} {1} {2}".format(*half_extents)
         elem = SubElement(node, "instance_geometry",
                           {"url": self.shapes+"#box"})
-        se = SubElement(elem, "bind_material")
-        se = SubElement(se, "technique_common")
-        SubElement(se, "instance_material",
-                   {"symbol":"material", "target": self.shapes+"#Grey"})
+        self._add_color(elem, color)
         return node
 
     def create_plane(self, coeffs, color):
@@ -215,24 +162,17 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         scale.text = "{0} {1} 0.".format(*self._options["plane half extents"])
         elem = SubElement(node, "instance_geometry",
                 {"url": self.shapes+"#plane"})
-        se = SubElement(elem, "bind_material")
-        se = SubElement(se, "technique_common")
-        SubElement(se, "instance_material",
-                   {"symbol":"material", "target": self.shapes+"#Grey"})
+        self._add_color(elem, color)
         return node
 
-    def _create_ellipsoid(self, radii
-         , color, resolution):
+    def _create_ellipsoid(self, radii, color, resolution):
         assert resolution in ('20', '80', '320')
         node = Element("node")
         scale = SubElement(node, 'scale')
         scale.text = "{0} {1} {2}".format(*radii)
         elem = SubElement(node, "instance_geometry",
                           {"url": self.shapes+"#sphere_"+resolution})
-        se = SubElement(elem, "bind_material")
-        se = SubElement(se, "technique_common")
-        SubElement(se, "instance_material",
-                   {"symbol":"material", "target": self.shapes+"#Grey"})
+        self._add_color(elem, color)
         return node
 
     def create_ellipsoid(self, radii, color):
@@ -240,7 +180,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
 
     def create_point(self, color):
         radii = (self._options['point radius'],) * 3
-        return self._create_ellipsoid(radii, color, resolution='8')
+        return self._create_ellipsoid(radii, color, resolution='20')
 
     def _create_cylinder(self, length, radius, color, resolution):
         assert resolution in ('8', '32')
@@ -249,18 +189,98 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         scale.text = "{0} {0} {1}".format(radius, length)
         elem = SubElement(node, "instance_geometry",
                           {"url": self.shapes+"#cylinder_"+resolution})
-        se = SubElement(elem, "bind_material")
-        se = SubElement(se, "technique_common")
-        SubElement(se, "instance_material",
-                   {"symbol":"material", "target": self.shapes+"#Grey"})
+        self._add_color(elem, color)
         return node
 
     def create_cylinder(self, length, radius, color):
         return self._create_cylinder(length, radius, color, '32')
 
+
+    def _add_color(self, parent, color):
+        if not color in self._colors:
+            self._colors.append(color)
+        idx = self._colors.index(color)
+        elem = SubElement(parent, "bind_material")
+        elem = SubElement(elem, "technique_common")
+        SubElement(elem, "instance_material",
+                   {"symbol":"material",
+                    "target": "#color"+str(idx)})
+
+    def _write_colors(self):
+        if len(self._colors):
+            for c in self._colors:
+                url = "color{0}".format(self._colors.index(c))
+                se = SubElement(self.lib_materials, "material", {"id": url})
+                SubElement(se, "instance_effect", {"url": "#"+ url+"_fx"})
+                se = SubElement(self.lib_effects, "effect", {"id": url+"_fx"})
+                se = SubElement(se, "profile_COMMON")
+                se = SubElement(se, "technique", {"sid": "blender"})
+                se = SubElement(se, "phong")
+                se = SubElement(se, "diffuse")
+                se = SubElement(se, "color")
+                se.text = "{0} {1} {2} 1.".format(*c)
+        else:
+            self.collada.remove(self.lib_materials)
+            self.collada.remove(self.lib_effects)
+
     def finish(self):
         # write to  file
+        self._write_colors()
         _indent(self.collada)
         tree = ElementTree(self.collada)
         tree.write(self._file, "utf-8")
         self._file.close()
+
+def write_collada_scene(world, dae_filename, flat=False):
+    """Write a visual description of the scene in a collada file.
+
+    :param world: the world to convert
+    :type world: :class:`arboris.core.World` instance
+    :param dae_filename: path of the output collada scene file
+    :type dae_filename: str
+    :param flat: if True, each body is a child of the ground. Otherwise
+                 the hierarchy is copied from arboris
+    :type flat: bool
+
+    """
+    assert isinstance(world, arboris.core.World)
+    drawer = arboris._visu.Drawer(ColladaDriver(dae_filename), flat)
+    world.parse(drawer)
+    drawer.finish()
+
+def write_collada_animation(dae_animation, dae_scene, hdf5_filename,
+                            hdf5_group="/"):
+    """Combine a collada scene and an HDF5 file into a collada animation.
+
+    :param dae_animation: path of the output animation collada file
+    :type dae_animation: str
+    :param dae_scene: path of the input scene collada file
+    :type dae_scene: str
+    :param hdf5_filename: path of the input HDF5 file.
+    :type hdf5_filename: str
+    :param hdf5_group: subgroup within the HDF5 file. Defaults to "/".
+    :type hdf5_group: str
+
+    This function is a simple Wrapper around the ``h5toanim`` command, which
+    should be installed.
+
+    """
+    subprocess.check_call(('h5toanim',
+            '--hdf5-file', hdf5_filename,
+            '--hdf5-group', hdf5_group,
+            '--scene-file', dae_scene,
+            '--output', dae_animation))
+
+def view_collada_animation(dae_scene, hdf5_filename, hdf5_group="/"):
+    """Display the animation corresponding to a simulation.
+
+    This function is a Wrapper around the ``h5toanim`` and ``daenim`` commands.
+    It creates a collada animation file using ``h5toanim`` in a temporary
+    location, then calls ``daenim`` to view it.
+
+    Both ``h5toanim`` and ``daenim`` should be installed.
+
+    """
+    dae_animation = os.path.join(tempdir, "arboris_animation.dae")
+    write_collada_animation(dae_animation, dae_scene, hdf5_filename, hdf5_group)
+    subprocess.check_call(('daenim', dae_animation))

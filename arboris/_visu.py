@@ -82,18 +82,18 @@ class DrawerDriver():
         options = {
             'display frame arrows': True,
             'display links': True,
-            'display names': False,
-            'display inertia ellipsoids': False,
+            #'display names': False,
+            #'display inertia ellipsoids': False,
             'display shapes': True,
             'frame arrows length': 0.08 * scale,
-            'frame arrows radius': 0.005 * scale,
-            'frame arrows alpha': 1.,
-            'link radius': 0.004 * scale,
+            #'frame arrows radius': 0.005 * scale,
+            #'frame arrows alpha': 1.,
+            #'link radius': 0.004 * scale,
             'point radius': 0.008 * scale,
             'plane half extents': (1. * scale, 1. * scale),
-            'text size': 0.1 * scale,
-            'center of interest': (0., 0., 0.),
-            'camera position': (3.,3.,3.),
+            #'text size': 0.1 * scale,
+            #'center of interest': (0., 0., 0.),
+            #'camera position': (3.,3.,3.),
             'force length': 0.1 * scale,
             'force radius': 0.002 * scale}
         return options
@@ -160,6 +160,89 @@ class AnimatorDriver(DrawerDriver):
     def do_frame(self):
         pass
 
+class ColorGenerator(object):
+    """Choose the color associated to an object.
+
+    The color is represented by a 3-tupple of R, G, B values scaled between
+    0 and 1. So
+
+    - (1., 0., 0.) is red,
+    - (1., 1., 1.) is white and
+    - (0., 0., 0.) is black.
+
+    The ``ColorGenerator`` manages a mapping whose keys are objects
+    or object names and values are the associated colors.
+    The color associated to an object can be requested through the
+    :meth:`get_color` method.
+    If neither the object nor its name are in the mapping, the color of its
+    parent body is searched.
+
+    If the parent body doesn't have color yet, the :meth:`generate_color`
+    method is called, and the new color is added to the mapping.
+
+    one can customize the color of an object using the :meth:`set_color` method
+    or by providing a dict at the ``ColorGenerator`` creation.
+
+    """
+
+    def __init__(self, map=None, nb_colors=20):
+        # init the color palette
+        self._palette = []
+        for k in range(nb_colors):
+            h = 360./nb_colors * k
+            self._palette.append(hsv_to_rgb((h, 0.9 , 0.9)))
+        # init the mapping betwen objects and colors
+        self._map = {}
+        if map:
+            for k, v in map.iteritems():
+                self.set_color(k, v)
+
+    def set_color(self, key, color):
+        assert len(color) == 3 and all([v >= 0. and v <= 1. for v in color])
+        self._map[key] = tuple(color)
+
+    def get_color(self, obj):
+        """Return the color mapped to the body or choose a new one.
+
+        :param obj: the obj whose color is looked for
+        :type obj: :class:`arboris.core.Frame` or :class:`arboris.core.Shape`
+        :return: color as a 3-tuple of RGB values
+
+        """
+        def get_parent_body(obj):
+            """Return the parent body of `obj`
+
+            if `obj` is an instance of :class:`arboris.core.Body`,
+            return itself.
+
+            """
+            if isinstance(obj, arboris.core.Frame):
+                return obj.body
+            elif isinstance(obj, arboris.core.Shape):
+                return obj.frame.body
+            else:
+                raise ValueError()
+
+        try:
+            color = self._map[obj]
+        except KeyError:
+            try:
+                color = self._map[obj.name]
+            except KeyError:
+                if isinstance(obj, arboris.core.Body):
+                    color = self.generate_color(obj)
+                    self.set_color(obj, color)
+                else:
+                    color = self.get_color(get_parent_body(obj))
+        return color
+
+    def generate_color(self, obj):
+        try:
+            return self._palette.pop()
+        except IndexError:
+            # the palette is exhausted
+            return (1., 1., 1.)
+
 class Drawer(object):
     """
     Draw a world
@@ -168,39 +251,22 @@ class Drawer(object):
 
     """
 
-    def __init__(self, driver, flat=False):
+    def __init__(self, driver, flat=False, color_generator=None):
         self.transform_nodes = {}
-        self.body_colors = {}
-        self._body_palette = []
-        ncolor = 20
-        for k in range(ncolor):
-            h = 360./ncolor * k
-            self._body_palette.append(hsv_to_rgb((h, 0.9 , 0.9)))
         self._flat = flat
         # TODO: guess driver
         assert isinstance(driver, DrawerDriver)
         self._driver = driver
-
-    def _get_body_color(self, body, alpha=1.):
-        """Select a colour in the palette for the body.
-        """
-        if body in self.body_colors:
-            color = self.body_colors[body]
+        if not color_generator:
+            self._color_generator = ColorGenerator()
         else:
-            try:
-                c = self._body_palette.pop()
-                color = (c[0], c[1], c[2], alpha)
-                self.body_colors[body] = color
-            except IndexError:
-                color = (1., 1., 1., alpha)
-        return color
+            self._color_generator = color_generator
 
     def init_parse(self, ground, up, current_time):
         self._ground_node = self._driver.add_ground(up)
         self.frame_nodes = {ground: self._ground_node}
 
     def _add_frame(self, parent, pose, is_constant, name, color):
-        print(name)
         node = self._driver.create_transform(pose, is_constant, name)
         self._driver.add_child(parent, node)
         self._driver.add_child(node, self._driver.create_frame_arrows(),
@@ -252,15 +318,16 @@ class Drawer(object):
         assert isinstance(f1, arboris.core.Frame)
         d = self._driver
         bd1 = f1.body
-        color = self._get_body_color(bd1)
         if isinstance(f1, arboris.core.Body):
             # no need to add a body
             if self._flat:
                 f1_node = self._add_frame(self._ground_node,
-                        bd1.pose, False, f1.name, color)
+                        bd1.pose, False, f1.name,
+                        self._color_generator.get_color(f1))
             else:
                 f1_node = self._add_frame(self.frame_nodes[f0],
-                        j.pose, False, f1.name, color)
+                        j.pose, False, f1.name,
+                        self._color_generator.get_color(f1))
             self.frame_nodes[f1] = f1_node
         elif isinstance(f1, arboris.core.MovingSubFrame):
             # this should never happen
@@ -269,14 +336,17 @@ class Drawer(object):
             if self._flat:
                 bd1_node = self._add_frame(self.ground_node,
                         bd1.pose, False, bd1.name,
-                        self._get_body_color(bd1))
+                        self._color_generator.get_color(bd1))
                 f1_node = self._add_frame(bd1_node,
-                        f1.bpose, True, f1.name, color)
+                        f1.bpose, True, f1.name,
+                        self._color_generator.get_color(f1))
             else:
                 f1_node = self._add_frame(self.frame_nodes[f0],
-                        j.pose, False, f1.name, color)
+                        j.pose, False, f1.name,
+                        self._color_generator.get_color(f1))
                 bd1_node = self._add_frame(f1_node,
-                        inv(f1.bpose), True, bd1.name, color)
+                        inv(f1.bpose), True, bd1.name,
+                        self._color_generator.get_color(bd1))
             self.frame_nodes[bd1] = bd1_node
             self.frame_nodes[f1] = f1_node
         if not self._flat:
@@ -285,19 +355,19 @@ class Drawer(object):
     def register(self, obj):
         if isinstance(obj, arboris.core.SubFrame) and \
                 not(obj in self.frame_nodes):
+            color = self._color_generator.get_color(obj)
             node = self._add_frame(self.frame_nodes[obj.body],
-                    obj.bpose, True, obj.name,
-                    self._get_body_color(obj.body))
+                    obj.bpose, True, obj.name, color)
             self.frame_nodes[obj] = node
         if isinstance(obj, arboris.core.MovingSubFrame) and \
                 not(obj in self.frame_nodes):
+            color = self._color_generator.get_color(obj)
             node = self._add_frame(self.frame_nodes[obj.body],
-                    obj.bpose, False, obj.name,
-                    self._get_body_color(obj.body))
+                    obj.bpose, False, obj.name, color)
             self.frame_nodes[obj] = node
             self.transform_nodes[obj] = node
         if isinstance(obj, arboris.core.Shape):
-            color = self._get_body_color(obj.frame.body)
+            color = self._color_generator.get_color(obj)
             if isinstance(obj, arboris.shapes.Sphere):
                 node = self._driver.create_sphere(obj.radius, color)
             if isinstance(obj, arboris.shapes.Point):
