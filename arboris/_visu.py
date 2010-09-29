@@ -135,11 +135,11 @@ class DrawerDriver():
     def create_box(self, half_extents, color):
         pass
 
-    #@abstractmethod
+    @abstractmethod
     def create_plane(self, coeffs, color):
         pass
 
-    #@abstractmethod
+    @abstractmethod
     def create_cylinder(self, length, radius, color):
         pass
 

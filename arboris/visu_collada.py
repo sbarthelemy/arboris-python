@@ -2,7 +2,7 @@
 
 from xml.etree.ElementTree import ElementTree, SubElement, Element, Comment
 from numpy import eye, zeros, all, array, ndarray, linspace, pi
-from arboris.homogeneousmatrix import inv, rotzyx_angles
+from arboris.homogeneousmatrix import inv, rotzyx_angles, zaligned
 import arboris.core
 import arboris._visu
 import subprocess
@@ -142,7 +142,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
     def add_child(self, parent, child):
         parent.append(child)
 
-    def create_transform(self, pose, is_constant, name):
+    def create_transform(self, pose, is_constant, name=None):
         """Generate the node corresponding to the pose."""
         if name:
             node = Element("node", {"id":name, "name":name})
@@ -183,17 +183,56 @@ class ColladaDriver(arboris._visu.DrawerDriver):
                    {"symbol":"material", "target": self.shapes+"#Grey"})
         return node
 
-    def create_ellipsoid(self, radii, color):
-        node = Element("node")
+    def create_plane(self, coeffs, color):
+        H = zaligned(coeffs[0:3])
+        H[0:3, 3] = coeffs[3] * coeffs[0:3]
+        node = self.create_transform(H, is_constant=True)
         scale = SubElement(node, 'scale')
-        scale.text = "{0} {1} {2}".format(*radii)
+        scale.text = "{0} {1} 0.".format(*self._options["plane half extents"])
         elem = SubElement(node, "instance_geometry",
-                          {"url": self.shapes+"#sphere"})
+                {"url": self.shapes+"#plane"})
         se = SubElement(elem, "bind_material")
         se = SubElement(se, "technique_common")
         SubElement(se, "instance_material",
                    {"symbol":"material", "target": self.shapes+"#Grey"})
         return node
+
+    def _create_ellipsoid(self, radii
+         , color, resolution):
+        assert resolution in ('20', '80', '320')
+        node = Element("node")
+        scale = SubElement(node, 'scale')
+        scale.text = "{0} {1} {2}".format(*radii)
+        elem = SubElement(node, "instance_geometry",
+                          {"url": self.shapes+"#sphere_"+resolution})
+        se = SubElement(elem, "bind_material")
+        se = SubElement(se, "technique_common")
+        SubElement(se, "instance_material",
+                   {"symbol":"material", "target": self.shapes+"#Grey"})
+        return node
+
+    def create_ellipsoid(self, radii, color):
+         return self._create_ellipsoid(radii, color, resolution='320')
+
+    def create_point(self, color):
+        radii = (self._options['point radius'],) * 3
+        return self._create_ellipsoid(radii, color, resolution='8')
+
+    def _create_cylinder(self, length, radius, color, resolution):
+        assert resolution in ('8', '32')
+        node = Element("node")
+        scale = SubElement(node, 'scale')
+        scale.text = "{0} {0} {1}".format(radius, length)
+        elem = SubElement(node, "instance_geometry",
+                          {"url": self.shapes+"#cylinder_"+resolution})
+        se = SubElement(elem, "bind_material")
+        se = SubElement(se, "technique_common")
+        SubElement(se, "instance_material",
+                   {"symbol":"material", "target": self.shapes+"#Grey"})
+        return node
+
+    def create_cylinder(self, length, radius, color):
+        return self._create_cylinder(length, radius, color, '32')
 
     def finish(self):
         # write to  file
