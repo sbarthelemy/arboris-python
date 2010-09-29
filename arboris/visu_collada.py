@@ -118,9 +118,19 @@ class ColladaDriver(arboris._visu.DrawerDriver):
                 SubElement(asset, "up_axis").text = up
             return asset
 
+        def _create_scaled_frame_arrows(scale):
+            node = Element("node", {'id': 'frame_arrows'})
+            elem = SubElement(node, 'scale')
+            elem.text = "{0} {0} {0}".format(scale)
+            SubElement(node, "instance_node", {"url": self.shapes+"#frame_arrows"})
+            return node
+
         self.collada = Element("COLLADA", {"version":"1.4.1",
                 "xmlns":"http://www.collada.org/2005/11/COLLADASchema"})
         self.collada.append(asset(up))
+        if self._options['display frame arrows']:
+            lib_nodes = SubElement(self.collada, "library_nodes")
+            lib_nodes.append(_create_scaled_frame_arrows(self._options['frame arrows length']))
         library_visual_scenes = SubElement(self.collada, "library_visual_scenes")
         scene_name = 'myscene'
         self.visual_scene = SubElement(library_visual_scenes, "visual_scene",
@@ -157,7 +167,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         return node
 
     def create_frame_arrows(self):
-        return Element("instance_node", {"url": self.shapes+"#frame_arrows"})
+        return Element("instance_node", {"url": "#frame_arrows"})
 
     def create_box(self, half_extents, color):
         # instead of creating a new box, we use the #box and scale it

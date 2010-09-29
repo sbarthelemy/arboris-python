@@ -70,7 +70,7 @@
 		<geometry id="frame_arrows_geometry">
 			<mesh>
 				<source id="frame_arrows_position">
-					<float_array count="12" id="frame_arrows_position_array">0. 0. 0. 0.08 0. 0. 0. 0.08 0. 0. 0. 0.08</float_array>
+					<float_array count="12" id="frame_arrows_position_array">0. 0. 0. 1. 0. 0. 0. 1. 0. 0. 0. 1.</float_array>
 					<technique_common>
 						<accessor count="4" source="#frame_arrows_position_array" stride="3">
 							<param name="X" type="float"/>
