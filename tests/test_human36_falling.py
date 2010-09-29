@@ -13,10 +13,7 @@ class Human36FallingTestCase(TestCase):
         t_end = 20e-2
         dt = 5e-3
         self.world = World()
-        if batch:
-            observers = []
-        else:
-            observers = [OsgObserver()]
+        observers = []
         add_groundplane(self.world)
         add_human36(self.world)
         # set initial position

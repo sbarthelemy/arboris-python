@@ -33,11 +33,6 @@ class VisuColladaTestCase(TestCase):
             scene_filenames[flat] = join(tempdir,
                                          'simplearm_scene_' + name +'.dae')
         obs = []
-        #try:
-        #    from arboris.visu_osg import OsgObserver
-        #    obs = [OsgObserver()]
-        #except ImportError:
-        #    pass
         for flat in self.cases.iterkeys():
             obs.append(observers.Hdf5Logger(h5_filenames[flat],
                                             mode='w',
