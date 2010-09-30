@@ -110,16 +110,8 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         if not is_constant:
             rotz, roty, rotx = rotzyx_angles(pose)
             coeff = 180./pi
-            matrix = SubElement(node, "translate", {'sid':"translate"})
-            matrix.text = "{0} {1} {2}".format(pose[0, 3],
-                                               pose[1, 3],
-                                               pose[2, 3])
-            matrix = SubElement(node, "rotate", {'sid':"rotateZ"})
-            matrix.text = "0 0 1 {0}".format(rotz*coeff)
-            matrix = SubElement(node, "rotate", {'sid':"rotateY"})
-            matrix.text = "0 1 0 {0}".format(roty*coeff)
-            matrix = SubElement(node, "rotate", {'sid':"rotateX"})
-            matrix.text = "1 0 0 {0}".format(rotx*coeff)
+            matrix = SubElement(node, "matrix", {'sid':"matrix"})
+            matrix.text = str(pose.reshape(16))[1:-1]
         elif not (pose == eye(4)).all():
             matrix = SubElement(node, "matrix", {'sid':'matrix'})
             matrix.text = str(pose.reshape(-1)).strip('[]')
