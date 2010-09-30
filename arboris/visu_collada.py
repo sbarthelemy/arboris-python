@@ -1,7 +1,7 @@
 # coding=utf-8
 
 from xml.etree.ElementTree import ElementTree, SubElement, Element, Comment
-from numpy import eye, zeros, all, array, ndarray, linspace, pi
+from numpy import eye, zeros, all, array, ndarray, linspace, pi, linalg
 from arboris.homogeneousmatrix import inv, rotzyx_angles, zaligned
 import arboris.core
 import arboris._visu
@@ -141,7 +141,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         return self.visual_scene
 
     def add_child(self, parent, child, category=None):
-        assert category in (None, 'frame arrows', 'shape')
+        assert category in (None, 'frame arrows', 'shape', 'link')
         def plural(noun):
             """Return the plural of a noun"""
             if noun[-1] is 's':
@@ -173,6 +173,21 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         elif not (pose == eye(4)).all():
             matrix = SubElement(node, "matrix", {'sid':'matrix'})
             matrix.text = str(pose.reshape(-1)).strip('[]')
+        return node
+
+    def create_line(self, start, end, color):
+        vector = (array(end) - array(start))
+        vector_norm = linalg.norm(vector)
+        assert vector_norm > 0.
+        n_vector = vector/vector_norm
+        H = zaligned(n_vector)
+        H[0:3, 3] = start
+        node = self.create_transform(H, is_constant=True)
+        scale = SubElement(node, 'scale')
+        scale.text = "0. 0. {0}".format(vector_norm)
+        elem = SubElement(node, "instance_geometry",
+            {"url": self.shapes+"#line"})
+        self._add_color(elem, color)
         return node
 
     def create_frame_arrows(self):

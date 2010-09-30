@@ -1,6 +1,7 @@
 # coding=utf-8
 from abc import ABCMeta, abstractmethod, abstractproperty
 from numpy import eye
+from numpy.linalg import norm
 import arboris.core
 
 def hsv_to_rgb(hsv):
@@ -117,8 +118,8 @@ class DrawerDriver():
     def create_frame_arrows(self):
         pass
 
-    #@abstractmethod
-    def create_link(self):
+    @abstractmethod
+    def create_line(self, start, end, color):
         pass
 
     @abstractmethod
@@ -165,8 +166,6 @@ class Drawer(object):
 
     it does not animate it !
 
-    TODO : add links
-
     """
 
     def __init__(self, driver, flat=False):
@@ -200,11 +199,16 @@ class Drawer(object):
         self._ground_node = self._driver.add_ground(up)
         self.frame_nodes = {ground: self._ground_node}
 
-    def _add_frame(self, pose, is_constant, name):
+    def _add_frame(self, parent, pose, is_constant, name, color):
+        print(name)
         node = self._driver.create_transform(pose, is_constant, name)
+        self._driver.add_child(parent, node)
         self._driver.add_child(node, self._driver.create_frame_arrows(),
                 'frame arrows')
         #TODO: add frame name as node
+        if is_constant and norm(pose[0:3, 3]) > 0:
+            line = self._driver.create_line((0., 0., 0.), pose[0:3, 3], color)
+            self._driver.add_child(parent, line, 'link')
         return node
 
     def add_link(self, f0, j, f1):
@@ -247,31 +251,32 @@ class Drawer(object):
         assert isinstance(j, arboris.core.Joint)
         assert isinstance(f1, arboris.core.Frame)
         d = self._driver
+        bd1 = f1.body
+        color = self._get_body_color(bd1)
         if isinstance(f1, arboris.core.Body):
             # no need to add a body
-            bd1 = f1
             if self._flat:
-                f1_node = self._add_frame(bd1.pose, False, f1.name)
-                d.add_child(self._ground_node, f1_node)
+                f1_node = self._add_frame(self._ground_node,
+                        bd1.pose, False, f1.name, color)
             else:
-                f1_node = self._add_frame(j.pose, False, f1.name)
-                d.add_child(self.frame_nodes[f0], f1_node)
+                f1_node = self._add_frame(self.frame_nodes[f0],
+                        j.pose, False, f1.name, color)
             self.frame_nodes[f1] = f1_node
         elif isinstance(f1, arboris.core.MovingSubFrame):
             # this should never happen
             raise ValueError()
         elif isinstance(f1, arboris.core.SubFrame):
-            bd1 = f1.body
             if self._flat:
-                bd1_node = self._add_frame(bd1.pose, False, bd1.name)
-                d.add_child(self.ground_node, bd1_node)
-                f1_node = self._add_frame(f1.bpose, True, f1.name)
-                d.add_child(bd1_node, f1_node)
+                bd1_node = self._add_frame(self.ground_node,
+                        bd1.pose, False, bd1.name,
+                        self._get_body_color(bd1))
+                f1_node = self._add_frame(bd1_node,
+                        f1.bpose, True, f1.name, color)
             else:
-                f1_node = self._add_frame(j.pose, False, f1.name)
-                d.add_child(self.frame_nodes[f0], f1_node)
-                bd1_node = self._add_frame(inv(f1.bpose), True, bd1.name)
-                d.add_child(f1_node, bd1_node)
+                f1_node = self._add_frame(self.frame_nodes[f0],
+                        j.pose, False, f1.name, color)
+                bd1_node = self._add_frame(f1_node,
+                        inv(f1.bpose), True, bd1.name, color)
             self.frame_nodes[bd1] = bd1_node
             self.frame_nodes[f1] = f1_node
         if not self._flat:
@@ -280,15 +285,17 @@ class Drawer(object):
     def register(self, obj):
         if isinstance(obj, arboris.core.SubFrame) and \
                 not(obj in self.frame_nodes):
-            node = self._add_frame(obj.bpose, True, obj.name)
+            node = self._add_frame(self.frame_nodes[obj.body],
+                    obj.bpose, True, obj.name,
+                    self._get_body_color(obj.body))
             self.frame_nodes[obj] = node
-            self._driver.add_child(self.frame_nodes[obj.body], node)
         if isinstance(obj, arboris.core.MovingSubFrame) and \
                 not(obj in self.frame_nodes):
-            node = self._add_frame(obj.bpose, False, obj.name)
+            node = self._add_frame(self.frame_nodes[obj.body],
+                    obj.bpose, False, obj.name,
+                    self._get_body_color(obj.body))
             self.frame_nodes[obj] = node
             self.transform_nodes[obj] = node
-            self._driver.add_child(self.frame_nodes[obj.body], node)
         if isinstance(obj, arboris.core.Shape):
             color = self._get_body_color(obj.frame.body)
             if isinstance(obj, arboris.shapes.Sphere):

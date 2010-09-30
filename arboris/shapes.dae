@@ -96,6 +96,27 @@
 				</lines>
 			</mesh>
 		</geometry>
+		<geometry id="line">
+			<mesh>
+				<source id="line_positions">
+					<float_array count="6" id="line_positions_array">0 0 0 0 0 1</float_array>
+					<technique_common>
+						<accessor count="2" source="#line_positions_array" stride="3">
+							<param name="X" type="float"/>
+							<param name="Y" type="float"/>
+							<param name="Z" type="float"/>
+						</accessor>
+					</technique_common>
+				</source>
+				<vertices id="line_vertices">
+					<input semantic="POSITION" source="#line_positions"/>
+				</vertices>
+				<lines count="1" material="material">
+					<input offset="0" semantic="VERTEX" source="#line_vertices"/>
+					<p>0 1</p>
+				</lines>
+			</mesh>
+		</geometry>
 		<geometry id="box">
 			<mesh>
 				<source id="box_positions">
