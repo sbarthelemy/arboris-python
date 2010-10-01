@@ -83,7 +83,8 @@ def _indent(elem, level=0):
 
 class ColladaDriver(arboris._visu.DrawerDriver):
 
-    shapes = os.path.join(os.path.dirname(__file__), 'shapes.dae')
+    shapes = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+            'shapes.dae')
 
     def __init__(self, filename, scale=1., options=None):
         arboris._visu.DrawerDriver.__init__(self, scale, options)
