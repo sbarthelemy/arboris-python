@@ -1,13 +1,12 @@
-import unittest
+import arboristest
 from numpy import array, zeros, eye, sin, cos, dot, ndarray
-from arboristest import TestCase
 from numpy.linalg import norm
 from arboris.core import World, Body
 from arboris.joints import *
 import arboris.homogeneousmatrix
 from arboris.homogeneousmatrix import rotx
 
-class TestRzyxAgainstRzRyRx(TestCase):
+class TestRzyxAgainstRzRyRx(arboristest.TestCase):
     def setUp(self):
         """
         Ensure multi-dof Rzyx behaves like the combination of Rz, Ry, Rx.
@@ -37,4 +36,4 @@ class TestRzyxAgainstRzRyRx(TestCase):
         self.assertListsAlmostEqual(Ja,Jb)
 
 if __name__ == '__main__':
-    unittest.main()
+    arboristest.main()

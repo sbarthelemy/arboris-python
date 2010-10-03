@@ -1,11 +1,8 @@
-import unittest
-from arboristest import TestCase
+import arboristest
 from arboris.all import *
 import numpy
 
-batch = True
-
-class Human36FallingTestCase(TestCase):
+class Human36FallingTestCase(arboristest.TestCase):
     """Check if joint limits are enforced on a simplearm under grabity."""
 
     def setUp(self):
@@ -50,4 +47,4 @@ class Human36FallingTestCase(TestCase):
             self.assertTrue(f.pose[1,3] >= 0.)
 
 if __name__ == '__main__':
-    unittest.main()
+    arboristest.main()

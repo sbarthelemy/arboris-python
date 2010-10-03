@@ -1,17 +1,11 @@
 # coding=utf-8
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
 
-from arboristest import TestCase
+import arboristest
 from arboris.all import *
-import unittest
-import tempfile
-#from arboris.core import World, simulate, SubFrame
-#from arboris.homogeneousmatrix import transl
-#from numpy import array, arange, eye
 from os.path import join
-tempdir = tempfile.gettempdir()
 
-class VisuColladaTestCase(TestCase):
+class VisuColladaTestCase(arboristest.TestCase):
 
     def setUp(self):
         self.world = World()
@@ -26,11 +20,11 @@ class VisuColladaTestCase(TestCase):
         anim_filenames = {}
         scene_filenames = {}
         for flat, name in self.cases.iteritems():
-            h5_filenames[flat] = join(tempdir,
+            h5_filenames[flat] = join(self.destdir,
                                       'simplearm_simulation_' + name +'.h5')
-            anim_filenames[flat] = join(tempdir,
+            anim_filenames[flat] = join(self.destdir,
                                         'simplearm_animation_' + name +'.dae')
-            scene_filenames[flat] = join(tempdir,
+            scene_filenames[flat] = join(self.destdir,
                                          'simplearm_scene_' + name +'.dae')
         obs = []
         for flat in self.cases.iterkeys():
@@ -42,7 +36,8 @@ class VisuColladaTestCase(TestCase):
             write_collada_scene(self.world, scene_filenames[flat], flat=flat)
             write_collada_animation(anim_filenames[flat],
                     scene_filenames[flat], h5_filenames[flat])
-            #view_collada_animation(scene_filenames[flat], h5_filenames[flat])
+            if self.interactive:
+                view_collada_animation(scene_filenames[flat], h5_filenames[flat])
 
 if __name__ == '__main__':
-    unittest.main()
+    arboristest.main()

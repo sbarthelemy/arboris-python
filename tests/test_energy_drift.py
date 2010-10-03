@@ -3,12 +3,12 @@
 This example shows that arboris creates energy.
 """
 __author__ = ("Sébastien BARTHÉLEMY <sebastien.barthelemy@crans.org>")
-
-from arboristest import TestCase
+import os
+import arboristest
 import h5py
 from arboris.all import *
-import unittest
 
+h5file = os.path.join(arboristest.TestCase.testdir, 'energy_drift.h5')
 def run_simulation(is_fixed=False, with_weight=True):
     world = World()
     njoints = 9
@@ -29,7 +29,7 @@ def run_simulation(is_fixed=False, with_weight=True):
 
     if False:
         # save result to a file
-        g = h5py.File('tests/energy_drift.h5', 'a')
+        g = h5py.File(h5file, 'a')
         if is_fixed:
             name = 'fixed_'
         else:
@@ -43,11 +43,11 @@ def run_simulation(is_fixed=False, with_weight=True):
     #nrj.plot()
     return nrj
 
-class EnergyDriftTestCase(TestCase):
+class EnergyDriftTestCase(arboristest.TestCase):
 
     def test_free_with_weight(self):
         nrj = run_simulation(False, True)
-        g = h5py.File('tests/energy_drift.h5', 'r')
+        g = h5py.File(h5file, 'r')
         try:
             self.assertListsAlmostEqual(g['free_with_weight'],
                                         nrj.kinetic_energy)
@@ -55,5 +55,5 @@ class EnergyDriftTestCase(TestCase):
             g.close()
 
 if __name__ == '__main__':
-    unittest.main()
+    arboristest.main()
 
