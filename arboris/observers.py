@@ -156,7 +156,7 @@ class Hdf5Logger(arboris.core.Observer):
 
       root/timeline (nsteps,)
       root/gpositions/
-      root/gvelolcities/
+      root/gvelocities/
       root/model/
       root/transforms/
 

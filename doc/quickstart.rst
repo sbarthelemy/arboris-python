@@ -30,7 +30,7 @@ One can get a list of the bodies[1]_:
 
   >>> bodies = w.getbodies()
   >>> joints = w.getjoints()
-  >>> bodies['ForeArm'].mass
+  >>> bodies['Forearm'].mass
   array([[  4.27733333e-02,   0.00000000e+00,   0.00000000e+00,
             0.00000000e+00,   0.00000000e+00,   1.60000000e-01],
          [  0.00000000e+00,   2.13333333e-04,   0.00000000e+00,

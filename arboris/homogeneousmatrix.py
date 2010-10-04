@@ -325,7 +325,7 @@ def iadjoint(H):
     return adjoint(inv(H))
 
 def rotzyx_angles(H):
-    """Returns the angles such that `H[0:3, 0:3] = R_z(a_z) R_y(a_y) R_x_(a_x)`
+    """Returns the angles such that `H[0:3, 0:3] = R_z(a_z) R_y(a_y) R_x(a_x)`
 
     :param H: homogeneous matrix
     :type H: 4x4 ndarray

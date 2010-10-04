@@ -3,7 +3,6 @@ from arboris.all import *
 import numpy
 
 class Human36FallingTestCase(arboristest.TestCase):
-    """Check if joint limits are enforced on a simplearm under grabity."""
 
     def setUp(self):
         d = numpy
