@@ -3,6 +3,7 @@
 
 import arboris
 import unittest
+import arboristest
 import doctest
 import glob
 import os
@@ -17,4 +18,4 @@ suite.addTest(_loader.loadTestsFromName('test_human36'))
 suite.addTest(_loader.loadTestsFromName('test_pdcontroller'))
 
 if __name__ == "__main__":
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    arboristest.main(defaultTest='suite')

@@ -14,30 +14,32 @@ class VisuColladaTestCase(arboristest.TestCase):
         self.world.getjoints()['Shoulder'].gpos[0] = 3.14/4
         self.world.update_geometric()
         self.cases = {True: 'flat', False:'notflat'}
-
-    def test_animation(self):
-        h5_filenames = {}
-        anim_filenames = {}
-        scene_filenames = {}
+        self.h5_files = {}
         for flat, name in self.cases.iteritems():
-            h5_filenames[flat] = join(self.destdir,
-                                      'simplearm_simulation_' + name +'.h5')
-            anim_filenames[flat] = join(self.destdir,
-                                        'simplearm_animation_' + name +'.dae')
-            scene_filenames[flat] = join(self.destdir,
-                                         'simplearm_scene_' + name +'.dae')
-        obs = []
-        for flat in self.cases.iterkeys():
-            obs.append(observers.Hdf5Logger(h5_filenames[flat],
-                                            mode='w',
-                                            flat=flat))
-        simulate(self.world, arange(0, .1, .01), obs)
-        for flat in self.cases.iterkeys():
-            write_collada_scene(self.world, scene_filenames[flat], flat=flat)
-            write_collada_animation(anim_filenames[flat],
-                    scene_filenames[flat], h5_filenames[flat])
-            if self.interactive:
-                view_collada_animation(scene_filenames[flat], h5_filenames[flat])
+            self.h5_files[flat] = join(self.testdir, 'simplearm_'+name+'.h5')
+        if False:
+            # save hdf5 files as a reference
+            obs = []
+            for flat in self.cases.iterkeys():
+                obs.append(observers.Hdf5Logger(self.h5_files[flat],
+                                                mode='w',
+                                                flat=flat))
+            simulate(self.world, arange(0, 1, .01), obs)
+
+    def _test_anim(self, flat):
+        name = self.cases[flat]
+        anim_file = join(self.destdir, 'simplearm_anim_' + name +'.dae')
+        scene_file = join(self.destdir, 'simplearm_scene_' + name +'.dae')
+        write_collada_scene(self.world, scene_file, flat=flat)
+        write_collada_animation(anim_file, scene_file, self.h5_files[flat])
+        if self.interactive:
+            view_collada_animation(scene_file, self.h5_files[flat])
+
+    def test_anim_flat(self):
+        self._test_anim(True)
+
+    def test_anim_notflat(self):
+        self._test_anim(False)
 
 if __name__ == '__main__':
     arboristest.main()
