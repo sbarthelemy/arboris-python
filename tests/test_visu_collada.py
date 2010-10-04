@@ -33,7 +33,7 @@ class VisuColladaTestCase(arboristest.TestCase):
         write_collada_scene(self.world, scene_file, flat=flat)
         write_collada_animation(anim_file, scene_file, self.h5_files[flat])
         if self.interactive:
-            view_collada_animation(scene_file, self.h5_files[flat])
+            view(anim_file)
 
     def test_anim_flat(self):
         self._test_anim(True)

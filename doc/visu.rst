@@ -35,20 +35,17 @@ Viewing the simulation involves four steps:
 >>> write_collada_animation(dest('myanim.dae'), dest('myscene.dae'),
 ...                         dest('mysimu.h5')) # step 3
 >>> import subprocess
->>> subprocess.check_call(['daenim', dest('myanim.dae')]) # step 4
-...                                                       #doctest:+SKIP
-0
+>>> view(dest('myanim.dae')) # step 4 #doctest:+SKIP
 
 The :func:`write_collada_animation` function is a simple wrapper around the
 external ``h5toanim`` command from the `ColladaTools project
 <http://github.com/sbarthelemy/ColladaTools>`_.
 
 The last two steps can be combined using the convenience function
-:func:`view_collada_animation`. Using it, the last three commands from the
+:func:`view`. Using it, the last three commands from the
 above example would be replaced by this single one:
 
->>> view_collada_animation(dest('myscene.dae'),
-...                        dest('mysimu.h5')) #doctest:+SKIP
+>>> view(dest('myscene.dae'), dest('mysimu.h5')) #doctest:+SKIP
 
 Customizing the visualization
 =============================
@@ -105,9 +102,7 @@ being attached to the hand, it would have been green)
 >>> drawer = Drawer(driver, color_generator=cg)
 >>> world.parse(drawer)
 >>> drawer.finish()
->>> subprocess.check_call(['daenim',
-...                       dest('mycustomizedscene.dae')]) #doctest:+SKIP
-0
+>>> view(dest('mycustomizedscene.dae')) #doctest:+SKIP
 
 Under the hood
 ==============

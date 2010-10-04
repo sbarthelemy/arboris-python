@@ -21,5 +21,5 @@ from arboris.robots.simpleshapes import add_sphere, add_box, add_cylinder, \
 from arboris.robots.simplearm import add_simplearm
 from arboris.robots.snake import add_snake
 from arboris.visu_collada import write_collada_animation, write_collada_scene, \
-        view_collada_animation, ColladaDriver
+        view, ColladaDriver
 from numpy import arange, dot

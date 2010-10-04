@@ -240,39 +240,49 @@ def write_collada_scene(world, dae_filename, flat=False):
     world.parse(drawer)
     drawer.finish()
 
-def write_collada_animation(dae_animation, dae_scene, hdf5_filename,
+def write_collada_animation(collada_animation, collada_scene, hdf5_file,
                             hdf5_group="/"):
     """Combine a collada scene and an HDF5 file into a collada animation.
 
-    :param dae_animation: path of the output animation collada file
-    :type dae_animation: str
-    :param dae_scene: path of the input scene collada file
-    :type dae_scene: str
-    :param hdf5_filename: path of the input HDF5 file.
-    :type hdf5_filename: str
+    :param collada_animation: path of the output collada animation file
+    :type collada_animation: str
+    :param collada_scene: path of the input collada scene file
+    :type collada_scene: str
+    :param hdf5_file: path of the input HDF5 file.
+    :type hdf5_file: str
     :param hdf5_group: subgroup within the HDF5 file. Defaults to "/".
     :type hdf5_group: str
 
-    This function is a simple Wrapper around the ``h5toanim`` command, which
-    should be installed.
+    This function is a simple Wrapper around the ``h5toanim`` external command,
+    which should be installed for this function to work.
 
     """
     subprocess.check_call(('h5toanim',
-            '--hdf5-file', hdf5_filename,
+            '--hdf5-file', hdf5_file,
             '--hdf5-group', hdf5_group,
-            '--scene-file', dae_scene,
-            '--output', dae_animation))
+            '--scene-file', collada_scene,
+            '--output', collada_animation))
 
-def view_collada_animation(dae_scene, hdf5_filename, hdf5_group="/"):
-    """Display the animation corresponding to a simulation.
+def view(collada_file, hdf5_file=None, hdf5_group="/"):
+    """Display a collada file, generating the animation if necessary.
 
-    This function is a Wrapper around the ``h5toanim`` and ``daenim`` commands.
-    It creates a collada animation file using ``h5toanim`` in a temporary
-    location, then calls ``daenim`` to view it.
+    Usage:
 
-    Both ``h5toanim`` and ``daenim`` should be installed.
+        view(collada_file)
+        view(collada_scene_file, hdf5_file, [hdf5_group])
+
+    If only the `collada_file` is given, it is displayed.
+    If both `collada_file` and `hdf5_file` are given, they are combined into
+    a collada animation file, which is displayed.
+
+    This function is a Wrapper around the ``h5toanim`` and ``daenim`` external
+    commands. Tey should both be installed for the function to work.
 
     """
-    dae_animation = os.path.join(tempdir, "arboris_animation.dae")
-    write_collada_animation(dae_animation, dae_scene, hdf5_filename, hdf5_group)
-    subprocess.check_call(('daenim', dae_animation))
+    if hdf5_file is None:
+        subprocess.check_call(('daenim', collada_file))
+    else:
+        anim_file = tempfile.mkstemp(suffix='anim.dae', text=True)[1]
+        write_collada_animation(anim_file, collada_file, hdf5_file, hdf5_group)
+        subprocess.check_call(('daenim', anim_file))
+        os.remove(anim_file)
