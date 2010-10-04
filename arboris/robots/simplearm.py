@@ -46,7 +46,7 @@ def add_simplearm(world, name='', lengths=(0.5 ,0.4 , 0.2),
 
     # create the 3 bodies
     arm = create_body(name+'Arm', lengths[0], masses[0])
-    forearm = create_body(name+'ForeArm', lengths[1], masses[1])
+    forearm = create_body(name+'Forearm', lengths[1], masses[1])
     hand = create_body(name+'Hand', lengths[2], masses[2])
 
     # create a joint between the ground and the arm

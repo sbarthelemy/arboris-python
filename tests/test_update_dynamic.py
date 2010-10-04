@@ -25,7 +25,7 @@ class UpdateDynamicTestCase(TestCase):
               [ 0.47942554,  0.87758256,  0.        ,  0.        ],
               [ 0.        ,  0.        ,  1.        ,  0.        ],
               [ 0.        ,  0.        ,  0.        ,  1.        ]])
-        self.assertListsAlmostEqual(bodies['ForeArm'].pose,
+        self.assertListsAlmostEqual(bodies['Forearm'].pose,
              [[ 0.0707372 , -0.99749499,  0.        , -0.23971277],
               [ 0.99749499,  0.0707372 ,  0.        ,  0.43879128],
               [ 0.        ,  0.        ,  1.        ,  0.        ],
@@ -49,7 +49,7 @@ class UpdateDynamicTestCase(TestCase):
               [ 0.,  0.,  0.],
               [ 0.,  0.,  0.],
               [ 0.,  0.,  0.]])
-        self.assertListsAlmostEqual(bodies['ForeArm'].jacobian,
+        self.assertListsAlmostEqual(bodies['Forearm'].jacobian,
              [[ 0.        ,  0.        ,  0.        ],
               [ 0.        ,  0.        ,  0.        ],
               [ 1.        ,  1.        ,  0.        ],
@@ -67,7 +67,7 @@ class UpdateDynamicTestCase(TestCase):
                 [ 0.,  0.,  0.,  0.,  0.,  0.])
         self.assertListsAlmostEqual(bodies['Arm'].twist,
                 [ 0. ,  0. ,  2.5,  0. ,  0. ,  0. ])
-        self.assertListsAlmostEqual(bodies['ForeArm'].twist,
+        self.assertListsAlmostEqual(bodies['Forearm'].twist,
                 [ 0.,  0., 1.5, -0.67537788,  1.05183873,  0. ])
         self.assertListsAlmostEqual(bodies['Hand'].twist,
                 [ 0. ,  0. ,  1.  , -0.35187792,  1.61528183,  0.  ])
@@ -88,7 +88,7 @@ class UpdateDynamicTestCase(TestCase):
                       0.00000000e+00,   1.00000000e+00,   0.00000000e+00],
                    [  2.50000000e-01,   0.00000000e+00,   0.00000000e+00,
                       0.00000000e+00,   0.00000000e+00,   1.00000000e+00]])
-        self.assertListsAlmostEqual(bodies['ForeArm'].mass,
+        self.assertListsAlmostEqual(bodies['Forearm'].mass,
                   [[  4.27733333e-02,   0.00000000e+00,   0.00000000e+00,
                       0.00000000e+00,   0.00000000e+00,   1.60000000e-01],
                    [  0.00000000e+00,   2.13333333e-04,   0.00000000e+00,
@@ -132,7 +132,7 @@ class UpdateDynamicTestCase(TestCase):
                    [ 0.,  0.,  0.],
                    [ 0.,  0.,  0.],
                    [ 0.,  0.,  0.]])
-        self.assertListsAlmostEqual(bodies['ForeArm'].djacobian,
+        self.assertListsAlmostEqual(bodies['Forearm'].djacobian,
                   [[ 0.        ,  0.        ,  0.        ],
                    [ 0.        ,  0.        ,  0.        ],
                    [ 0.        ,  0.        ,  0.        ],
@@ -166,7 +166,7 @@ class UpdateDynamicTestCase(TestCase):
                       2.50000000e+00,   0.00000000e+00,   0.00000000e+00],
                    [  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                       0.00000000e+00,   0.00000000e+00,   0.00000000e+00]])
-        self.assertListsAlmostEqual(bodies['ForeArm'].nleffects,
+        self.assertListsAlmostEqual(bodies['Forearm'].nleffects,
                   [[  0.00000000e+00,  -3.20000000e-04,   0.00000000e+00,
                       0.00000000e+00,   0.00000000e+00,   0.00000000e+00],
                    [  1.61600000e-02,   0.00000000e+00,   0.00000000e+00,
