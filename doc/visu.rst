@@ -14,17 +14,29 @@ Viewing the simulation involves four steps:
 4. view the animation using an external viewer such as `dænim
    <http://github.com/sbarthelemy/daenim>`_ or blender.
 
-
+>>> def dest(filename):
+...     """return absolute path to ``filename`` in an temporary directory.
+...
+...     The temporary directory is platform-dependant. It is usually
+...     ``/tmp`` or ``$TMPDIR``.
+...
+...     """
+...     import tempfile
+...     import os
+...     return os.path.join(tempfile.gettempdir(), filename)
 >>> from arboris.all import *
 >>> world = World()
 >>> world.register(WeightController())
 >>> add_simplearm(world, with_shapes=True)
 >>> world.getjoints()['Shoulder'].gpos[0] = 3.14/4
->>> write_collada_scene(world, 'myscene.dae') # step 1
->>> simulate(world, arange(0, 1, .01), [observers.Hdf5Logger('mysimu.h5')]) # step 2
->>> write_collada_animation('myanim.dae', 'myscene.dae', 'mysimu.h5') # step 3
+>>> write_collada_scene(world, dest('myscene.dae')) # step 1
+>>> obs = [observers.Hdf5Logger(dest('mysimu.h5'))]
+>>> simulate(world, arange(0, 1, .01), obs) # step 2
+>>> write_collada_animation(dest('myanim.dae'), dest('myscene.dae'),
+...                         dest('mysimu.h5')) # step 3
 >>> import subprocess
->>> subprocess.check_call(['daenim', 'myanim.dae']) # step 4
+>>> subprocess.check_call(['daenim', dest('myanim.dae')]) # step 4
+...                                                       #doctest:+SKIP
 0
 
 The :func:`write_collada_animation` function is a simple wrapper around the
@@ -32,13 +44,14 @@ external ``h5toanim`` command from the `ColladaTools project
 <http://github.com/sbarthelemy/ColladaTools>`_.
 
 The last two steps can be combined using the convenience function
-:func:`view_collada_animation`. Using it, the last three lines from the above
-example would be replaced by this single line:
+:func:`view_collada_animation`. Using it, the last three commands from the
+above example would be replaced by this single one:
 
->>> view_collada_animation('myscene.dae', 'mysimu.h5')
+>>> view_collada_animation(dest('myscene.dae'),
+...                        dest('mysimu.h5')) #doctest:+SKIP
 
 Customizing the visualization
-============================
+=============================
 
 One can skip the step 1 and provide its own collada scene file. One can
 also edit the generated the generated scene either manually or with a filter.
@@ -50,16 +63,13 @@ display of shapes.
 To use these options, one cannot use the :func:`write_collada_scene` helper
 function.
 
->>> from arboris.all import *
->>> import subprocess
->>> world = World()
->>> world.register(WeightController())
->>> add_simplearm(world, with_shapes=True)
->>> world.getjoints()['Shoulder'].gpos[0] = 3.14/4
-
 Some graphic elements have a fixed size, such as the points or the frame
 arrows. They can be scaled altogether with a single :param:`scale` parameter,
 and ca
+
+.. TODO: explain that plane is finite/infinite
+
+.. TODO: explain how to filter the collada with sax to change the plane size.
 
 >>> options = ColladaDriver.get_default_options(scale=1.)
 >>> print(options['point radius'])
@@ -95,7 +105,8 @@ being attached to the hand, it would have been green)
 >>> drawer = Drawer(driver, color_generator=cg)
 >>> world.parse(drawer)
 >>> drawer.finish()
->>> subprocess.check_call(['daenim', 'mycustomizedscene.dae'])
+>>> subprocess.check_call(['daenim',
+...                       dest('mycustomizedscene.dae')]) #doctest:+SKIP
 0
 
 Under the hood
