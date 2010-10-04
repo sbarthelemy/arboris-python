@@ -8,7 +8,6 @@ import arboris._visu
 import subprocess
 import os
 import tempfile
-tempdir = tempfile.gettempdir()
 
 def _indent(elem, level=0):
     """Indent the xml subtree starting at elem."""
