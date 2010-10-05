@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+	<asset>
+		<created>2005-06-27T21:00:00Z</created>
+		<modified>2005-06-27T21:00:00Z</modified>
+		<unit meter="1" name="meter"/>
+	</asset>
+	<library_materials>
+	</library_materials>
+	<library_effects>
+	</library_effects>
+	<library_nodes>
+		<node id="frame_arrows">
+			<scale>1 1 1</scale>
+			<instance_node url="shapes.dae#frame_arrows"/>
+		</node>
+		<node id="ground">
+		</node>
+	</library_nodes>
+	<library_visual_scenes>
+		<visual_scene id="myscene">
+			<node>
+				<instance_node url="#ground"/>
+			</node>
+		</visual_scene>
+	</library_visual_scenes>
+	<scene>
+		<instance_visual_scene url="#myscene"/>
+	</scene>
+</COLLADA>

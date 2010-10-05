@@ -1,6 +1,6 @@
 # coding=utf-8
-
-from xml.etree.ElementTree import ElementTree, SubElement, Element, Comment
+import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import XML, Element, SubElement
 from numpy import eye, zeros, all, array, ndarray, linspace, pi, linalg
 from arboris.homogeneousmatrix import inv, rotzyx_angles, zaligned
 import arboris.core
@@ -9,85 +9,151 @@ import subprocess
 import os
 import tempfile
 
-def _indent(elem, level=0):
-    """Indent the xml subtree starting at elem."""
-    istr = "\t"
-    i = "\n" + level*istr
-    if len(elem):
-        if not elem.text or not elem.text.strip():
-            elem.text = i + istr
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
+NS = 'http://www.collada.org/2005/11/COLLADASchema'
+shapes = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shapes.dae')
+
+def QN(tag):
+    """Return the qualified version of a collada tag name.
+
+    Example:
+
+    >>> QN('asset')
+    '{http://www.collada.org/2005/11/COLLADASchema}asset'
+
+    """
+    assert tag[1] is not '{'
+    return "{" + NS + "}" + tag
+
+def indent(tree):
+    """Indent the xml tree."""
+    def _indent(elem, level):
+        """Indent the xml subtree starting at elem."""
+        istr = "\t"
+        i = "\n" + level*istr
+        if len(elem):
+            if not elem.text or not elem.text.strip():
+                elem.text = i + istr
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+            for elem in elem:
+                _indent(elem, level+1)
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+        else:
+            if level and (not elem.tail or not elem.tail.strip()):
+                elem.tail = i
+
+    _indent(tree.getroot(), 0)
+
+def fix_namespace(tree):
+    """Fix a tree to avoid namespace aliases/prefixes.
+
+    This function replaces qualified elements tags from the collada namespace
+    by the unqualified (or local) version and add the namespace declaration
+    to the root element.
+
+    **Background**
+
+    ColladaCoherencyTest requires the collada file to declare the namespace as
+    shown in this example::
+
+        <COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema"
+                 version="1.4.1">
+            <asset>
+                ...
+            </asset>
+        </COLLADA>
+
+    Due to this namespace declaration, when ElementTree parses the file, it
+    remove the ``xmlns`` attribute from the ``COLLADA`` element and stores
+    qualified versions of the tags. For the example ``Element``s' tags would
+    be:
+
+    - {http://www.collada.org/2005/11/COLLADASchema}COLLADA
+    - {http://www.collada.org/2005/11/COLLADASchema}asset
+
+    There is no way to disable this namespace resolution in ElementTree
+    (besides writing a new parser).
+
+    When ElementTree serializes the tree back to an XML file, it generates
+    namespace aliases, such as "ns0" for every element.
+
+        <ns0:COLLADA xmlns:ns0="http://www.collada.org/2005/11/COLLADASchema"
+                     version="1.4.1">
+            <ns0:asset>
+                ...
+            </ns0:asset>
+        </ns0:COLLADA>
+
+    One can customize the prefix, but not disable it (ie. declare a namespace
+    to be default.)
+
+    However,collada-dom does not support namespace prefixes and won't load such
+    a file. This seems to be a limitation of the whole DTD thing which is not
+    namespace-aware.
+
+    In order to write collada-dom compatible files, this function "unqualifies"
+    the collada tags and adds back the ``xmlns`` attribute to the root element.
+
+    """
+    def _fix_tag(elem):
+        if elem.tag.startswith('{'+NS+'}'):
+            elem.tag = elem.tag.split('}')[1]
         for elem in elem:
-            _indent(elem, level+1)
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-    else:
-        if level and (not elem.tail or not elem.tail.strip()):
-            elem.tail = i
+            _fix_tag(elem)
+    root = tree.getroot()
+    root.set('xmlns', NS)
+    _fix_tag(root)
+
+def find_by_id(root, id, tag=None):
+    """Find an element by id."""
+    if tag:
+        tag = '{'+NS+'}'+tag
+    for e in root.getiterator(tag):
+        if e.get('id') == id:
+            return(e)
+    return None
 
 class ColladaDriver(arboris._visu.DrawerDriver):
-
-    shapes = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-            'shapes.dae')
-
     def __init__(self, filename, scale=1., options=None):
         arboris._visu.DrawerDriver.__init__(self, scale, options)
         self._file = open(filename, 'w')
-        self._file.write('<?xml version="1.0" encoding="utf-8"?>\n')
         self._colors = []
+        scene = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                'scene.dae')
+        self._tree = ET.parse(scene)
+        frame_arrows = find_by_id(self._tree, 'frame_arrows', 'node')
+        # make the path to shapes.dae absolute
+        instance_node = frame_arrows.find('./{'+NS+'}instance_node')
+        instance_node.set('url', shapes + "#frame_arrows")
+        # update the frame arrows scale
+        scale = frame_arrows.find('./{'+NS+'}scale')
+        scale.text = "{0} {0} {0}".format(self._options['frame arrows length'])
 
     def init(self):
         pass
 
     def add_ground(self, up):
-        self._init_scene(up)
-        return self.visual_scene
+        self._set_up_axis(up)
+        ground = find_by_id(self._tree, 'ground', 'node')
+        assert ground is not None
+        return ground
 
-    def _init_scene(self, up):
-
-        def asset(up):
-            """Generate the "asset" collada tag."""
-            asset = Element("asset")
-            SubElement(asset, "created").text = '2005-06-27T21:00:00Z'  #TODO add date
-            SubElement(asset, "modified").text = '2005-06-27T21:00:00Z' #TODO add date
-            SubElement(asset, "unit", {"meter":"1", "name":"meter"}) #TODO useful ?
-            if (up == [1., 0., 0.]).all():
-                up = 'X_UP'
-            elif (up == [0., 1., 0.]).all():
-                up = 'Y_UP'
-            elif (up == [0., 0., 1.]).all():
-                up = 'Z_UP'
-            else:
-                up = None
-                warning('the up vector is not compatible with collada')
-            if up:
-                SubElement(asset, "up_axis").text = up
-            return asset
-
-
-        def _create_scaled_frame_arrows(scale):
-            node = Element("node", {'id': 'frame_arrows'})
-            elem = SubElement(node, 'scale')
-            elem.text = "{0} {0} {0}".format(scale)
-            SubElement(node, "instance_node", {"url": self.shapes+"#frame_arrows"})
-            return node
-
-        self.collada = Element("COLLADA", {"version":"1.4.1",
-                "xmlns":"http://www.collada.org/2005/11/COLLADASchema"})
-        self.collada.append(asset(up))
-        self.lib_materials = SubElement(self.collada, "library_materials")
-        self.lib_effects = SubElement(self.collada, "library_effects")
-        if self._options['display frame arrows']:
-            lib_nodes = SubElement(self.collada, "library_nodes")
-            lib_nodes.append(_create_scaled_frame_arrows(self._options['frame arrows length']))
-        library_visual_scenes = SubElement(self.collada, "library_visual_scenes")
-        scene_name = 'myscene'
-        self.visual_scene = SubElement(library_visual_scenes, "visual_scene",
-                {'id':scene_name})
-        scene = SubElement(self.collada, "scene")
-        SubElement(scene, "instance_visual_scene", {"url":'#'+scene_name})
-        return self.visual_scene
+    def _set_up_axis(self, up):
+        """Set the up_axis element."""
+        if all(up == [1., 0., 0.]):
+            up_text = 'X_UP'
+        elif all(up == [0., 1., 0.]):
+            up_text = 'Y_UP'
+        elif all(up == [0., 0., 1.]):
+            up_text = 'Z_UP'
+        else:
+            up_text = None
+            warning('the up vector is not compatible with collada')
+        if up_text:
+            up_element = SubElement(self._tree.find('{'+NS+'}asset'),
+                    QN('up_axis'))
+            up_element.text = up_text
 
     def add_child(self, parent, child, category=None):
         assert category in (None, 'frame arrows', 'shape', 'link')
@@ -98,21 +164,21 @@ class ColladaDriver(arboris._visu.DrawerDriver):
             else:
                 return noun + 's'
         if category is None or self._options['display '+plural(category)]:
-                parent.append(child)
+            parent.append(child)
 
     def create_transform(self, pose, is_constant, name=None):
         """Generate the node corresponding to the pose."""
         if name:
-            node = Element("node", {"id":name, "name":name})
+            node = Element(QN("node"), {"id":name, "name":name})
         else:
-            node = Element("node")
+            node = Element(QN("node"))
         if not is_constant:
             rotz, roty, rotx = rotzyx_angles(pose)
             coeff = 180./pi
-            matrix = SubElement(node, "matrix", {'sid':"matrix"})
+            matrix = SubElement(node, QN("matrix"), {'sid':"matrix"})
             matrix.text = str(pose.reshape(16))[1:-1]
         elif not (pose == eye(4)).all():
-            matrix = SubElement(node, "matrix", {'sid':'matrix'})
+            matrix = SubElement(node, QN("matrix"), {'sid':'matrix'})
             matrix.text = str(pose.reshape(-1)).strip('[]')
         return node
 
@@ -124,24 +190,24 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         H = zaligned(n_vector)
         H[0:3, 3] = start
         node = self.create_transform(H, is_constant=True)
-        scale = SubElement(node, 'scale')
+        scale = SubElement(node, QN('scale'))
         scale.text = "0. 0. {0}".format(vector_norm)
-        elem = SubElement(node, "instance_geometry",
-            {"url": self.shapes+"#line"})
+        elem = SubElement(node, QN("instance_geometry"),
+            {"url": shapes+"#line"})
         self._add_color(elem, color)
         return node
 
     def create_frame_arrows(self):
-        return Element("instance_node", {"url": "#frame_arrows"})
+        return Element(QN("instance_node"), {"url": "#frame_arrows"})
 
     def create_box(self, half_extents, color):
         # instead of creating a new box, we use the #box and scale it
         # to the proper size
-        node = Element("node")
-        scale = SubElement(node, 'scale')
+        node = Element(QN("node"))
+        scale = SubElement(node, QN('scale'))
         scale.text = "{0} {1} {2}".format(*half_extents)
-        elem = SubElement(node, "instance_geometry",
-                          {"url": self.shapes+"#box"})
+        elem = SubElement(node, QN("instance_geometry"),
+                          {"url": shapes+"#box"})
         self._add_color(elem, color)
         return node
 
@@ -149,20 +215,20 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         H = zaligned(coeffs[0:3])
         H[0:3, 3] = coeffs[3] * coeffs[0:3]
         node = self.create_transform(H, is_constant=True)
-        scale = SubElement(node, 'scale')
+        scale = SubElement(node, QN('scale'))
         scale.text = "{0} {1} 0.".format(*self._options["plane half extents"])
-        elem = SubElement(node, "instance_geometry",
-                {"url": self.shapes+"#plane"})
+        elem = SubElement(node, QN("instance_geometry"),
+                {"url": shapes+"#plane"})
         self._add_color(elem, color)
         return node
 
     def _create_ellipsoid(self, radii, color, resolution):
         assert resolution in ('20', '80', '320')
-        node = Element("node")
-        scale = SubElement(node, 'scale')
+        node = Element(QN("node"))
+        scale = SubElement(node, QN('scale'))
         scale.text = "{0} {1} {2}".format(*radii)
-        elem = SubElement(node, "instance_geometry",
-                          {"url": self.shapes+"#sphere_"+resolution})
+        elem = SubElement(node, QN("instance_geometry"),
+                          {"url": shapes+"#sphere_"+resolution})
         self._add_color(elem, color)
         return node
 
@@ -175,51 +241,62 @@ class ColladaDriver(arboris._visu.DrawerDriver):
 
     def _create_cylinder(self, length, radius, color, resolution):
         assert resolution in ('8', '32')
-        node = Element("node")
-        scale = SubElement(node, 'scale')
+        node = Element(QN("node"))
+        scale = SubElement(node, QN('scale'))
         scale.text = "{0} {0} {1}".format(radius, length)
-        elem = SubElement(node, "instance_geometry",
-                          {"url": self.shapes+"#cylinder_"+resolution})
+        elem = SubElement(node, QN("instance_geometry"),
+                          {"url": shapes+"#cylinder_"+resolution})
         self._add_color(elem, color)
         return node
 
     def create_cylinder(self, length, radius, color):
         return self._create_cylinder(length, radius, color, '32')
 
+    def _color_id(self, color):
+        return "color{0}".format(self._colors.index(color))
 
     def _add_color(self, parent, color):
         if not color in self._colors:
             self._colors.append(color)
-        idx = self._colors.index(color)
-        elem = SubElement(parent, "bind_material")
-        elem = SubElement(elem, "technique_common")
-        SubElement(elem, "instance_material",
-                   {"symbol":"material",
-                    "target": "#color"+str(idx)})
+        parent.append(XML("""
+        <bind_material xmlns="{NS}">
+            <technique_common>
+                <instance_material symbol="material" target="#{0}" />
+            </technique_common>
+        </bind_material>
+        """.format(self._color_id(color), NS=NS)))
 
     def _write_colors(self):
-        if len(self._colors):
-            for c in self._colors:
-                url = "color{0}".format(self._colors.index(c))
-                se = SubElement(self.lib_materials, "material", {"id": url})
-                SubElement(se, "instance_effect", {"url": "#"+ url+"_fx"})
-                se = SubElement(self.lib_effects, "effect", {"id": url+"_fx"})
-                se = SubElement(se, "profile_COMMON")
-                se = SubElement(se, "technique", {"sid": "blender"})
-                se = SubElement(se, "phong")
-                se = SubElement(se, "diffuse")
-                se = SubElement(se, "color")
-                se.text = "{0} {1} {2} 1.".format(*c)
-        else:
-            self.collada.remove(self.lib_materials)
-            self.collada.remove(self.lib_effects)
+        lib_materials = self._tree.find('{'+NS+'}library_materials')
+        lib_effects = self._tree.find('{'+NS+'}library_effects')
+        for c in self._colors:
+            color_id = self._color_id(c)
+            lib_materials.append(XML("""
+            <material id="{0}" xmlns="{NS}">
+                <instance_effect url="#{0}_fx"/>
+            </material>
+            """.format(color_id, NS=NS)))
+
+            lib_effects.append(XML("""
+            <effect id="{0}_fx" xmlns="{NS}">
+                <profile_COMMON>
+                    <technique sid="blender">
+                        <phong>
+                            <diffuse>
+                                <color>{1} {2} {3} 1</color>
+                            </diffuse>
+                        </phong>
+                    </technique>
+                </profile_COMMON>
+            </effect>
+            """.format(color_id, *c, NS=NS)))
 
     def finish(self):
         # write to  file
         self._write_colors()
-        _indent(self.collada)
-        tree = ElementTree(self.collada)
-        tree.write(self._file, "utf-8")
+        indent(self._tree)
+        fix_namespace(self._tree)
+        self._tree.write(self._file, "utf-8")
         self._file.close()
 
 def write_collada_scene(world, dae_filename, flat=False):
@@ -265,7 +342,7 @@ def write_collada_animation(collada_animation, collada_scene, hdf5_file,
 def view(collada_file, hdf5_file=None, hdf5_group="/"):
     """Display a collada file, generating the animation if necessary.
 
-    Usage:
+    Usage::
 
         view(collada_file)
         view(collada_scene_file, hdf5_file, [hdf5_group])
