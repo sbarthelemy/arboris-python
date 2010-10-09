@@ -383,6 +383,12 @@ class World(NamedObject):
         for obj in self._subframes:
             yield obj
 
+    def itermovingsubframes(self):
+        """Iterate over all subframes."""
+        for obj in self._subframes:
+            if isinstance(obj, MovingSubFrame):
+                yield obj
+
     def iterframes(self):
         """Iterate over all frames (bodies and subframes)."""
         for obj in self.iterbodies():

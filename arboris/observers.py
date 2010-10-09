@@ -233,11 +233,13 @@ class Hdf5Logger(arboris.core.Observer):
             self._arb_transforms = {}
             self._transforms = self._root.require_group('transforms')
             if self._flat:
-                for b in self._world.ground.iter_descendant_bodies():
+                for b in self._world.iterbodies():
                     self._arb_transforms[b.name] = b
             else:
                 for j in  self._world.getjoints():
                     self._arb_transforms[j.frames[1].name] = j
+            for f in self._world.ground.itermovingsubframes():
+                self._arb_transforms[f.name] = f
             for k in self._arb_transforms.iterkeys():
                 d = self._transforms.require_dataset(k,
                                                     (self._nb_steps, 4,4),
@@ -267,6 +269,13 @@ class Hdf5Logger(arboris.core.Observer):
                 self._gvelocities[j.name][self._current_step] = j.gvel
         if self._save_transforms:
             for k, v in self._arb_transforms.iteritems():
+                if isinstance(v, MovingSubFrame):
+                    if self._flat:
+                        pose = v.pose
+                    else:
+                        pose = v.bpose
+                else:
+                    pose = v.pose
                 self._transforms[k][self._current_step,:,:] = v.pose
         if self._save_model:
             self._model["gvel"][self._current_step,:] = self._world.gvel
