@@ -10,7 +10,7 @@ import os
 import tempfile
 
 NS = 'http://www.collada.org/2005/11/COLLADASchema'
-shapes = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shapes.dae')
+SHAPES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shapes.dae')
 
 def QN(tag):
     """Return the qualified version of a collada tag name.
@@ -115,7 +115,7 @@ def find_by_id(root, id, tag=None):
     return None
 
 class ColladaDriver(arboris._visu.DrawerDriver):
-    def __init__(self, filename, scale=1., options=None):
+    def __init__(self, filename, shapes_file=None, scale=1., options=None):
         arboris._visu.DrawerDriver.__init__(self, scale, options)
         self._file = open(filename, 'w')
         self._colors = []
@@ -123,9 +123,13 @@ class ColladaDriver(arboris._visu.DrawerDriver):
                 'scene.dae')
         self._tree = ET.parse(scene)
         frame_arrows = find_by_id(self._tree, 'frame_arrows', 'node')
-        # make the path to shapes.dae absolute
+        # fix the path to the shapes.dae file
+        if shapes_file is None:
+            self._shapes = SHAPES
+        else:
+            self._shapes = shapes_file
         instance_node = frame_arrows.find('./{'+NS+'}instance_node')
-        instance_node.set('url', shapes + "#frame_arrows")
+        instance_node.set('url', self._shapes + "#frame_arrows")
         # update the frame arrows scale
         scale = frame_arrows.find('./{'+NS+'}scale')
         scale.text = "{0} {0} {0}".format(self._options['frame arrows length'])
@@ -193,7 +197,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         scale = SubElement(node, QN('scale'))
         scale.text = "0. 0. {0}".format(vector_norm)
         elem = SubElement(node, QN("instance_geometry"),
-            {"url": shapes+"#line"})
+            {"url": self._shapes+"#line"})
         self._add_color(elem, color)
         return node
 
@@ -207,7 +211,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         scale = SubElement(node, QN('scale'))
         scale.text = "{0} {1} {2}".format(*half_extents)
         elem = SubElement(node, QN("instance_geometry"),
-                          {"url": shapes+"#box"})
+                          {"url": self._shapes+"#box"})
         self._add_color(elem, color)
         return node
 
@@ -218,7 +222,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         scale = SubElement(node, QN('scale'))
         scale.text = "{0} {1} 0.".format(*self._options["plane half extents"])
         elem = SubElement(node, QN("instance_geometry"),
-                {"url": shapes+"#plane"})
+                {"url": self._shapes+"#plane"})
         self._add_color(elem, color)
         return node
 
@@ -228,7 +232,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         scale = SubElement(node, QN('scale'))
         scale.text = "{0} {1} {2}".format(*radii)
         elem = SubElement(node, QN("instance_geometry"),
-                          {"url": shapes+"#sphere_"+resolution})
+                          {"url": self._shapes+"#sphere_"+resolution})
         self._add_color(elem, color)
         return node
 
@@ -245,7 +249,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         scale = SubElement(node, QN('scale'))
         scale.text = "{0} {0} {1}".format(radius, length)
         elem = SubElement(node, QN("instance_geometry"),
-                          {"url": shapes+"#cylinder_"+resolution})
+                          {"url": self._shapes+"#cylinder_"+resolution})
         self._add_color(elem, color)
         return node
 
