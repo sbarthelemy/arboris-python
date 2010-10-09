@@ -8,6 +8,7 @@ import arboris._visu
 import subprocess
 import os
 import tempfile
+from datetime import datetime
 
 NS = 'http://www.collada.org/2005/11/COLLADASchema'
 SHAPES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shapes.dae')
@@ -139,12 +140,13 @@ class ColladaDriver(arboris._visu.DrawerDriver):
 
     def add_ground(self, up):
         self._set_up_axis(up)
+        self._set_date()
         ground = find_by_id(self._tree, 'ground', 'node')
         assert ground is not None
         return ground
 
     def _set_up_axis(self, up):
-        """Set the up_axis element."""
+        """Add an up_axis element."""
         if all(up == [1., 0., 0.]):
             up_text = 'X_UP'
         elif all(up == [0., 1., 0.]):
@@ -158,6 +160,16 @@ class ColladaDriver(arboris._visu.DrawerDriver):
             up_element = SubElement(self._tree.find('{'+NS+'}asset'),
                     QN('up_axis'))
             up_element.text = up_text
+
+    def _set_date(self, date=None):
+        """Set the created ans modified elements"""
+        if date is None:
+            date = datetime.now()
+        created = self._tree.find('{'+NS+'}asset/{'+NS+'}created')
+        created.text = date.isoformat()
+        modified = self._tree.find('{'+NS+'}asset/{'+NS+'}modified')
+        modified.text = date.isoformat()
+
 
     def add_child(self, parent, child, category=None):
         assert category in (None, 'frame arrows', 'shape', 'link')
