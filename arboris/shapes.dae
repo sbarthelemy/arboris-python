@@ -181,7 +181,7 @@
 				<trifans count="1" material="material">
 					<input offset="0" semantic="VERTEX" source="#cylinder_8_vertex" />
 					<input offset="1" semantic="NORMAL" source="#cylinder_8_normal" />
-					<p> 1 9  17 9  15 9  13 9  11 9  9 9  7 9  5 9  3 9  17 9 </p>
+					<p> 17 9  15 9  13 9  11 9  9 9  7 9  5 9  3 9  1 9  15 9 </p>
 				</trifans>
 				<trifans count="1" material="material">
 					<input offset="0" semantic="VERTEX" source="#cylinder_8_vertex" />
@@ -223,7 +223,7 @@
 				<trifans count="1" material="material">
 					<input offset="0" semantic="VERTEX" source="#cylinder_32_vertex" />
 					<input offset="1" semantic="NORMAL" source="#cylinder_32_normal" />
-					<p> 1 33  65 33  63 33  61 33  59 33  57 33  55 33  53 33  51 33  49 33  47 33  45 33  43 33  41 33  39 33  37 33  35 33  33 33  31 33  29 33  27 33  25 33  23 33  21 33  19 33  17 33  15 33  13 33  11 33  9 33  7 33  5 33  3 33  65 33 </p>
+					<p> 65 33  63 33  61 33  59 33  57 33  55 33  53 33  51 33  49 33  47 33  45 33  43 33  41 33  39 33  37 33  35 33  33 33  31 33  29 33  27 33  25 33  23 33  21 33  19 33  17 33  15 33  13 33  11 33  9 33  7 33  5 33  3 33  1 33  63 33 </p>
 				</trifans>
 				<trifans count="1" material="material">
 					<input offset="0" semantic="VERTEX" source="#cylinder_32_vertex" />
