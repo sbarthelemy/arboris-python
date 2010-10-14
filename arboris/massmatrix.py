@@ -52,6 +52,20 @@ def transport(M, H):
            [  0.,   0.,   3.,   1.,   0.,   0.],
            [  0.,   0.,  -1.,   0.,   1.,   0.],
            [ -3.,   1.,   0.,   0.,   0.,   1.]])
+    >>> ismassmatrix(M_b)
+    True
+    >>> from math import pi
+    >>> H_ab = Hg.rotx(pi/4)
+    >>> M_b = transport(M_a, H_ab)
+    >>> M_b
+    array([[ 3.,  0.,  0.,  0.,  0.,  0.],
+           [ 0.,  3.,  1.,  0.,  0.,  0.],
+           [ 0.,  1.,  3.,  0.,  0.,  0.],
+           [ 0.,  0.,  0.,  1.,  0.,  0.],
+           [ 0.,  0.,  0.,  0.,  1.,  0.],
+           [ 0.,  0.,  0.,  0.,  0.,  1.]])
+    >>> ismassmatrix(M_b)
+    True
 
     """
     assert ismassmatrix(M)
