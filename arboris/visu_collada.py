@@ -108,8 +108,6 @@ def fix_namespace(tree):
 
 def find_by_id(root, id, tag=None):
     """Find an element by id."""
-    if tag:
-        tag = '{'+NS+'}'+tag
     for e in root.getiterator(tag):
         if e.get('id') == id:
             return(e)
@@ -123,7 +121,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         scene = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                 'scene.dae')
         self._tree = ET.parse(scene)
-        frame_arrows = find_by_id(self._tree, 'frame_arrows', 'node')
+        frame_arrows = find_by_id(self._tree, 'frame_arrows', QN('node'))
         # fix the path to the shapes.dae file
         if shapes_file is None:
             self._shapes = SHAPES
@@ -141,7 +139,7 @@ class ColladaDriver(arboris._visu.DrawerDriver):
     def add_ground(self, up):
         self._set_up_axis(up)
         self._set_date()
-        ground = find_by_id(self._tree, 'ground', 'node')
+        ground = find_by_id(self._tree, 'ground', QN('node'))
         assert ground is not None
         return ground
 
