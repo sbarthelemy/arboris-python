@@ -119,29 +119,29 @@ class DrawerDriver():
         pass
 
     @abstractmethod
-    def create_line(self, start, end, color):
+    def create_line(self, start, end, color, name=None):
         pass
 
     @abstractmethod
-    def create_ellipsoid(self, radii, color):
+    def create_ellipsoid(self, radii, color, name=None):
         pass
 
-    def create_sphere(self, radius, color):
+    def create_sphere(self, radius, color, name=None):
         return self.create_ellipsoid([radius] * 3, color)
 
-    def create_point(self, color):
+    def create_point(self, color, name=None):
         return self.create_sphere(self._options['point radius'], color)
 
     @abstractmethod
-    def create_box(self, half_extents, color):
+    def create_box(self, half_extents, color, name=None):
         pass
 
     @abstractmethod
-    def create_plane(self, coeffs, color):
+    def create_plane(self, coeffs, color, name=None):
         pass
 
     @abstractmethod
-    def create_cylinder(self, length, radius, color):
+    def create_cylinder(self, length, radius, color, name=None):
         pass
 
     @abstractmethod
@@ -369,16 +369,19 @@ class Drawer(object):
         if isinstance(obj, arboris.core.Shape):
             color = self._color_generator.get_color(obj)
             if isinstance(obj, arboris.shapes.Sphere):
-                node = self._driver.create_sphere(obj.radius, color)
-            if isinstance(obj, arboris.shapes.Point):
-                node = self._driver.create_point(color)
-            if isinstance(obj, arboris.shapes.Cylinder):
+                node = self._driver.create_sphere(obj.radius, color, obj.name)
+            elif isinstance(obj, arboris.shapes.Point):
+                node = self._driver.create_point(color, obj.name)
+            elif isinstance(obj, arboris.shapes.Cylinder):
                 node = self._driver.create_cylinder(obj.length, obj.radius,
-                                                    color)
-            if isinstance(obj, arboris.shapes.Plane):
-                node = self._driver.create_plane(obj.coeffs, color)
-            if isinstance(obj, arboris.shapes.Box):
-                node = self._driver.create_box(obj.half_extents, color)
+                                                    color, obj.name)
+            elif isinstance(obj, arboris.shapes.Plane):
+                node = self._driver.create_plane(obj.coeffs, color, obj.name)
+            elif isinstance(obj, arboris.shapes.Box):
+                node = self._driver.create_box(obj.half_extents, color,
+                        obj.name)
+            else:
+                raise(ValueError('Unknown shape'))
             self._driver.add_child(self.frame_nodes[obj.frame], node, 'shape')
 
     def finish(self):

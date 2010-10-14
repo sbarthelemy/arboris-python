@@ -198,14 +198,14 @@ class ColladaDriver(arboris._visu.DrawerDriver):
             matrix.text = str(pose.reshape(-1)).strip('[]')
         return node
 
-    def create_line(self, start, end, color):
+    def create_line(self, start, end, color, name=None):
         vector = (array(end) - array(start))
         vector_norm = linalg.norm(vector)
         assert vector_norm > 0.
         n_vector = vector/vector_norm
         H = zaligned(n_vector)
         H[0:3, 3] = start
-        node = self.create_transform(H, is_constant=True)
+        node = self.create_transform(H, is_constant=True, name=name)
         scale = SubElement(node, QN('scale'))
         scale.text = "0. 0. {0}".format(vector_norm)
         elem = SubElement(node, QN("instance_geometry"),
@@ -216,10 +216,13 @@ class ColladaDriver(arboris._visu.DrawerDriver):
     def create_frame_arrows(self):
         return Element(QN("instance_node"), {"url": "#frame_arrows"})
 
-    def create_box(self, half_extents, color):
+    def create_box(self, half_extents, color, name=None):
         # instead of creating a new box, we use the #box and scale it
         # to the proper size
-        node = Element(QN("node"))
+        if name:
+            node = Element(QN("node"), {"id":name, "name":name})
+        else:
+            node = Element(QN("node"))
         scale = SubElement(node, QN('scale'))
         scale.text = "{0} {1} {2}".format(*half_extents)
         elem = SubElement(node, QN("instance_geometry"),
@@ -227,10 +230,10 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         self._add_color(elem, color)
         return node
 
-    def create_plane(self, coeffs, color):
+    def create_plane(self, coeffs, color, name=None):
         H = zaligned(coeffs[0:3])
         H[0:3, 3] = coeffs[3] * coeffs[0:3]
-        node = self.create_transform(H, is_constant=True)
+        node = self.create_transform(H, is_constant=True, name=name)
         scale = SubElement(node, QN('scale'))
         scale.text = "{0} {1} 0.".format(*self._options["plane half extents"])
         elem = SubElement(node, QN("instance_geometry"),
@@ -238,9 +241,12 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         self._add_color(elem, color)
         return node
 
-    def _create_ellipsoid(self, radii, color, resolution):
+    def _create_ellipsoid(self, radii, color, resolution, name=None):
         assert resolution in ('20', '80', '320')
-        node = Element(QN("node"))
+        if name:
+            node = Element(QN("node"), {"id":name, "name":name})
+        else:
+            node = Element(QN("node"))
         scale = SubElement(node, QN('scale'))
         scale.text = "{0} {1} {2}".format(*radii)
         elem = SubElement(node, QN("instance_geometry"),
@@ -248,16 +254,20 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         self._add_color(elem, color)
         return node
 
-    def create_ellipsoid(self, radii, color):
-         return self._create_ellipsoid(radii, color, resolution='320')
+    def create_ellipsoid(self, radii, color, name=None):
+         return self._create_ellipsoid(radii, color, resolution='320',
+                 name=name)
 
-    def create_point(self, color):
+    def create_point(self, color, name=None):
         radii = (self._options['point radius'],) * 3
-        return self._create_ellipsoid(radii, color, resolution='20')
+        return self._create_ellipsoid(radii, color, resolution='20', name=name)
 
-    def _create_cylinder(self, length, radius, color, resolution):
+    def _create_cylinder(self, length, radius, color, resolution, name=None):
         assert resolution in ('8', '32')
-        node = Element(QN("node"))
+        if name:
+            node = Element(QN("node"), {"id":name, "name":name})
+        else:
+            node = Element(QN("node"))
         scale = SubElement(node, QN('scale'))
         scale.text = "{0} {0} {1}".format(radius, length)
         elem = SubElement(node, QN("instance_geometry"),
@@ -265,8 +275,8 @@ class ColladaDriver(arboris._visu.DrawerDriver):
         self._add_color(elem, color)
         return node
 
-    def create_cylinder(self, length, radius, color):
-        return self._create_cylinder(length, radius, color, '32')
+    def create_cylinder(self, length, radius, color, name=None):
+        return self._create_cylinder(length, radius, color, '32', name=name)
 
     def _color_id(self, color):
         return "color{0}".format(self._colors.index(color))
