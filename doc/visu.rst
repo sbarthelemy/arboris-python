@@ -6,7 +6,7 @@ The visualisation of a simulation is still a work
 in progress. However it is quite useable right now.
 
 Basic use
----------
+=========
 
 Viewing the simulation involves four steps:
 
@@ -68,8 +68,8 @@ To use these options, one cannot use the :func:`write_collada_scene` helper
 function.
 
 Some graphic elements have a fixed size, such as the points or the frame
-arrows. They can be scaled altogether with a single `scale` parameter,
-and ca
+arrows. They can be scaled altogether with a single ``scale`` parameter,
+and can also be set independently.
 
 >>> options = ColladaDriver.get_default_options(scale=1.)
 >>> print(options['point radius'])
