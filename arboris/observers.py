@@ -191,8 +191,6 @@ class Hdf5Logger(arboris.core.Observer):
     ``Joint.pose`` and whose name is taken from the joint second frame
     (``Joint.frames[1].name``).
 
-    The :class:`arboris.core.MovingSubFrame` instances are not saved yet.
-
     """
     def __init__(self, filename, group="/", mode='a', save_state=False,
                  save_transforms=True, flat=False, save_model=False):
@@ -238,7 +236,7 @@ class Hdf5Logger(arboris.core.Observer):
             else:
                 for j in  self._world.getjoints():
                     self._arb_transforms[j.frames[1].name] = j
-            for f in self._world.ground.itermovingsubframes():
+            for f in self._world.itermovingsubframes():
                 self._arb_transforms[f.name] = f
             for k in self._arb_transforms.iterkeys():
                 d = self._transforms.require_dataset(k,
@@ -269,7 +267,7 @@ class Hdf5Logger(arboris.core.Observer):
                 self._gvelocities[j.name][self._current_step] = j.gvel
         if self._save_transforms:
             for k, v in self._arb_transforms.iteritems():
-                if isinstance(v, MovingSubFrame):
+                if isinstance(v, arboris.core.MovingSubFrame):
                     if self._flat:
                         pose = v.pose
                     else:
