@@ -10,20 +10,17 @@ from numpy import ndarray
 class TestCase(unittest.TestCase):
     """A class whose instances are single test cases.
 
-    This is a variant of :class:`unittest.TestCase` which adds:
+    This is a variant of :class:`unittest.TestCase` which adds the
+    :meth:`assertListsAlmostEqual` method to compare sequences of floating
+    points numbers, and the following attributes:
 
-    the :meth:`assertListsAlmostEqual` method to compare sequences of floating
-    points numbers
-
-    The following attributes:
-
-    - :attribute:`testdir`: the directory where the reference result files are
+    - :attr:`testdir`: the directory where the reference result files are
       stored,
 
-    - :attribute:`destdir`: the path of a place where temporary result files
+    - :attr:`destdir`: the path of a place where temporary result files
       should be written (this defauts to a temporary directory),
 
-    - :attribute:`interactive`: (boolean) if False (the default), the test case
+    - :attr:`interactive`: (boolean) if False (the default), the test case
       should not require user interaction (such as displaying an animation) and
       therefore be suitable for batch processsing.
 

@@ -11,7 +11,7 @@ tol=1e-9
 def transl(t_x, t_y, t_z):
     """Homogeneous matrix of a translation.
 
-    INPUT: ``t_x, t_y, t_z`` - coordinates of the translation vector in 3d space
+    INPUT: t_x, t_y, t_z - coordinates of the translation vector in 3d space
 
     OUTPUT: Homogeneous matrix of the translation
 
@@ -137,7 +137,7 @@ def rotx(angle):
     """
     Homogeneous matrix of a rotation around the x-axis
 
-    Example:
+    **Example:**
 
     >>> rotx(3.14/6)
     array([[ 1.        ,  0.        ,  0.        ,  0.        ],
@@ -159,7 +159,7 @@ def roty(angle):
     """
     Homogeneous matrix of a rotation around the y-axis
 
-    Example:
+    **Example:**
 
     >>> roty(3.14/6)
     array([[ 0.86615809,  0.        ,  0.4997701 ,  0.        ],
@@ -283,7 +283,7 @@ def adjoint(H):
     :return: adjoint matrix
     :rtype: 6x6 ndarray
 
-    Example:
+    **Example:**
 
     >>> H = array(
     ...     [[ 0.70738827,  0.        , -0.70682518,  3.        ],
@@ -331,10 +331,12 @@ def rotzyx_angles(H):
     :type H: 4x4 ndarray
     :rtype: 3-tuple
 
-    Exemple:
+    **Example:**
+
     >>> angles = array((3.14/3, 3.14/6, 1))
     >>> (rotzyx_angles(rotzyx(*angles)) == angles).all()
     True
+
     """
     assert ishomogeneousmatrix(H)
     if abs(H[0,0])<tol and abs(H[1,0])<tol:

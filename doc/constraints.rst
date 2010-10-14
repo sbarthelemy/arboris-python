@@ -6,7 +6,7 @@ Gauss-Seidel algorithm
 ======================
 
 .. automethod:: arboris.core.World.update_constraints
-
+    :noindex:
 
 Constraints
 ===========

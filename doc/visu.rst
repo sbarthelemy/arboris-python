@@ -5,6 +5,9 @@ Visualization
 The visualisation of a simulation is still a work
 in progress. However it is quite useable right now.
 
+Basic use
+---------
+
 Viewing the simulation involves four steps:
 
 1. generate a collada file describing the scene
@@ -65,7 +68,7 @@ To use these options, one cannot use the :func:`write_collada_scene` helper
 function.
 
 Some graphic elements have a fixed size, such as the points or the frame
-arrows. They can be scaled altogether with a single :param:`scale` parameter,
+arrows. They can be scaled altogether with a single `scale` parameter,
 and ca
 
 >>> options = ColladaDriver.get_default_options(scale=1.)

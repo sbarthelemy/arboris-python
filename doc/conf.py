@@ -17,6 +17,7 @@ import sys, os
 # is relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
 sys.path.append(os.path.abspath('..'))
+sys.path.append(os.path.abspath('../tests'))
 
 # General configuration
 # ---------------------

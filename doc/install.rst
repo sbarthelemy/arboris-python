@@ -10,8 +10,8 @@ What we use...
 ---------------------
 
 The program is written in python 2.6. See the documentation
-`online <http://docs.python.org/>`_
-(or `locally <file:///usr/share/doc/python2.6-doc/html/index.html>`_
+`online <http://docs.python.org/>`__
+(or `locally <file:///usr/share/doc/python2.6-doc/html/index.html>`__
 on linux)
 and start with the tutorial.
 
@@ -33,8 +33,8 @@ results in the `HDF5 format <http://www.hdfgroup.org/HDF5/>`_.
 
 The documentation is written in the reST markup language and processed
 by sphinx (version >=6). See the sphinx (and reST) documentation
-`online <http://sphinx.pocoo.org/>`_
-(or `locally <file:///usr/share/doc/python-sphinx/html/index.html>`_
+`online <http://sphinx.pocoo.org/>`__
+(or `locally <file:///usr/share/doc/python-sphinx/html/index.html>`__
 on linux). We use sphinx plugins
 which allow to embed latex in the doc, to parse the docstrings spread
 in the code and to run the examples with doctest. To generate the uml
