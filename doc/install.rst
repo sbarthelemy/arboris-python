@@ -35,10 +35,12 @@ The documentation is written in the reST markup language and processed
 by sphinx (version >=6). See the sphinx (and reST) documentation
 `online <http://sphinx.pocoo.org/>`__
 (or `locally <file:///usr/share/doc/python-sphinx/html/index.html>`__
-on linux). We use sphinx plugins
-which allow to embed latex in the doc, to parse the docstrings spread
-in the code and to run the examples with doctest. To generate the uml
-diagrams, graphviz is needed too.
+on linux). We use sphinx plugins which allow
+
+- to embed latex in the doc,
+- to parse the docstrings spread in the code,
+- to run the examples with doctest,
+- to generate the uml diagrams using graphviz.
 
 
 ...for the visualization
@@ -129,6 +131,12 @@ Install cvxopt from ubuntu and then cvxmod from sources::
   cd cvxmod-0.4.6/
   python setup.py install --prefix=~/.local
 
+Installing the tools needed to build the documentation
+------------------------------------------------------
+
+::
+
+  sudo aptitude install python-sphinx graphviz texlive-latex-base dvipng
 
 For Mac OS 10.6 (Snow Leopard)
 ==============================

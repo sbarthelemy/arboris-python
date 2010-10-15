@@ -125,3 +125,10 @@ violations etc.::
 
   pylint --rcfile=.pylintrc -f html arboris/ > pylint_report.html
 
+Building the documentation
+==========================
+
+::
+
+    python setup.py build_doc
+
