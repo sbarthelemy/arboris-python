@@ -5,12 +5,10 @@
 __author__ = (u"Sébastien BARTHÉLEMY <barthelemy@crans.org>")
 
 import arboris.homogeneousmatrix as Hg
-from numpy import diag, eye, dot, array
+from numpy import diag, eye, dot, array, allclose
 from numpy.linalg import eig, eigvals, det, norm
 
-tol=1e-9
-
-def ismassmatrix(M, tol=tol, semi=False):
+def ismassmatrix(M, semi=False):
     """Check whether M is a valid mass matrix.
 
     Return ``True`` if M is correctly shaped and symmetric positive
@@ -20,15 +18,12 @@ def ismassmatrix(M, tol=tol, semi=False):
     are also considered valid.
 
     """
-    common = M.shape == (6,6) and norm(M-M.T) <= tol and \
-            (M[3:6, 3:6] == M[3,3]*eye(3)).all()
-    if not common:
-        print (M[3:6, 3:6] == M[3, 3]*eye(3))
-        print norm(M-M.T)
+    common = M.shape == (6,6) and allclose(M, M.T) and \
+            allclose(M[3:6, 3:6], M[3,3]*eye(3))
     if semi:
-        return common and (eigvals(M)>=0.).all()
+        return common and (eigvals(M) >= 0.).all()
     else:
-        return common and (eigvals(M)>0.).all()
+        return common and (eigvals(M) > 0.).all()
 
 def transport(M, H):
     """Transport (express) the mass matrix into another frame.
@@ -45,25 +40,25 @@ def transport(M, H):
     >>> M_a = diag((3., 2., 4., 1., 1., 1.))
     >>> H_ab = Hg.transl(1., 3., 0.)
     >>> M_b = transport(M_a, H_ab)
-    >>> M_b
-    array([[ 12.,  -3.,   0.,   0.,   0.,  -3.],
-           [ -3.,   3.,   0.,   0.,   0.,   1.],
-           [  0.,   0.,  14.,   3.,  -1.,   0.],
-           [  0.,   0.,   3.,   1.,   0.,   0.],
-           [  0.,   0.,  -1.,   0.,   1.,   0.],
-           [ -3.,   1.,   0.,   0.,   0.,   1.]])
+    >>> allclose(M_b, [[ 12.,  -3.,   0.,   0.,   0.,  -3.],
+    ...                [ -3.,   3.,   0.,   0.,   0.,   1.],
+    ...                [  0.,   0.,  14.,   3.,  -1.,   0.],
+    ...                [  0.,   0.,   3.,   1.,   0.,   0.],
+    ...                [  0.,   0.,  -1.,   0.,   1.,   0.],
+    ...                [ -3.,   1.,   0.,   0.,   0.,   1.]])
+    True
     >>> ismassmatrix(M_b)
     True
     >>> from math import pi
     >>> H_ab = Hg.rotx(pi/4)
     >>> M_b = transport(M_a, H_ab)
-    >>> M_b
-    array([[ 3.,  0.,  0.,  0.,  0.,  0.],
-           [ 0.,  3.,  1.,  0.,  0.,  0.],
-           [ 0.,  1.,  3.,  0.,  0.,  0.],
-           [ 0.,  0.,  0.,  1.,  0.,  0.],
-           [ 0.,  0.,  0.,  0.,  1.,  0.],
-           [ 0.,  0.,  0.,  0.,  0.,  1.]])
+    >>> allclose(M_b, [[ 3.,  0.,  0.,  0.,  0.,  0.],
+    ...                [ 0.,  3.,  1.,  0.,  0.,  0.],
+    ...                [ 0.,  1.,  3.,  0.,  0.,  0.],
+    ...                [ 0.,  0.,  0.,  1.,  0.,  0.],
+    ...                [ 0.,  0.,  0.,  0.,  1.,  0.],
+    ...                [ 0.,  0.,  0.,  0.,  0.,  1.]])
+    True
     >>> ismassmatrix(M_b)
     True
 
