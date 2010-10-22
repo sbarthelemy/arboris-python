@@ -22,4 +22,4 @@ from arboris.robots.simplearm import add_simplearm
 from arboris.robots.snake import add_snake
 from arboris.visu_collada import write_collada_animation, write_collada_scene, \
         view, ColladaDriver
-from numpy import arange, dot
+from numpy import arange, dot, allclose, pi
