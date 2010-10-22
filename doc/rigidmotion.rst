@@ -125,8 +125,8 @@ translation and then inverts it.
 
 .. doctest::
 
-  >>> import homogeneousmatrix
-  >>> H = homogeneousmatrix.transl((1., 0., 2./3.))
+  >>> import arboris.homogeneousmatrix as homogeneousmatrix
+  >>> H = homogeneousmatrix.transl(1., 0., 2./3.)
   >>> H
   array([[ 1.        ,  0.        ,  0.        ,  1.        ],
          [ 0.        ,  1.        ,  0.        ,  0.        ],
